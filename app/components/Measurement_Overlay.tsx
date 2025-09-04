@@ -1,6 +1,6 @@
 // components/Measurement_Overlay.tsx
 import React from "react";
-import type { Measurement } from "../types";
+import type { Measurement } from "../map/types";
 
 export default function Measurement_Overlay({
   measurements,
@@ -17,11 +17,7 @@ export default function Measurement_Overlay({
   const h = height * gridSize;
 
   return (
-    <svg
-      width={w}
-      height={h}
-      className="absolute inset-0 pointer-events-none"
-    >
+    <svg width={w} height={h} className="absolute inset-0 pointer-events-none">
       {measurements.map((m) => {
         const x1 = m.startX * gridSize + gridSize / 2;
         const y1 = m.startY * gridSize + gridSize / 2;

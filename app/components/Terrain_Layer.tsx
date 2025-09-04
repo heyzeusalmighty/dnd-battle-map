@@ -1,6 +1,6 @@
 // components/Terrain_Layer.tsx
 import React from "react";
-import type { Terrain, CustomObj } from "../types";
+import type { Terrain, CustomObj } from "../map/types";
 
 type Props = {
   tiles: Terrain[];
@@ -15,10 +15,7 @@ type Props = {
 
   // UI state/handlers
   canInteract: boolean; // selectedTool === "select"
-  onTerrainRightClick?: (
-    e: React.MouseEvent,
-    tileId: string,
-  ) => void;
+  onTerrainRightClick?: (e: React.MouseEvent, tileId: string) => void;
 };
 
 export default function Terrain_Layer({
@@ -40,16 +37,11 @@ export default function Terrain_Layer({
         const top = tile.y * cellPx;
 
         const baseClass = `absolute ${
-          canInteract
-            ? "cursor-context-menu"
-            : "pointer-events-none"
+          canInteract ? "cursor-context-menu" : "pointer-events-none"
         }`;
 
-        const bg = isCustom
-          ? "transparent"
-          : getTerrainColor(tile.type);
-        const opacity =
-          !isCustom && tile.type === "difficult" ? 0.6 : 1;
+        const bg = isCustom ? "transparent" : getTerrainColor(tile.type);
+        const opacity = !isCustom && tile.type === "difficult" ? 0.6 : 1;
 
         return (
           <div
@@ -63,12 +55,8 @@ export default function Terrain_Layer({
               backgroundColor: bg,
               opacity,
             }}
-            onContextMenu={(e) =>
-              onTerrainRightClick?.(e, tile.id)
-            }
-            title={
-              canInteract ? "Right-click to delete" : undefined
-            }
+            onContextMenu={(e) => onTerrainRightClick?.(e, tile.id)}
+            title={canInteract ? "Right-click to delete" : undefined}
           >
             {isCustom ? (
               (() => {
