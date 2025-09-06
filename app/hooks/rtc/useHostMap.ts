@@ -38,6 +38,8 @@ export function useHostPeerSession(mapName: string) {
         console.log(`Received from ${conn.peer}:`, data);
         // Handle incoming data per connection here
       });
+
+      // this is what happens when a peer disconnects nicely
       conn.on('close', () => {
         setConnections((prev) => {
           const updated = prev.filter((c) => c.peer !== conn.peer);
@@ -45,6 +47,26 @@ export function useHostPeerSession(mapName: string) {
           return updated;
         });
         console.log(`Connection to ${conn.peer} closed.`);
+      });
+
+      conn.on('iceStateChanged', () => {
+        // this doesnt make sense but the last state is "connected" when the connection is closed
+        // its likely that the last event isn't handled or missed
+        // this is typically when someone closes the browser tab or loses connection
+        if (conn.peerConnection.connectionState === 'connected') {
+          console.log(`Connection to ${conn.peer} is not open.`);
+          setConnections((prev) => {
+            const updated = prev.filter((c) => c.peer !== conn.peer);
+            connectionsRef.current = updated;
+            return updated;
+          });
+        } else {
+          console.log(`Connection to ${conn.peer} is open or starting.`);
+        }
+      });
+
+      conn.on('error', (err) => {
+        console.error(`Connection error with ${conn.peer}:`, err);
       });
     });
 
