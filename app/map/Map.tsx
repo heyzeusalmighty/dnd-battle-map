@@ -1,6 +1,8 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect, MouseEvent, useMemo } from 'react';
+
 import { GRID_SIZE } from './utils/constants';
 import { demoCharacters, demoTerrain } from './utils/demo';
 import { rollInitiativeOnce, capInit } from './utils/dice';
@@ -54,7 +56,7 @@ const INITIAL_OBJECTS: CustomObj[] = [
   },
 ];
 
-export default function App() {
+const Map = () => {
   // Map configuration
   const [mapWidth, setMapWidth] = useState(25);
   const [mapHeight, setMapHeight] = useState(20);
@@ -62,6 +64,9 @@ export default function App() {
   const [distanceRule, setDistanceRule] = useState<DistanceRule>('5e');
 
   const mapScrollRef = useRef<HTMLDivElement>(null);
+
+  const searchParams = useSearchParams();
+  const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
 
   function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
     const el = mapScrollRef.current;
@@ -1019,7 +1024,7 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
-        <h1 className="text-lg font-semibold">Shadow Over Orlovia (Stain ya pants)</h1>
+        <h1 className="text-lg font-semibold">{mapName}</h1>
       </header>
 
       <main className="flex-1 flex gap-4 p-4">
@@ -1181,4 +1186,6 @@ export default function App() {
       </main>
     </div>
   );
-}
+};
+
+export default Map;
