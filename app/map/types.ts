@@ -1,7 +1,7 @@
 // src/types.ts
 
 // Movement / measurement
-export type DistanceRule = "5e" | "5105" | "euclidean";
+export type DistanceRule = '5e' | '5105' | 'euclidean';
 
 export interface Measurement {
   id: string;
@@ -21,7 +21,7 @@ export interface MapConfig {
 }
 
 // Terrain / objects on the grid
-export type TerrainType = "wall" | "door" | "water" | "furniture" | "custom";
+export type TerrainType = 'wall' | 'door' | 'water' | 'furniture' | 'custom';
 
 export interface Terrain {
   id: string;
@@ -36,8 +36,8 @@ export interface Terrain {
 }
 
 // Characters (PCs/NPCs)
-export type NPCType = "standard" | "boss" | "ally";
-export type InitiativeMode = "auto" | "manual";
+export type NPCType = 'standard' | 'boss' | 'ally';
+export type InitiativeMode = 'auto' | 'manual';
 
 export interface Character {
   id: string;
@@ -76,14 +76,26 @@ export type LastInitRoll = {
   mod: number; // initiativeMod used
   total: number; // die + mod (before cap)
   capped: number; // after capInit()
-  flags?: "adv" | "dis" | null; // optional
+  flags?: 'adv' | 'dis' | null; // optional
 };
 
-export type RollScope = "all" | "pcs" | "npcs" | "selected";
+export type RollScope = 'all' | 'pcs' | 'npcs' | 'selected';
 
 export type RollPreset = {
   scope: RollScope;
   useMods?: boolean;
   advantage?: boolean;
   disadvantage?: boolean;
+};
+
+export type AppSnapshot = {
+  characters: Character[];
+  terrain: Terrain[];
+  measurements: Measurement[];
+  mapWidth: number;
+  mapHeight: number;
+  gridScale: number;
+  round: number;
+  currentTurn: number;
+  selectedTool: string;
 };

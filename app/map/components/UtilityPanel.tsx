@@ -1,10 +1,11 @@
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Measurement, Terrain } from '../types';
 
 interface UtilityPanelProps {
-  measurements: any[];
+  measurements: Measurement[];
   clearMeasurements: () => void;
-  setTerrain: React.Dispatch<React.SetStateAction<any[]>>;
+  setTerrain: React.Dispatch<React.SetStateAction<Terrain[]>>;
   npcCount: number;
   pcCount: number;
   handleClearNPCs: () => void;
@@ -41,30 +42,25 @@ const UtilityPanel = ({
         Clear Terrain
       </Button>
 
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={clearMeasurements}
-        className="w-full"
-      >
+      <Button size="sm" variant="outline" onClick={clearMeasurements} className="w-full">
         Clear Measurements ({measurements.length})
       </Button>
 
       <Button variant="outline" className="w-full" onClick={handleClearNPCs}>
-        Clear NPCs {npcCount > 0 ? `(${npcCount})` : ""}
+        Clear NPCs {npcCount > 0 ? `(${npcCount})` : ''}
       </Button>
 
       <Button variant="outline" className="w-full" onClick={handleClearPCs}>
-        Clear PCs {pcCount > 0 ? `(${pcCount})` : ""}
+        Clear PCs {pcCount > 0 ? `(${pcCount})` : ''}
       </Button>
 
       <Button
         size="sm"
-        variant={showMovePreview ? "default" : "outline"}
+        variant={showMovePreview ? 'default' : 'outline'}
         onClick={() => setShowMovePreview((v) => !v)}
         className="w-full"
       >
-        {showMovePreview ? "Movement Preview: On" : "Movement Preview: Off"}
+        {showMovePreview ? 'Movement Preview: On' : 'Movement Preview: Off'}
       </Button>
     </div>
   </Card>

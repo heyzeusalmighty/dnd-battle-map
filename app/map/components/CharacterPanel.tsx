@@ -1,18 +1,16 @@
-import { MoreVertical } from "lucide-react";
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
+import { MoreVertical } from 'lucide-react';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
 
-import BulkNpcForm from "../../components/BulkNpcForm";
+import BulkNpcForm from '../../components/BulkNpcForm';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "../../components/ui/dropdown-menu";
+} from '../../components/ui/dropdown-menu';
 
 import {
   Select,
@@ -20,7 +18,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../components/ui/select";
+} from '../../components/ui/select';
 
 import {
   Dialog,
@@ -28,18 +26,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../components/ui/dialog";
+} from '../../components/ui/dialog';
 
-import type {
-  Character,
-  CustomObj,
-  DistanceRule,
-  Measurement,
-  Terrain,
-  InitiativeMode,
-} from "../types";
+import type { Character, InitiativeMode } from '../types';
 
-import { DEFAULT_PARTY } from "../utils/partyPresets";
+import { DEFAULT_PARTY } from '../utils/partyPresets';
 
 const CharacterPanel = ({
   characters,
@@ -91,16 +82,16 @@ const CharacterPanel = ({
   mapHeight: number;
   isWallAt: (x: number, y: number) => boolean;
   saveSnapshot: () => void;
-  charTab: "add" | "manage";
-  setCharTab: React.Dispatch<React.SetStateAction<"add" | "manage">>;
+  charTab: 'add' | 'manage';
+  setCharTab: React.Dispatch<React.SetStateAction<'add' | 'manage'>>;
   presetToAdd: string;
   setPresetToAdd: React.Dispatch<React.SetStateAction<string>>;
   addCharacterFromPreset: () => void;
   addPartyFromPresets: () => void;
   showAddChar: boolean;
   setShowAddChar: React.Dispatch<React.SetStateAction<boolean>>;
-  addMode: "single" | "bulk";
-  setAddMode: React.Dispatch<React.SetStateAction<"single" | "bulk">>;
+  addMode: 'single' | 'bulk';
+  setAddMode: React.Dispatch<React.SetStateAction<'single' | 'bulk'>>;
   newCharName: string;
   setNewCharName: React.Dispatch<React.SetStateAction<string>>;
   newCharInit: string;
@@ -110,16 +101,14 @@ const CharacterPanel = ({
   handleAddCharacter: () => void;
   charQuery: string;
   setCharQuery: React.Dispatch<React.SetStateAction<string>>;
-  charFilter: "all" | "pc" | "npc";
-  setCharFilter: React.Dispatch<React.SetStateAction<"all" | "pc" | "npc">>;
+  charFilter: 'all' | 'pc' | 'npc';
+  setCharFilter: React.Dispatch<React.SetStateAction<'all' | 'pc' | 'npc'>>;
   filteredCharacters: Character[];
   handleCharacterClick: (id: string) => void;
   handleUpdateHp: (id: string, newHp: number) => void;
   handleDeleteCharacter: (id: string) => void;
   damageDelta: { [key: string]: string }; // id -> delta string
-  setDamageDelta: React.Dispatch<
-    React.SetStateAction<{ [key: string]: string }>
-  >;
+  setDamageDelta: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>;
   applyDamageDelta: (id: string) => void;
 }) => (
   <Card className="p-4">
@@ -128,24 +117,24 @@ const CharacterPanel = ({
       <div className="inline-flex rounded-md overflow-hidden border">
         <Button
           size="sm"
-          variant={charTab === "add" ? "default" : "ghost"}
+          variant={charTab === 'add' ? 'default' : 'ghost'}
           className="h-7 px-3 rounded-none"
-          onClick={() => setCharTab("add")}
+          onClick={() => setCharTab('add')}
         >
           Add
         </Button>
         <Button
           size="sm"
-          variant={charTab === "manage" ? "default" : "ghost"}
+          variant={charTab === 'manage' ? 'default' : 'ghost'}
           className="h-7 px-3 rounded-none"
-          onClick={() => setCharTab("manage")}
+          onClick={() => setCharTab('manage')}
         >
           Manage
         </Button>
       </div>
     </div>
 
-    {charTab === "add" ? (
+    {charTab === 'add' ? (
       // --- Add tab (your existing controls) ---
       <div className="space-y-3">
         {/* Preset + Add */}
@@ -172,11 +161,7 @@ const CharacterPanel = ({
         </div>
 
         {/* Add whole party */}
-        <Button
-          className="w-full"
-          variant="outline"
-          onClick={addPartyFromPresets}
-        >
+        <Button className="w-full" variant="outline" onClick={addPartyFromPresets}>
           Add Party ({DEFAULT_PARTY.length} presets)
         </Button>
 
@@ -197,25 +182,23 @@ const CharacterPanel = ({
             <div className="mb-3 inline-flex w-fit self-start rounded-md border overflow-hidden">
               <button
                 className={`px-3 py-1 text-sm flex-none ${
-                  addMode === "single"
-                    ? "bg-black text-white"
-                    : "bg-transparent"
+                  addMode === 'single' ? 'bg-black text-white' : 'bg-transparent'
                 }`}
-                onClick={() => setAddMode("single")}
+                onClick={() => setAddMode('single')}
               >
                 Single
               </button>
               <button
                 className={`px-3 py-1 text-sm flex-none ${
-                  addMode === "bulk" ? "bg-black text-white" : "bg-transparent"
+                  addMode === 'bulk' ? 'bg-black text-white' : 'bg-transparent'
                 }`}
-                onClick={() => setAddMode("bulk")}
+                onClick={() => setAddMode('bulk')}
               >
                 Bulk
               </button>
             </div>
 
-            {addMode === "single" ? (
+            {addMode === 'single' ? (
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium">Name</label>
@@ -228,9 +211,7 @@ const CharacterPanel = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium">
-                      Initiative mod
-                    </label>
+                    <label className="text-sm font-medium">Initiative mod</label>
                     <Input
                       value={newCharInit}
                       onChange={(e) => setNewCharInit(e.target.value)}
@@ -239,9 +220,7 @@ const CharacterPanel = ({
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">
-                      Starting damage (optional)
-                    </label>
+                    <label className="text-sm font-medium">Starting damage (optional)</label>
                     <Input
                       value={newCharDmg}
                       onChange={(e) => setNewCharDmg(e.target.value)}
@@ -252,10 +231,7 @@ const CharacterPanel = ({
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddChar(false)}
-                  >
+                  <Button variant="outline" onClick={() => setShowAddChar(false)}>
                     Cancel
                   </Button>
                   <Button
@@ -300,25 +276,25 @@ const CharacterPanel = ({
           <div className="inline-flex rounded-md overflow-hidden border self-start">
             <Button
               size="sm"
-              variant={charFilter === "all" ? "default" : "ghost"}
+              variant={charFilter === 'all' ? 'default' : 'ghost'}
               className="h-8 px-2 rounded-none"
-              onClick={() => setCharFilter("all")}
+              onClick={() => setCharFilter('all')}
             >
               All
             </Button>
             <Button
               size="sm"
-              variant={charFilter === "pc" ? "default" : "ghost"}
+              variant={charFilter === 'pc' ? 'default' : 'ghost'}
               className="h-8 px-2 rounded-none"
-              onClick={() => setCharFilter("pc")}
+              onClick={() => setCharFilter('pc')}
             >
               PC
             </Button>
             <Button
               size="sm"
-              variant={charFilter === "npc" ? "default" : "ghost"}
+              variant={charFilter === 'npc' ? 'default' : 'ghost'}
               className="h-8 px-2 rounded-none"
-              onClick={() => setCharFilter("npc")}
+              onClick={() => setCharFilter('npc')}
             >
               NPC
             </Button>
@@ -339,11 +315,11 @@ const CharacterPanel = ({
                   aria-selected={isSelected}
                   onClick={() => handleCharacterClick(c.id)} // row = select
                   className={[
-                    "group px-3 py-2 grid items-center gap-2 min-w-0",
-                    isSelected ? "bg-primary/5" : "",
-                  ].join(" ")}
+                    'group px-3 py-2 grid items-center gap-2 min-w-0',
+                    isSelected ? 'bg-primary/5' : '',
+                  ].join(' ')}
                   style={{
-                    gridTemplateColumns: "1fr auto",
+                    gridTemplateColumns: '1fr auto',
                   }} // name/controls | menu
                 >
                   {/* left column */}
@@ -363,18 +339,15 @@ const CharacterPanel = ({
                           }}
                           aria-hidden
                         />
-                        <Badge variant={c.isPlayer ? "default" : "secondary"}>
-                          {c.isPlayer ? "PC" : "NPC"}
+                        <Badge variant={c.isPlayer ? 'default' : 'secondary'}>
+                          {c.isPlayer ? 'PC' : 'NPC'}
                         </Badge>
 
                         {c.isPlayer ? (
                           <Badge variant="outline">
                             HP {c.hp}/{c.maxHp}
                             {c.hp > c.maxHp && (
-                              <span className="text-green-600">
-                                {" "}
-                                (+{c.hp - c.maxHp})
-                              </span>
+                              <span className="text-green-600"> (+{c.hp - c.maxHp})</span>
                             )}
                           </Badge>
                         ) : (
@@ -383,9 +356,7 @@ const CharacterPanel = ({
 
                         {/* optional disambiguator for names ending in a number, e.g., "Zombie 3" */}
                         {/\s(\d+)$/.test(c.name) && (
-                          <Badge variant="secondary">
-                            #{c.name.match(/\s(\d+)$/)![1]}
-                          </Badge>
+                          <Badge variant="secondary">#{c.name.match(/\s(\d+)$/)![1]}</Badge>
                         )}
                       </div>
                     </div>
@@ -393,7 +364,7 @@ const CharacterPanel = ({
                     {/* line 2: inline editor (hidden until hover or selected) */}
                     <div
                       className={`mt-1 ${
-                        isSelected ? "flex" : "hidden group-hover:flex"
+                        isSelected ? 'flex' : 'hidden group-hover:flex'
                       } items-center gap-1`}
                     >
                       {c.isPlayer ? (
@@ -418,10 +389,7 @@ const CharacterPanel = ({
                             value={String(c.hp)}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) =>
-                              handleUpdateHp(
-                                c.id,
-                                parseInt(e.target.value, 10) || 0
-                              )
+                              handleUpdateHp(c.id, parseInt(e.target.value, 10) || 0)
                             }
                             onFocus={(e) => e.currentTarget.select()}
                           />
@@ -444,16 +412,14 @@ const CharacterPanel = ({
                         </>
                       ) : (
                         <>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            Δ
-                          </span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">Δ</span>
                           <Input
                             type="text"
                             inputMode="numeric"
                             pattern="-?[0-9]*"
                             placeholder="+/-"
                             className="h-7 w-16 text-center text-xs"
-                            value={damageDelta[c.id] ?? ""}
+                            value={damageDelta[c.id] ?? ''}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) =>
                               setDamageDelta((prev) => ({
@@ -462,7 +428,7 @@ const CharacterPanel = ({
                               }))
                             }
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") {
+                              if (e.key === 'Enter') {
                                 e.stopPropagation();
                                 saveSnapshot?.();
                                 applyDamageDelta(c.id);

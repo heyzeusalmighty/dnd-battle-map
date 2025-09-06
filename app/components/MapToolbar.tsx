@@ -2,26 +2,23 @@ import React from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
-import { 
-  MousePointer, 
-  Square, 
-  Mountain, 
-  Waves, 
-  Circle, 
+import {
+  MousePointer,
+  Square,
+  Mountain,
+  Waves,
+  Circle,
   Plus,
-  Palette,
-  Users,
   DoorOpen,
   Armchair,
   AlertTriangle,
   Ruler,
   Settings,
-  Edit,
-  Trash2
+  Trash2,
 } from 'lucide-react';
 import type { Token, MeasurementLine } from './CombatMap';
 
@@ -47,49 +44,65 @@ const TERRAIN_TOOLS = [
   { id: 'door', icon: DoorOpen, label: 'Door', category: 'objects' },
   { id: 'furniture', icon: Armchair, label: 'Furniture', category: 'objects' },
   { id: 'trap', icon: AlertTriangle, label: 'Trap', category: 'objects' },
-  { id: 'measure', icon: Ruler, label: 'Measure', category: 'tools' }
+  { id: 'measure', icon: Ruler, label: 'Measure', category: 'tools' },
 ] as const;
 
 const TOKEN_COLORS = [
-  '#EF4444', '#F97316', '#F59E0B', '#EAB308',
-  '#84CC16', '#22C55E', '#10B981', '#14B8A6',
-  '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
-  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899'
+  '#EF4444',
+  '#F97316',
+  '#F59E0B',
+  '#EAB308',
+  '#84CC16',
+  '#22C55E',
+  '#10B981',
+  '#14B8A6',
+  '#06B6D4',
+  '#0EA5E9',
+  '#3B82F6',
+  '#6366F1',
+  '#8B5CF6',
+  '#A855F7',
+  '#D946EF',
+  '#EC4899',
 ];
 
 const TOKEN_SIZES = [
   { id: 'small', label: 'Small' },
   { id: 'medium', label: 'Medium' },
   { id: 'large', label: 'Large' },
-  { id: 'huge', label: 'Huge' }
+  { id: 'huge', label: 'Huge' },
 ] as const;
 
 const NPC_TYPES = [
   { id: 'minion', label: 'Minion', description: 'Weak enemies, often in groups' },
   { id: 'elite', label: 'Elite', description: 'Stronger than regular enemies' },
   { id: 'boss', label: 'Boss', description: 'Major encounter enemies' },
-  { id: 'ally', label: 'Ally', description: 'Friendly NPCs' }
+  { id: 'ally', label: 'Ally', description: 'Friendly NPCs' },
 ] as const;
 
-export function MapToolbar({ 
-  selectedTool, 
-  onToolSelect, 
-  onAddToken, 
+export function MapToolbar({
+  selectedTool,
+  onToolSelect,
+  onAddToken,
   onClearTerrain,
   onClearMeasurements,
   gridScale,
   onGridScaleChange,
   measurements,
-  onRemoveMeasurement
+  onRemoveMeasurement,
 }: MapToolbarProps) {
   const [showTokenCreator, setShowTokenCreator] = React.useState(false);
   const [showSettings, setShowSettings] = React.useState(false);
   const [newTokenName, setNewTokenName] = React.useState('');
   const [newTokenColor, setNewTokenColor] = React.useState(TOKEN_COLORS[0]);
-  const [newTokenSize, setNewTokenSize] = React.useState<'small' | 'medium' | 'large' | 'huge'>('medium');
+  const [newTokenSize, setNewTokenSize] = React.useState<'small' | 'medium' | 'large' | 'huge'>(
+    'medium'
+  );
   const [newTokenHp, setNewTokenHp] = React.useState('');
   const [newTokenIsPlayer, setNewTokenIsPlayer] = React.useState(false);
-  const [newTokenNpcType, setNewTokenNpcType] = React.useState<'minion' | 'elite' | 'boss' | 'ally' | undefined>(undefined);
+  const [newTokenNpcType, setNewTokenNpcType] = React.useState<
+    'minion' | 'elite' | 'boss' | 'ally' | undefined
+  >(undefined);
 
   const handleCreateToken = () => {
     if (newTokenName && newTokenHp) {
@@ -103,7 +116,7 @@ export function MapToolbar({
         hp,
         maxHp: hp,
         isPlayer: newTokenIsPlayer,
-        npcType: newTokenIsPlayer ? undefined : newTokenNpcType
+        npcType: newTokenIsPlayer ? undefined : newTokenNpcType,
       });
       setNewTokenName('');
       setNewTokenHp('');
@@ -112,10 +125,10 @@ export function MapToolbar({
     }
   };
 
-  const basicTools = TERRAIN_TOOLS.filter(tool => tool.category === 'basic');
-  const terrainTools = TERRAIN_TOOLS.filter(tool => tool.category === 'terrain');
-  const objectTools = TERRAIN_TOOLS.filter(tool => tool.category === 'objects');
-  const measurementTools = TERRAIN_TOOLS.filter(tool => tool.category === 'tools');
+  const basicTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'basic');
+  const terrainTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'terrain');
+  const objectTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'objects');
+  const measurementTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'tools');
 
   return (
     <Card className="p-4">
@@ -206,20 +219,19 @@ export function MapToolbar({
               );
             })}
             {(measurements || []).length > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onClearMeasurements}
-              >
+              <Button size="sm" variant="outline" onClick={onClearMeasurements}>
                 Clear ({(measurements || []).length})
               </Button>
             )}
           </div>
-          
+
           {(measurements || []).length > 0 && (
             <div className="space-y-1 max-h-20 overflow-y-auto text-xs">
               {(measurements || []).map((measurement) => (
-                <div key={measurement.id} className="flex items-center justify-between bg-muted p-1 rounded">
+                <div
+                  key={measurement.id}
+                  className="flex items-center justify-between bg-muted p-1 rounded"
+                >
                   <span>{measurement.distance}ft</span>
                   <Button
                     size="sm"
@@ -241,10 +253,7 @@ export function MapToolbar({
         <div>
           <div className="flex items-center justify-between mb-2">
             <h4>Characters & NPCs</h4>
-            <Button
-              size="sm"
-              onClick={() => setShowTokenCreator(!showTokenCreator)}
-            >
+            <Button size="sm" onClick={() => setShowTokenCreator(!showTokenCreator)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Character
             </Button>
@@ -273,13 +282,19 @@ export function MapToolbar({
                   checked={newTokenIsPlayer}
                   onChange={(e) => setNewTokenIsPlayer(e.target.checked)}
                 />
-                <label htmlFor="isPlayer" className="text-sm">Player Character</label>
+                <label htmlFor="isPlayer" className="text-sm">
+                  Player Character
+                </label>
               </div>
 
               {!newTokenIsPlayer && (
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">NPC Type</label>
-                  <Select onValueChange={(value: any) => setNewTokenNpcType(value)}>
+                  <Select
+                    onValueChange={(value: 'minion' | 'elite' | 'boss' | 'ally') =>
+                      setNewTokenNpcType(value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select NPC type (optional)" />
                     </SelectTrigger>
@@ -333,11 +348,7 @@ export function MapToolbar({
                 <Button size="sm" onClick={handleCreateToken}>
                   Create Character
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowTokenCreator(false)}
-                >
+                <Button size="sm" variant="outline" onClick={() => setShowTokenCreator(false)}>
                   Cancel
                 </Button>
               </div>
@@ -364,7 +375,9 @@ export function MapToolbar({
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Grid Scale (feet per square)</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      Grid Scale (feet per square)
+                    </label>
                     <Select onValueChange={(value) => onGridScaleChange(parseInt(value))}>
                       <SelectTrigger>
                         <SelectValue placeholder={`${gridScale} feet`} />
@@ -388,9 +401,7 @@ export function MapToolbar({
               </DialogContent>
             </Dialog>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Current scale: {gridScale} ft/square
-          </div>
+          <div className="text-xs text-muted-foreground">Current scale: {gridScale} ft/square</div>
         </div>
 
         {/* Enhanced Legend */}
@@ -418,21 +429,27 @@ export function MapToolbar({
               <div className="w-4 h-4 bg-[#2F2F2F] rounded"></div>
               <span>Pit</span>
             </div>
-            
+
             <div className="font-medium text-muted-foreground mt-2">Objects</div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#8B4513] rounded flex items-center justify-center text-white text-xs">D</div>
+              <div className="w-4 h-4 bg-[#8B4513] rounded flex items-center justify-center text-white text-xs">
+                D
+              </div>
               <span>Door</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#654321] rounded flex items-center justify-center text-white text-xs">■</div>
+              <div className="w-4 h-4 bg-[#654321] rounded flex items-center justify-center text-white text-xs">
+                ■
+              </div>
               <span>Furniture</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-[#FF4500] rounded flex items-center justify-center text-white text-xs">⚠</div>
+              <div className="w-4 h-4 bg-[#FF4500] rounded flex items-center justify-center text-white text-xs">
+                ⚠
+              </div>
               <span>Trap</span>
             </div>
-            
+
             <div className="font-medium text-muted-foreground mt-2">Characters</div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-blue-500 rounded-full bg-blue-400"></div>
@@ -442,11 +459,13 @@ export function MapToolbar({
               <div className="w-4 h-4 border-2 border-red-500 rounded-full bg-red-400"></div>
               <span>Enemy/NPC</span>
             </div>
-            
+
             <div className="font-medium text-muted-foreground mt-2">NPC Types</div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-orange-400 rounded-full bg-red-400 relative">
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-orange-400 rounded-full text-white text-xs flex items-center justify-center">M</div>
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-orange-400 rounded-full text-white text-xs flex items-center justify-center">
+                  M
+                </div>
               </div>
               <span>Minion</span>
             </div>
@@ -471,7 +490,10 @@ export function MapToolbar({
 
             <div className="font-medium text-muted-foreground mt-2">Measurements</div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-orange-500" style={{ clipPath: 'polygon(0 0, 100% 50%, 0 100%)' }}></div>
+              <div
+                className="w-4 h-1 bg-orange-500"
+                style={{ clipPath: 'polygon(0 0, 100% 50%, 0 100%)' }}
+              ></div>
               <span>Distance Line</span>
             </div>
           </div>

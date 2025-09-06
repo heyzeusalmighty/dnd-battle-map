@@ -1,31 +1,11 @@
-import { useState, useCallback, useMemo } from "react";
-import { Card } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
-import {
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-  Plus,
-  Heart,
-  Shield,
-  Sword,
-} from "lucide-react";
+import { useState, useCallback, useMemo } from 'react';
+import { Card } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { ChevronUp, ChevronDown, Trash2, Plus, Heart, Shield, Sword } from 'lucide-react';
 
 export interface InitiativeEntry {
   id: string;
@@ -35,7 +15,7 @@ export interface InitiativeEntry {
   maxHp: number;
   ac: number;
   isPlayer: boolean;
-  npcType?: "minion" | "elite" | "boss" | "ally";
+  npcType?: 'minion' | 'elite' | 'boss' | 'ally';
   conditions: string[];
   tempHp?: number;
   damageDealt?: number;
@@ -49,36 +29,36 @@ interface InitiativeTrackerProps {
   onUpdateHp: (id: string, hp: number) => void;
   onUpdateInitiative: (id: string, initiative: number) => void;
   onRemoveEntry: (id: string) => void;
-  onAddEntry: (entry: Omit<InitiativeEntry, "id">) => void;
+  onAddEntry: (entry: Omit<InitiativeEntry, 'id'>) => void;
   onAddCondition: (id: string, condition: string) => void;
   onRemoveCondition: (id: string, condition: string) => void;
   onUpdateTempHp: (id: string, tempHp: number) => void;
 }
 
 const COMMON_CONDITIONS = [
-  "Blinded",
-  "Charmed",
-  "Deafened",
-  "Frightened",
-  "Grappled",
-  "Incapacitated",
-  "Invisible",
-  "Paralyzed",
-  "Petrified",
-  "Poisoned",
-  "Prone",
-  "Restrained",
-  "Stunned",
-  "Unconscious",
-  "Exhaustion",
-  "Concentration",
+  'Blinded',
+  'Charmed',
+  'Deafened',
+  'Frightened',
+  'Grappled',
+  'Incapacitated',
+  'Invisible',
+  'Paralyzed',
+  'Petrified',
+  'Poisoned',
+  'Prone',
+  'Restrained',
+  'Stunned',
+  'Unconscious',
+  'Exhaustion',
+  'Concentration',
 ];
 
 const NPC_TYPE_COLORS = {
-  minion: "#FFA500",
-  elite: "#FF4500",
-  boss: "#8B0000",
-  ally: "#32CD32",
+  minion: '#FFA500',
+  elite: '#FF4500',
+  boss: '#8B0000',
+  ally: '#32CD32',
 };
 
 export function InitiativeTracker({
@@ -94,14 +74,14 @@ export function InitiativeTracker({
   onRemoveCondition,
   onUpdateTempHp,
 }: InitiativeTrackerProps) {
-  const [newCharacterName, setNewCharacterName] = useState("");
-  const [newCharacterInit, setNewCharacterInit] = useState("");
-  const [newCharacterHp, setNewCharacterHp] = useState("");
-  const [newCharacterAc, setNewCharacterAc] = useState("");
+  const [newCharacterName, setNewCharacterName] = useState('');
+  const [newCharacterInit, setNewCharacterInit] = useState('');
+  const [newCharacterHp, setNewCharacterHp] = useState('');
+  const [newCharacterAc, setNewCharacterAc] = useState('');
   const [newCharacterType, setNewCharacterType] = useState<
-    "player" | "minion" | "elite" | "boss" | "ally"
-  >("player");
-  const [selectedCondition, setSelectedCondition] = useState("");
+    'player' | 'minion' | 'elite' | 'boss' | 'ally'
+  >('player');
+  const [selectedCondition, setSelectedCondition] = useState('');
   const [round, setRound] = useState(1);
   const [showAddCharacter, setShowAddCharacter] = useState(false);
 
@@ -109,12 +89,12 @@ export function InitiativeTracker({
   const [showDamageDialog, setShowDamageDialog] = useState(false);
   const [showHealDialog, setShowHealDialog] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-  const [damageAmount, setDamageAmount] = useState("");
-  const [healAmount, setHealAmount] = useState("");
+  const [damageAmount, setDamageAmount] = useState('');
+  const [healAmount, setHealAmount] = useState('');
 
   const sortedEntries = useMemo(() => {
     return [...(entries || [])]
-      .filter((entry) => entry && typeof entry.initiative === "number")
+      .filter((entry) => entry && typeof entry.initiative === 'number')
       .sort((a, b) => b.initiative - a.initiative);
   }, [entries]);
 
@@ -127,17 +107,17 @@ export function InitiativeTracker({
         hp,
         maxHp: hp,
         ac: parseInt(newCharacterAc) || 10,
-        isPlayer: newCharacterType === "player",
-        npcType: newCharacterType === "player" ? undefined : newCharacterType,
+        isPlayer: newCharacterType === 'player',
+        npcType: newCharacterType === 'player' ? undefined : newCharacterType,
         conditions: [],
         tempHp: 0,
         damageDealt: 0,
       });
-      setNewCharacterName("");
-      setNewCharacterInit("");
-      setNewCharacterHp("");
-      setNewCharacterAc("");
-      setNewCharacterType("player");
+      setNewCharacterName('');
+      setNewCharacterInit('');
+      setNewCharacterHp('');
+      setNewCharacterAc('');
+      setNewCharacterType('player');
     }
   }, [
     newCharacterName,
@@ -193,13 +173,13 @@ export function InitiativeTracker({
 
   const openDamageDialog = useCallback((entryId: string) => {
     setSelectedEntryId(entryId);
-    setDamageAmount("");
+    setDamageAmount('');
     setShowDamageDialog(true);
   }, []);
 
   const openHealDialog = useCallback((entryId: string) => {
     setSelectedEntryId(entryId);
-    setHealAmount("");
+    setHealAmount('');
     setShowHealDialog(true);
   }, []);
 
@@ -212,7 +192,7 @@ export function InitiativeTracker({
     }
     setShowDamageDialog(false);
     setSelectedEntryId(null);
-    setDamageAmount("");
+    setDamageAmount('');
   }, [selectedEntryId, damageAmount, handleDamage]);
 
   const confirmHeal = useCallback(() => {
@@ -224,13 +204,11 @@ export function InitiativeTracker({
     }
     setShowHealDialog(false);
     setSelectedEntryId(null);
-    setHealAmount("");
+    setHealAmount('');
   }, [selectedEntryId, healAmount, handleHeal]);
 
   const currentEntry =
-    sortedEntries && sortedEntries[currentTurn]
-      ? sortedEntries[currentTurn]
-      : null;
+    sortedEntries && sortedEntries[currentTurn] ? sortedEntries[currentTurn] : null;
 
   return (
     <Card className="p-4 h-full flex flex-col">
@@ -240,18 +218,10 @@ export function InitiativeTracker({
           <div className="text-sm text-muted-foreground">Round {round}</div>
         </div>
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={onPreviousTurn}
-            disabled={entries.length === 0}
-          >
+          <Button size="sm" onClick={onPreviousTurn} disabled={entries.length === 0}>
             <ChevronUp className="w-4 h-4" />
           </Button>
-          <Button
-            size="sm"
-            onClick={handleNextTurnWithRound}
-            disabled={entries.length === 0}
-          >
+          <Button size="sm" onClick={handleNextTurnWithRound} disabled={entries.length === 0}>
             <ChevronDown className="w-4 h-4" />
           </Button>
         </div>
@@ -270,8 +240,7 @@ export function InitiativeTracker({
                     color: NPC_TYPE_COLORS[currentEntry.npcType],
                   }}
                 >
-                  {currentEntry.npcType.charAt(0).toUpperCase() +
-                    currentEntry.npcType.slice(1)}
+                  {currentEntry.npcType.charAt(0).toUpperCase() + currentEntry.npcType.slice(1)}
                 </Badge>
               )}
             </div>
@@ -285,16 +254,14 @@ export function InitiativeTracker({
           <div
             key={entry.id}
             className={`p-3 border rounded-lg ${
-              index === currentTurn
-                ? "border-primary bg-primary/5"
-                : "border-border"
+              index === currentTurn ? 'border-primary bg-primary/5' : 'border-border'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{entry.name}</span>
-                <Badge variant={entry.isPlayer ? "default" : "secondary"}>
-                  {entry.isPlayer ? "PC" : "NPC"}
+                <Badge variant={entry.isPlayer ? 'default' : 'secondary'}>
+                  {entry.isPlayer ? 'PC' : 'NPC'}
                 </Badge>
                 {entry.npcType && (
                   <Badge
@@ -304,17 +271,12 @@ export function InitiativeTracker({
                       color: NPC_TYPE_COLORS[entry.npcType],
                     }}
                   >
-                    {entry.npcType.charAt(0).toUpperCase() +
-                      entry.npcType.slice(1)}
+                    {entry.npcType.charAt(0).toUpperCase() + entry.npcType.slice(1)}
                   </Badge>
                 )}
                 {entry.hp <= 0 && <Badge variant="destructive">KO</Badge>}
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onRemoveEntry(entry.id)}
-              >
+              <Button size="sm" variant="ghost" onClick={() => onRemoveEntry(entry.id)}>
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
@@ -325,9 +287,7 @@ export function InitiativeTracker({
                 <Input
                   type="number"
                   value={entry.initiative}
-                  onChange={(e) =>
-                    onUpdateInitiative(entry.id, parseInt(e.target.value) || 0)
-                  }
+                  onChange={(e) => onUpdateInitiative(entry.id, parseInt(e.target.value) || 0)}
                   className="h-8"
                 />
               </div>
@@ -336,12 +296,7 @@ export function InitiativeTracker({
                 <Input
                   type="number"
                   value={entry.hp}
-                  onChange={(e) =>
-                    onUpdateHp(
-                      entry.id,
-                      Math.max(0, parseInt(e.target.value) || 0)
-                    )
-                  }
+                  onChange={(e) => onUpdateHp(entry.id, Math.max(0, parseInt(e.target.value) || 0))}
                   className="h-8"
                 />
               </div>
@@ -362,10 +317,7 @@ export function InitiativeTracker({
                   type="number"
                   value={entry.tempHp || 0}
                   onChange={(e) =>
-                    onUpdateTempHp(
-                      entry.id,
-                      Math.max(0, parseInt(e.target.value) || 0)
-                    )
+                    onUpdateTempHp(entry.id, Math.max(0, parseInt(e.target.value) || 0))
                   }
                   className="h-8"
                 />
@@ -402,12 +354,12 @@ export function InitiativeTracker({
                     width: `${Math.min(100, (entry.hp / entry.maxHp) * 100)}%`,
                     backgroundColor:
                       entry.hp / entry.maxHp > 0.75
-                        ? "#10B981"
+                        ? '#10B981'
                         : entry.hp / entry.maxHp > 0.5
-                        ? "#84CC16"
-                        : entry.hp / entry.maxHp > 0.25
-                        ? "#F59E0B"
-                        : "#EF4444",
+                          ? '#84CC16'
+                          : entry.hp / entry.maxHp > 0.25
+                            ? '#F59E0B'
+                            : '#EF4444',
                   }}
                 />
                 {entry.tempHp && entry.tempHp > 0 && (
@@ -415,10 +367,7 @@ export function InitiativeTracker({
                     className="h-2 rounded-r absolute top-0 bg-blue-400"
                     style={{
                       left: `${Math.min(100, (entry.hp / entry.maxHp) * 100)}%`,
-                      width: `${Math.min(
-                        25,
-                        (entry.tempHp / entry.maxHp) * 100
-                      )}%`,
+                      width: `${Math.min(25, (entry.tempHp / entry.maxHp) * 100)}%`,
                     }}
                   />
                 )}
@@ -426,10 +375,7 @@ export function InitiativeTracker({
               <span>
                 {entry.hp}/{entry.maxHp}
                 {entry.hp > entry.maxHp && (
-                  <span className="text-green-600">
-                    {" "}
-                    (+{entry.hp - entry.maxHp})
-                  </span>
+                  <span className="text-green-600"> (+{entry.hp - entry.maxHp})</span>
                 )}
                 {entry.tempHp && entry.tempHp > 0 && (
                   <span className="text-blue-500"> (+{entry.tempHp})</span>
@@ -455,20 +401,13 @@ export function InitiativeTracker({
               )}
 
               <div className="flex gap-1">
-                <Select
-                  value={selectedCondition}
-                  onValueChange={setSelectedCondition}
-                >
+                <Select value={selectedCondition} onValueChange={setSelectedCondition}>
                   <SelectTrigger className="h-6 text-xs">
                     <SelectValue placeholder="Add condition" />
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_CONDITIONS.map((condition) => (
-                      <SelectItem
-                        key={condition}
-                        value={condition}
-                        className="text-xs"
-                      >
+                      <SelectItem key={condition} value={condition} className="text-xs">
                         {condition}
                       </SelectItem>
                     ))}
@@ -480,7 +419,7 @@ export function InitiativeTracker({
                   onClick={() => {
                     if (selectedCondition) {
                       onAddCondition(entry.id, selectedCondition);
-                      setSelectedCondition("");
+                      setSelectedCondition('');
                     }
                   }}
                   className="h-6 px-2 text-xs"
@@ -503,7 +442,7 @@ export function InitiativeTracker({
             onClick={() => setShowAddCharacter(!showAddCharacter)}
           >
             <Plus className="w-4 h-4 mr-1" />
-            {showAddCharacter ? "Cancel" : "Add"}
+            {showAddCharacter ? 'Cancel' : 'Add'}
           </Button>
         </div>
 
@@ -540,7 +479,9 @@ export function InitiativeTracker({
             </div>
             <Select
               value={newCharacterType}
-              onValueChange={(value: any) => setNewCharacterType(value)}
+              onValueChange={(value: 'player' | 'minion' | 'elite' | 'boss' | 'ally') =>
+                setNewCharacterType(value)
+              }
             >
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Character Type" />
@@ -579,11 +520,7 @@ export function InitiativeTracker({
               />
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={confirmDamage}
-                className="flex-1"
-                disabled={!damageAmount}
-              >
+              <Button onClick={confirmDamage} className="flex-1" disabled={!damageAmount}>
                 Apply Damage
               </Button>
               <Button
@@ -616,18 +553,10 @@ export function InitiativeTracker({
               />
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={confirmHeal}
-                className="flex-1"
-                disabled={!healAmount}
-              >
+              <Button onClick={confirmHeal} className="flex-1" disabled={!healAmount}>
                 Apply Healing
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowHealDialog(false)}
-                className="flex-1"
-              >
+              <Button variant="outline" onClick={() => setShowHealDialog(false)} className="flex-1">
                 Cancel
               </Button>
             </div>

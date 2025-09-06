@@ -1,29 +1,18 @@
-import React, { FC, useState } from "react";
-import { Card } from "@/app/components/ui/card";
-import { Badge } from "@/app/components/ui/badge";
-import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
+import { FC, SetStateAction, MouseEvent, RefObject, Dispatch, MutableRefObject } from 'react';
+import { Card } from '@/app/components/ui/card';
+import { Badge } from '@/app/components/ui/badge';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
 
 import {
   MousePointer,
   BrickWall,
   DoorOpen,
-  Dice5,
   Mountain,
-  Plus,
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-  Shield,
   Paintbrush,
-  Heart,
-  Sword,
   Settings,
   Ruler,
-  Expand,
-  HelpCircle,
-  MoreVertical,
-} from "lucide-react";
+} from 'lucide-react';
 
 import {
   Dialog,
@@ -31,28 +20,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/app/components/ui/dialog";
+} from '@/app/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select";
+} from '@/app/components/ui/select';
 
-import Map_GridLines from "@/app/components/Map_GridLines";
-import Measurement_Overlay from "@/app/components/Measurement_Overlay";
-import Movement_Overlay from "@/app/components/Movement_Overlay";
-import Terrain_Layer from "@/app/components/Terrain_Layer";
-import Tokens_Layer from "@/app/components/Tokens_Layer";
+import Map_GridLines from '@/app/components/Map_GridLines';
+import Measurement_Overlay from '@/app/components/Measurement_Overlay';
+import Movement_Overlay from '@/app/components/Movement_Overlay';
+import Terrain_Layer from '@/app/components/Terrain_Layer';
+import Tokens_Layer from '@/app/components/Tokens_Layer';
 
-import { GRID_SIZE } from "@/app/map/utils/constants";
+import { GRID_SIZE } from '@/app/map/utils/constants';
 
-import {
-  clipMovementAtWalls,
-  measureFeet,
-  traceLineCells,
-} from "@/app/map/utils/distance";
+import { measureFeet } from '@/app/map/utils/distance';
 
 import type {
   Character,
@@ -60,10 +45,8 @@ import type {
   DistanceRule,
   Measurement,
   Terrain,
-  InitiativeMode,
-  RollPreset,
-  RollScope,
-} from "@/app/map/types";
+  AppSnapshot,
+} from '@/app/map/types';
 
 interface MapGridProps {
   gridScale: number;
@@ -71,9 +54,9 @@ interface MapGridProps {
   mapWidth: number;
   mapHeight: number;
   selectedCharacter: string | null;
-  characters: any[];
-  terrain: any[];
-  measurements: any[];
+  characters: Character[];
+  terrain: Terrain[];
+  measurements: Measurement[];
   mode: string;
 
   selectedTool: string;
@@ -81,49 +64,41 @@ interface MapGridProps {
   isDifficultAt: (x: number, y: number) => boolean;
   getTerrainColor: (type: string) => string;
   isCustomObjectType: (type: string) => boolean;
-  getCustomObject: (type: string) => any;
+  getCustomObject: (type: string) => CustomObj | undefined;
   tokenClasses: (isPlayer: boolean, isSelected: boolean) => string;
   handleCharacterClick: (charId: string) => void;
-  handleCellMouseDown: (e: React.MouseEvent, x: number, y: number) => void;
-  handleCellMouseEnter: (e: React.MouseEvent, x: number, y: number) => void;
+  handleCellMouseDown: (e: MouseEvent, x: number, y: number) => void;
+  handleCellMouseEnter: (e: MouseEvent, x: number, y: number) => void;
   showMovePreview: boolean;
   measurementStart: { x: number; y: number } | null;
-  setMeasurementStart: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number } | null>
-  >;
-  undoStack: any[];
-  redoStack: any[];
+  setMeasurementStart: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
+  undoStack: AppSnapshot[];
+  redoStack: AppSnapshot[];
   undo: () => void;
   redo: () => void;
   saveSnapshot: () => void;
   showMapSettings: boolean;
-  setShowMapSettings: React.Dispatch<React.SetStateAction<boolean>>;
-  mapScrollRef: React.RefObject<HTMLDivElement | null>;
-  setMapWidth: React.Dispatch<React.SetStateAction<number>>;
-  setMapHeight: React.Dispatch<React.SetStateAction<number>>;
-  setGridScale: React.Dispatch<React.SetStateAction<number>>;
-  setDistanceRule: React.Dispatch<React.SetStateAction<DistanceRule>>;
-  paintSnap: React.MutableRefObject<boolean>;
+  setShowMapSettings: Dispatch<SetStateAction<boolean>>;
+  mapScrollRef: RefObject<HTMLDivElement | null>;
+  setMapWidth: Dispatch<SetStateAction<number>>;
+  setMapHeight: Dispatch<SetStateAction<number>>;
+  setGridScale: Dispatch<SetStateAction<number>>;
+  setDistanceRule: Dispatch<SetStateAction<DistanceRule>>;
+  paintSnap: MutableRefObject<boolean>;
   isDragging: boolean;
-  setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
-
-  setDragMode: React.Dispatch<React.SetStateAction<"paint" | "erase" | null>>;
-
-  setLastCell: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number } | null>
-  >;
+  setIsDragging: Dispatch<SetStateAction<boolean>>;
+  setDragMode: Dispatch<SetStateAction<'paint' | 'erase' | null>>;
+  setLastCell: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
   hoveredCell: { x: number; y: number } | null;
-  setHoveredCell: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number } | null>
-  >;
-  setMeasurements: React.Dispatch<React.SetStateAction<Measurement[]>>;
+  setHoveredCell: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
+  setMeasurements: Dispatch<SetStateAction<Measurement[]>>;
   getId: () => string;
   getSelectedChar: () => Character | null;
   commit: (fn: () => void) => void;
-  setCharacters: React.Dispatch<React.SetStateAction<Character[]>>;
-  setTerrain: React.Dispatch<React.SetStateAction<Terrain[]>>;
-  setMode: (m: "select" | "measure" | "paint") => void;
-  setPaintTool: (tool: "wall" | "difficult" | "door") => void;
+  setCharacters: Dispatch<SetStateAction<Character[]>>;
+  setTerrain: Dispatch<SetStateAction<Terrain[]>>;
+  setMode: (m: 'select' | 'measure' | 'paint') => void;
+  setPaintTool: (tool: 'wall' | 'difficult' | 'door') => void;
 }
 
 const MapGrid: FC<MapGridProps> = ({
@@ -182,14 +157,14 @@ const MapGrid: FC<MapGridProps> = ({
 
   // pick black/white text that contrasts with a hex bg color
   const textColorOn = (hex: string) => {
-    const h = hex.replace("#", "");
-    const full = h.length === 3 ? h.replace(/(.)/g, "$1$1") : h;
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.replace(/(.)/g, '$1$1') : h;
     const n = parseInt(full, 16);
     const r = (n >> 16) & 255,
       g = (n >> 8) & 255,
       b = n & 255;
     const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 128 ? "#000" : "#fff";
+    return yiq >= 128 ? '#000' : '#fff';
   };
 
   // calculating distance
@@ -198,16 +173,11 @@ const MapGrid: FC<MapGridProps> = ({
 
   // Event handlers
   const handleCellClick = (x: number, y: number) => {
-    if (selectedTool === "measure") {
+    if (selectedTool === 'measure') {
       if (!measurementStart) {
         setMeasurementStart({ x, y });
       } else {
-        const distance = calculateDistance(
-          measurementStart.x,
-          measurementStart.y,
-          x,
-          y
-        );
+        const distance = calculateDistance(measurementStart.x, measurementStart.y, x, y);
         const newMeasurement: Measurement = {
           id: getId(),
           startX: measurementStart.x,
@@ -223,7 +193,7 @@ const MapGrid: FC<MapGridProps> = ({
       return;
     }
 
-    if (selectedTool === "select") {
+    if (selectedTool === 'select') {
       if (selectedCharacter) {
         const sel = getSelectedChar(); // or however you fetch it
         if (!sel) return;
@@ -244,12 +214,12 @@ const MapGrid: FC<MapGridProps> = ({
   // first letter fallback (label > id)
   const getObjectLetter = (obj: CustomObj) => {
     const s = (obj.label?.trim() || obj.id).trim();
-    return s ? s[0].toUpperCase() : "?";
+    return s ? s[0].toUpperCase() : '?';
   };
 
-  const handleTerrainRightClick = (e: React.MouseEvent, terrainId: string) => {
+  const handleTerrainRightClick = (e: MouseEvent, terrainId: string) => {
     e.preventDefault();
-    if (selectedTool === "select") {
+    if (selectedTool === 'select') {
       saveSnapshot();
       setTerrain((prev) => prev.filter((t) => t.id !== terrainId));
     }
@@ -264,14 +234,11 @@ const MapGrid: FC<MapGridProps> = ({
           </span>
           {selectedCharacter && (
             <Badge variant="outline">
-              {characters.find((c) => c.id === selectedCharacter)?.name}{" "}
-              selected - click to move
+              {characters.find((c) => c.id === selectedCharacter)?.name} selected - click to move
             </Badge>
           )}
           {measurementStart && (
-            <Badge variant="outline">
-              Click another cell to measure distance
-            </Badge>
+            <Badge variant="outline">Click another cell to measure distance</Badge>
           )}
         </div>
 
@@ -283,9 +250,9 @@ const MapGrid: FC<MapGridProps> = ({
             <div className="inline-flex rounded-md overflow-hidden border">
               <Button
                 size="sm"
-                variant={mode === "select" ? "default" : "ghost"}
+                variant={mode === 'select' ? 'default' : 'ghost'}
                 className="h-8 px-3 rounded-none"
-                onClick={() => setMode("select")}
+                onClick={() => setMode('select')}
                 title="Select (V)"
               >
                 <MousePointer className="w-4 h-4 mr-1" />
@@ -293,9 +260,9 @@ const MapGrid: FC<MapGridProps> = ({
               </Button>
               <Button
                 size="sm"
-                variant={mode === "measure" ? "default" : "ghost"}
+                variant={mode === 'measure' ? 'default' : 'ghost'}
                 className="h-8 px-3 rounded-none"
-                onClick={() => setMode("measure")}
+                onClick={() => setMode('measure')}
                 title="Measure (M)"
               >
                 <Ruler className="w-4 h-4 mr-1" />
@@ -303,9 +270,9 @@ const MapGrid: FC<MapGridProps> = ({
               </Button>
               <Button
                 size="sm"
-                variant={mode === "paint" ? "default" : "ghost"}
+                variant={mode === 'paint' ? 'default' : 'ghost'}
                 className="h-8 px-3 rounded-none"
-                onClick={() => setMode("paint")}
+                onClick={() => setMode('paint')}
                 title="Paint terrain (B)"
               >
                 <Paintbrush className="w-4 h-4 mr-1" />
@@ -356,12 +323,7 @@ const MapGrid: FC<MapGridProps> = ({
                           type="number"
                           value={mapWidth}
                           onChange={(e) =>
-                            setMapWidth(
-                              Math.max(
-                                10,
-                                Math.min(50, parseInt(e.target.value) || 25)
-                              )
-                            )
+                            setMapWidth(Math.max(10, Math.min(50, parseInt(e.target.value) || 25)))
                           }
                         />
                       </div>
@@ -371,12 +333,7 @@ const MapGrid: FC<MapGridProps> = ({
                           type="number"
                           value={mapHeight}
                           onChange={(e) =>
-                            setMapHeight(
-                              Math.max(
-                                10,
-                                Math.min(50, parseInt(e.target.value) || 20)
-                              )
-                            )
+                            setMapHeight(Math.max(10, Math.min(50, parseInt(e.target.value) || 20)))
                           }
                         />
                       </div>
@@ -388,21 +345,16 @@ const MapGrid: FC<MapGridProps> = ({
                         value={String(gridScale)}
                         onValueChange={(v) => {
                           const next = parseInt(v, 10);
-                          if (!Number.isFinite(next) || next === gridScale)
-                            return;
+                          if (!Number.isFinite(next) || next === gridScale) return;
                           saveSnapshot();
                           setGridScale(next);
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue
-                            placeholder={`${gridScale} feet per square`}
-                          />
+                          <SelectValue placeholder={`${gridScale} feet per square`} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="5">
-                            5 feet (Standard D&D)
-                          </SelectItem>
+                          <SelectItem value="5">5 feet (Standard D&D)</SelectItem>
                           <SelectItem value="10">10 feet</SelectItem>
                           <SelectItem value="1">1 foot</SelectItem>
                         </SelectContent>
@@ -422,21 +374,13 @@ const MapGrid: FC<MapGridProps> = ({
                         <SelectValue placeholder={distanceRule} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="5e">
-                          5e (each square = 5 ft)
-                        </SelectItem>
-                        <SelectItem value="5105">
-                          5-10-5 (every 2nd diagonal 10 ft)
-                        </SelectItem>
-                        <SelectItem value="euclidean">
-                          Euclidean (true distance)
-                        </SelectItem>
+                        <SelectItem value="5e">5e (each square = 5 ft)</SelectItem>
+                        <SelectItem value="5105">5-10-5 (every 2nd diagonal 10 ft)</SelectItem>
+                        <SelectItem value="euclidean">Euclidean (true distance)</SelectItem>
                       </SelectContent>
                     </Select>
 
-                    <Button onClick={() => setShowMapSettings(false)}>
-                      Done
-                    </Button>
+                    <Button onClick={() => setShowMapSettings(false)}>Done</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -444,16 +388,16 @@ const MapGrid: FC<MapGridProps> = ({
           </div>
 
           {/* Row 2: appears only in Paint mode */}
-          {mode === "paint" && (
+          {mode === 'paint' && (
             <div className="w-fit">
-              {" "}
+              {' '}
               {/* <- new: shrink-wrap the row */}
               <div className="inline-flex rounded-md overflow-hidden border">
                 <Button
                   size="sm"
-                  variant={selectedTool === "wall" ? "default" : "ghost"}
+                  variant={selectedTool === 'wall' ? 'default' : 'ghost'}
                   className="h-8 px-3 rounded-none flex-none" // <- flex-none
-                  onClick={() => setPaintTool("wall")}
+                  onClick={() => setPaintTool('wall')}
                   title="Wall (1)"
                 >
                   <BrickWall className="w-4 h-4 mr-1" />
@@ -461,9 +405,9 @@ const MapGrid: FC<MapGridProps> = ({
                 </Button>
                 <Button
                   size="sm"
-                  variant={selectedTool === "difficult" ? "default" : "ghost"}
+                  variant={selectedTool === 'difficult' ? 'default' : 'ghost'}
                   className="h-8 px-3 rounded-none flex-none"
-                  onClick={() => setPaintTool("difficult")}
+                  onClick={() => setPaintTool('difficult')}
                   title="Difficult (2)"
                 >
                   <Mountain className="w-4 h-4 mr-1" />
@@ -471,9 +415,9 @@ const MapGrid: FC<MapGridProps> = ({
                 </Button>
                 <Button
                   size="sm"
-                  variant={selectedTool === "door" ? "default" : "ghost"}
+                  variant={selectedTool === 'door' ? 'default' : 'ghost'}
                   className="h-8 px-3 rounded-none flex-none"
-                  onClick={() => setPaintTool("door")}
+                  onClick={() => setPaintTool('door')}
                   title="Door (3)"
                 >
                   <DoorOpen className="w-4 h-4 mr-1" />
@@ -489,9 +433,9 @@ const MapGrid: FC<MapGridProps> = ({
           ref={mapScrollRef}
           className="relative overflow-auto rounded border-2 border-border select-none"
           style={{
-            width: "100%",
-            maxWidth: "100%",
-            maxHeight: "calc(100vh - 180px)",
+            width: '100%',
+            maxWidth: '100%',
+            maxHeight: 'calc(100vh - 180px)',
           }}
           onContextMenu={(e) => {
             // block the browser/Figma right-click menu anywhere on the map
@@ -520,11 +464,7 @@ const MapGrid: FC<MapGridProps> = ({
           {/* Stage: sized exactly to the grid in pixels.
       Everything that positions absolutely should be inside this. */}
           <div className="relative" style={{ width: stageW, height: stageH }}>
-            <Map_GridLines
-              width={mapWidth}
-              height={mapHeight}
-              size={GRID_SIZE}
-            />
+            <Map_GridLines width={mapWidth} height={mapHeight} size={GRID_SIZE} />
             <Measurement_Overlay
               measurements={measurements}
               gridSize={GRID_SIZE}
@@ -532,7 +472,7 @@ const MapGrid: FC<MapGridProps> = ({
               height={mapHeight}
             />
             {/* Measurement Preview (overlay SVG above gridlines) */}
-            {selectedTool === "measure" && measurementStart && hoveredCell && (
+            {selectedTool === 'measure' && measurementStart && hoveredCell && (
               <svg
                 width={mapWidth * GRID_SIZE}
                 height={mapHeight * GRID_SIZE}
@@ -549,14 +489,8 @@ const MapGrid: FC<MapGridProps> = ({
                     strokeDasharray="3,3"
                   />
                   <text
-                    x={
-                      ((measurementStart.x + hoveredCell.x) * GRID_SIZE) / 2 +
-                      GRID_SIZE / 2
-                    }
-                    y={
-                      ((measurementStart.y + hoveredCell.y) * GRID_SIZE) / 2 +
-                      GRID_SIZE / 2
-                    }
+                    x={((measurementStart.x + hoveredCell.x) * GRID_SIZE) / 2 + GRID_SIZE / 2}
+                    y={((measurementStart.y + hoveredCell.y) * GRID_SIZE) / 2 + GRID_SIZE / 2}
                     fill="#FF6B35"
                     fontSize="12"
                     textAnchor="middle"
@@ -575,7 +509,7 @@ const MapGrid: FC<MapGridProps> = ({
 
             {/* Movement preview (overlay SVG above gridlines) */}
             {showMovePreview &&
-              selectedTool === "select" &&
+              selectedTool === 'select' &&
               selectedCharacter &&
               hoveredCell &&
               !measurementStart &&
@@ -601,9 +535,7 @@ const MapGrid: FC<MapGridProps> = ({
                 <div
                   key={`${x}-${y}`}
                   className={`absolute cursor-pointer hover:bg-accent/30 ${
-                    measurementStart?.x === x && measurementStart?.y === y
-                      ? "bg-orange-200"
-                      : ""
+                    measurementStart?.x === x && measurementStart?.y === y ? 'bg-orange-200' : ''
                   }`}
                   style={{
                     left: x * GRID_SIZE,
@@ -614,10 +546,7 @@ const MapGrid: FC<MapGridProps> = ({
                   // Only let onClick handle MEASURE and SELECT moves.
                   // Terrain tools are handled by mouse down/drag (below).
                   onClick={() => {
-                    if (
-                      selectedTool === "measure" ||
-                      selectedTool === "select"
-                    ) {
+                    if (selectedTool === 'measure' || selectedTool === 'select') {
                       handleCellClick(x, y);
                     }
                   }}
@@ -632,12 +561,8 @@ const MapGrid: FC<MapGridProps> = ({
                   // Support single right-click erase without dragging
                   onContextMenu={(e) => {
                     e.preventDefault(); // no browser/Figma menu
-                    if (!isDragging && selectedTool !== "select") {
-                      handleCellMouseDown(
-                        Object.assign(e, { button: 2 }),
-                        x,
-                        y
-                      );
+                    if (!isDragging && selectedTool !== 'select') {
+                      handleCellMouseDown(Object.assign(e, { button: 2 }), x, y);
                     }
                   }}
                 />
@@ -653,7 +578,7 @@ const MapGrid: FC<MapGridProps> = ({
               getTerrainColor={getTerrainColor}
               textColorOn={textColorOn}
               getObjectLetter={getObjectLetter}
-              canInteract={selectedTool === "select" && !selectedCharacter}
+              canInteract={selectedTool === 'select' && !selectedCharacter}
               onTerrainRightClick={handleTerrainRightClick}
             />
             {/* Characters */}

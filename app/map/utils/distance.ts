@@ -1,5 +1,5 @@
 // distance.ts — pure distance calculator
-import type { DistanceRule } from "../types";
+import type { DistanceRule } from '../types';
 
 /**
  * Returns distance in feet (or your feet-per-cell unit)
@@ -16,14 +16,13 @@ export function measureFeet(
   const dx = Math.abs(x2 - x1);
   const dy = Math.abs(y2 - y1);
 
-  if (rule === "5e") return Math.max(dx, dy) * feetPerCell;
+  if (rule === '5e') return Math.max(dx, dy) * feetPerCell;
 
-  if (rule === "5105") {
+  if (rule === '5105') {
     const diag = Math.min(dx, dy);
     const straight = Math.abs(dx - dy);
     // 5-10-5 pattern: every second diagonal "costs" 10 ft
-    const diagFeet =
-      Math.floor(diag / 2) * (feetPerCell * 3) + (diag % 2) * feetPerCell;
+    const diagFeet = Math.floor(diag / 2) * (feetPerCell * 3) + (diag % 2) * feetPerCell;
     return diagFeet + straight * feetPerCell;
   }
 
@@ -34,16 +33,11 @@ export function measureFeet(
 export type Cell = { x: number; y: number };
 
 /** Cells a straight line from (x0,y0) to (x1,y1) passes through (excludes start). */
-export function traceLineCells(
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number
-): Cell[] {
+export function traceLineCells(x0: number, y0: number, x1: number, y1: number): Cell[] {
   const cells: Cell[] = [];
-  let dx = Math.abs(x1 - x0),
+  const dx = Math.abs(x1 - x0),
     sx = x0 < x1 ? 1 : -1;
-  let dy = -Math.abs(y1 - y0),
+  const dy = -Math.abs(y1 - y0),
     sy = y0 < y1 ? 1 : -1;
   let err = dx + dy;
 
@@ -73,7 +67,7 @@ export function clipMovementAtWalls(
   lastFree: Cell;
   blocked: boolean;
   blockedAt?: Cell;
-  reason?: "wall" | "corner";
+  reason?: 'wall' | 'corner';
 } {
   let x = start.x,
     y = start.y;
@@ -98,7 +92,7 @@ export function clipMovementAtWalls(
           lastFree: last,
           blocked: true,
           blockedAt: { x: nx, y: ny },
-          reason: "corner",
+          reason: 'corner',
         };
       }
     }
@@ -109,7 +103,7 @@ export function clipMovementAtWalls(
         lastFree: last,
         blocked: true,
         blockedAt: { x: nx, y: ny },
-        reason: "wall",
+        reason: 'wall',
       };
     }
 

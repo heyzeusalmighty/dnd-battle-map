@@ -1,67 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect, MouseEvent, useMemo } from "react";
-
-// import { Card } from "../components/
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
-import { clamp } from "../components/ui/utils";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "../components/ui/dropdown-menu";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../components/ui/dialog";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-
-import BulkNpcForm from "../components/BulkNpcForm";
-import Map_GridLines from "../components/Map_GridLines";
-import Measurement_Overlay from "../components/Measurement_Overlay";
-import Movement_Overlay from "../components/Movement_Overlay";
-import Terrain_Layer from "../components/Terrain_Layer";
-import Tokens_Layer from "../components/Tokens_Layer";
-
-import { GRID_SIZE } from "./utils/constants";
-import { demoCharacters, demoTerrain } from "./utils/demo";
-import { rollInitiativeOnce, capInit, INITIATIVE_CAP } from "./utils/dice";
-import {
-  clipMovementAtWalls,
-  measureFeet,
-  traceLineCells,
-} from "./utils/distance";
-import { getId } from "./utils/id";
-import { measureMoveCost } from "./utils/movement";
-import { BUILTIN_TERRAIN, getTerrainColor } from "./utils/terrain";
-
-import {
-  takeSnapshot,
-  applySnapshot,
-  pushSnapshot,
-  popUndo,
-  popRedo,
-  capHistory,
-  type Snapshot,
-} from "./utils/snapshots";
-
+import { useState, useRef, useEffect, MouseEvent, useMemo } from 'react';
+import { GRID_SIZE } from './utils/constants';
+import { demoCharacters, demoTerrain } from './utils/demo';
+import { rollInitiativeOnce, capInit } from './utils/dice';
+import { getId } from './utils/id';
+import { BUILTIN_TERRAIN } from './utils/terrain';
 import type {
   Character,
   CustomObj,
@@ -71,62 +15,42 @@ import type {
   InitiativeMode,
   RollPreset,
   RollScope,
-} from "./types";
+  AppSnapshot,
+} from './types';
 
-import { DEFAULT_PARTY } from "./utils/partyPresets";
+import { DEFAULT_PARTY } from './utils/partyPresets';
 
-import {
-  MousePointer,
-  BrickWall,
-  DoorOpen,
-  Dice5,
-  Mountain,
-  Plus,
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-  Shield,
-  Paintbrush,
-  Heart,
-  Sword,
-  Settings,
-  Ruler,
-  Expand,
-  HelpCircle,
-  MoreVertical,
-} from "lucide-react";
-
-import ObjectPanel from "./components/ObjectPanel";
-import CharacterPanel from "./components/CharacterPanel";
-import UtilityPanel from "./components/UtilityPanel";
-import InitiativePanel from "./components/InitiativePanel";
-import HelpDialog from "./components/HelpDialog";
-import MapGrid from "./components/MapGrid";
+import ObjectPanel from './components/ObjectPanel';
+import CharacterPanel from './components/CharacterPanel';
+import UtilityPanel from './components/UtilityPanel';
+import InitiativePanel from './components/InitiativePanel';
+import HelpDialog from './components/HelpDialog';
+import MapGrid from './components/MapGrid';
 
 const INITIAL_OBJECTS: CustomObj[] = [
   {
-    id: "chest",
-    label: "Chest",
-    icon: "📦",
-    color: "#8B4513",
+    id: 'chest',
+    label: 'Chest',
+    icon: '📦',
+    color: '#8B4513',
   },
   {
-    id: "pillar",
-    label: "Pillar",
-    icon: "🏛️",
-    color: "#A9A9A9",
+    id: 'pillar',
+    label: 'Pillar',
+    icon: '🏛️',
+    color: '#A9A9A9',
   },
   {
-    id: "table",
-    label: "Table",
-    icon: "⛩",
-    color: "#654321",
+    id: 'table',
+    label: 'Table',
+    icon: '⛩',
+    color: '#654321',
   },
   {
-    id: "shelves",
-    label: "Shelves",
-    icon: "🗄️",
-    color: "#C19A6B",
+    id: 'shelves',
+    label: 'Shelves',
+    icon: '🗄️',
+    color: '#C19A6B',
   },
 ];
 
@@ -135,18 +59,11 @@ export default function App() {
   const [mapWidth, setMapWidth] = useState(25);
   const [mapHeight, setMapHeight] = useState(20);
   const [gridScale, setGridScale] = useState(5);
-  const [distanceRule, setDistanceRule] = useState<DistanceRule>("5e");
+  const [distanceRule, setDistanceRule] = useState<DistanceRule>('5e');
 
-  const mapRef = useRef<HTMLDivElement>(null);
   const mapScrollRef = useRef<HTMLDivElement>(null);
-  const stageW = mapWidth * GRID_SIZE;
-  const stageH = mapHeight * GRID_SIZE;
 
-  function scrollCellIntoCenter(
-    x: number,
-    y: number,
-    behavior: ScrollBehavior = "smooth"
-  ) {
+  function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
     const el = mapScrollRef.current;
     if (!el) return;
     const cellSize = GRID_SIZE; // your existing constant
@@ -160,23 +77,21 @@ export default function App() {
   }
 
   // Game state
-  const [characters, setCharacters] = useState<Character[]>(() =>
-    demoCharacters()
-  );
+  const [characters, setCharacters] = useState<Character[]>(() => demoCharacters());
   const [terrain, setTerrain] = useState<Terrain[]>(() => demoTerrain());
 
   // O(1) lookups for terrain difficulty
   const difficultKeys = useMemo(() => {
     const s = new Set<string>();
     for (const t of terrain) {
-      if (t.type === "difficult") s.add(`${t.x},${t.y}`);
+      if (t.type === 'difficult') s.add(`${t.x},${t.y}`);
     }
     return s;
   }, [terrain]);
 
   // click-and-drag state
   const [isDragging, setIsDragging] = useState(false);
-  const [dragMode, setDragMode] = useState<"paint" | "erase" | null>(null);
+  const [dragMode, setDragMode] = useState<'paint' | 'erase' | null>(null);
   const [lastCell, setLastCell] = useState<{
     x: number;
     y: number;
@@ -192,8 +107,8 @@ export default function App() {
       setLastCell(null);
     };
 
-    window.addEventListener("mouseup", onUp);
-    return () => window.removeEventListener("mouseup", onUp);
+    window.addEventListener('mouseup', onUp);
+    return () => window.removeEventListener('mouseup', onUp);
   }, [isDragging, setIsDragging, setDragMode, setLastCell]);
 
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -202,12 +117,7 @@ export default function App() {
   const isTypingTarget = (t: EventTarget | null) => {
     if (!(t instanceof HTMLElement)) return false;
     const tag = t.tagName.toLowerCase();
-    return (
-      tag === "input" ||
-      tag === "textarea" ||
-      tag === "select" ||
-      t.isContentEditable
-    );
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
   };
 
   const clearMeasurements = () => {
@@ -219,10 +129,7 @@ export default function App() {
   };
 
   // clear characters
-  const pcCount = useMemo(
-    () => characters.filter((c) => c.isPlayer).length,
-    [characters]
-  );
+  const pcCount = useMemo(() => characters.filter((c) => c.isPlayer).length, [characters]);
   const npcCount = characters.length - pcCount;
 
   function clearBy(predicate: (c: Character) => boolean, label: string) {
@@ -245,14 +152,14 @@ export default function App() {
   }
 
   function handleClearNPCs() {
-    clearBy((c) => !c.isPlayer, "NPC(s)");
+    clearBy((c) => !c.isPlayer, 'NPC(s)');
   }
   function handleClearPCs() {
-    clearBy((c) => c.isPlayer, "PC(s)");
+    clearBy((c) => c.isPlayer, 'PC(s)');
   }
 
   // UI state
-  const [selectedTool, setSelectedTool] = useState("select");
+  const [selectedTool, setSelectedTool] = useState('select');
   const [currentTurn, setCurrentTurn] = useState(0);
   const [round, setRound] = useState(1);
   const [measurementStart, setMeasurementStart] = useState<{
@@ -263,26 +170,20 @@ export default function App() {
     x: number;
     y: number;
   } | null>(null);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(
-    null
-  );
+  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
 
   // Derive the high-level mode from your existing selectedTool
-  const mode: "select" | "measure" | "paint" =
-    selectedTool === "select"
-      ? "select"
-      : selectedTool === "measure"
-      ? "measure"
-      : "paint";
+  const mode: 'select' | 'measure' | 'paint' =
+    selectedTool === 'select' ? 'select' : selectedTool === 'measure' ? 'measure' : 'paint';
 
   // characters split panel
-  const [charTab, setCharTab] = useState<"add" | "manage">("add");
-  const [charQuery, setCharQuery] = useState("");
-  const [charFilter, setCharFilter] = useState<"all" | "pc" | "npc">("all");
+  const [charTab, setCharTab] = useState<'add' | 'manage'>('add');
+  const [charQuery, setCharQuery] = useState('');
+  const [charFilter, setCharFilter] = useState<'all' | 'pc' | 'npc'>('all');
 
   const filteredCharacters = characters.filter((c) => {
-    if (charFilter === "pc" && !c.isPlayer) return false;
-    if (charFilter === "npc" && c.isPlayer) return false;
+    if (charFilter === 'pc' && !c.isPlayer) return false;
+    if (charFilter === 'npc' && c.isPlayer) return false;
     if (charQuery.trim()) {
       const q = charQuery.trim().toLowerCase();
       if (!c.name.toLowerCase().includes(q)) return false;
@@ -293,58 +194,48 @@ export default function App() {
   // choose token classes based on PC/NPC and selection
   const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
     [
-      "absolute z-10 flex items-center justify-center",
-      isPlayer ? "rounded-full" : "rounded-md",
+      'absolute z-10 flex items-center justify-center',
+      isPlayer ? 'rounded-full' : 'rounded-md',
 
       // Base (subtle) outline via ring; no borders at all
-      "ring-1 ring-black/10 dark:ring-white/20",
-      "ring-offset-1 ring-offset-white dark:ring-offset-neutral-900",
+      'ring-1 ring-black/10 dark:ring-white/20',
+      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
 
       // Selection emphasis
-      isSelected
-        ? isPlayer
-          ? "ring-2 ring-blue-500/70"
-          : "ring-2 ring-red-600/70"
-        : "",
+      isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
 
       // Optional: small polish
-      "shadow-sm transition-all duration-150",
+      'shadow-sm transition-all duration-150',
       // If you set fill inline via style={{ backgroundColor: c.color }},
       // you can drop bg-background. Keep it only if you rely on a CSS var:
       // "bg-background",
-    ].join(" ");
+    ].join(' ');
 
   // move preview for characters
   const [showMovePreview, setShowMovePreview] = useState(true);
-  const isDifficultAt = (x: number, y: number) =>
-    difficultKeys.has(`${x},${y}`);
+  const isDifficultAt = (x: number, y: number) => difficultKeys.has(`${x},${y}`);
 
-  function commitMove(
-    charId: string,
-    from: { x: number; y: number },
-    drop: { x: number; y: number }
-  ) {
-    const { lastFree } = clipMovementAtWalls(from, drop, isWallAt);
-    setCharacters((prev) =>
-      prev.map((c) =>
-        c.id === charId ? { ...c, x: lastFree.x, y: lastFree.y } : c
-      )
-    );
-  }
+  // function commitMove(
+  //   charId: string,
+  //   from: { x: number; y: number },
+  //   drop: { x: number; y: number }
+  // ) {
+  //   const { lastFree } = clipMovementAtWalls(from, drop, isWallAt);
+  //   setCharacters((prev) =>
+  //     prev.map((c) => (c.id === charId ? { ...c, x: lastFree.x, y: lastFree.y } : c))
+  //   );
+  // }
 
   // Form states
-  const [newCharName, setNewCharName] = useState("");
-  const [newCharHp, setNewCharHp] = useState("");
-  const [newCharDmg, setNewCharDmg] = useState("");
-  const [newCharInit, setNewCharInit] = useState("");
+  const [newCharName, setNewCharName] = useState('');
+  const [newCharDmg, setNewCharDmg] = useState('');
+  const [newCharInit, setNewCharInit] = useState('');
   const [showMapSettings, setShowMapSettings] = useState(false);
   const [showAddChar, setShowAddChar] = useState(false);
-  const [addMode, setAddMode] = useState<"single" | "bulk">("single");
+  const [addMode, setAddMode] = useState<'single' | 'bulk'>('single');
   const [damageDelta, setDamageDelta] = useState<Record<string, string>>({});
 
-  const [presetToAdd, setPresetToAdd] = useState<string>(
-    DEFAULT_PARTY[0]?.name ?? ""
-  );
+  const [presetToAdd, setPresetToAdd] = useState<string>(DEFAULT_PARTY[0]?.name ?? '');
 
   // ---- undo / redo snapshot
   // snapshot helper
@@ -353,28 +244,16 @@ export default function App() {
     mutator();
   }
 
-  type AppSnapshot = {
-    characters: Character[];
-    terrain: Terrain[];
-    measurements: Measurement[];
-    mapWidth: number;
-    mapHeight: number;
-    gridScale: number;
-    round: number;
-    currentTurn: number;
-    selectedTool: string;
-  };
-
   const [undoStack, setUndoStack] = useState<AppSnapshot[]>([]);
   const [redoStack, setRedoStack] = useState<AppSnapshot[]>([]);
   const MAX_HISTORY = 50;
 
   // initiative states
 
-  const [initiativeMode, setInitiativeMode] = useState<InitiativeMode>("auto");
+  const [initiativeMode, setInitiativeMode] = useState<InitiativeMode>('auto');
 
   const [rollPreset, setRollPreset] = useState<RollPreset>({
-    scope: "all",
+    scope: 'all',
     useMods: true,
   });
 
@@ -385,9 +264,9 @@ export default function App() {
   };
 
   // App.tsx (near your roll fns)
-  function getInitMod(c: any): number {
-    const raw = c?.initiativeMod ?? c?.initMod ?? 0;
-    const n = typeof raw === "string" ? parseInt(raw, 10) : raw;
+  function getInitMod(c: Character): number {
+    const raw = c?.initiativeMod ?? 0;
+    const n = typeof raw === 'string' ? parseInt(raw, 10) : raw;
     return Number.isFinite(n) ? (n as number) : 0;
   }
 
@@ -399,17 +278,17 @@ export default function App() {
       disadvantage?: boolean;
     }
   ) {
-    if (scope === "selected" && !selectedCharacter) return;
+    if (scope === 'selected' && !selectedCharacter) return;
     const useMods = opts?.useMods ?? true;
 
     saveSnapshot();
     setCharacters((prev) =>
       prev.map((c) => {
         const inScope =
-          scope === "all" ||
-          (scope === "pcs" && c.isPlayer) ||
-          (scope === "npcs" && !c.isPlayer) ||
-          (scope === "selected" && c.id === selectedCharacter);
+          scope === 'all' ||
+          (scope === 'pcs' && c.isPlayer) ||
+          (scope === 'npcs' && !c.isPlayer) ||
+          (scope === 'selected' && c.id === selectedCharacter);
 
         if (!inScope) return c;
 
@@ -429,17 +308,17 @@ export default function App() {
             mod,
             total,
             capped,
-            flags: opts?.advantage ? "adv" : opts?.disadvantage ? "dis" : null,
+            flags: opts?.advantage ? 'adv' : opts?.disadvantage ? 'dis' : null,
           },
         };
       })
     );
-    setInitiativeMode("auto");
+    setInitiativeMode('auto');
     setCurrentTurn(0); // feel free to remove if you prefer keeping the pointer
   }
 
   const [editInitId, setEditInitId] = useState<string | null>(null);
-  const [editInitVal, setEditInitVal] = useState("");
+  const [editInitVal, setEditInitVal] = useState('');
 
   function startEditInit(c: Character) {
     setEditInitId(c.id);
@@ -452,37 +331,36 @@ export default function App() {
     saveSnapshot();
     setCharacters((prev) =>
       prev.map((ch) =>
-        ch.id === editInitId
-          ? { ...ch, initiative: n, lastInitRoll: undefined }
-          : ch
+        ch.id === editInitId ? { ...ch, initiative: n, lastInitRoll: undefined } : ch
       )
     );
     setEditInitId(null);
   }
 
   // one-click initiative roller
-  function rollAllInitiative(opts?: {
-    useMods?: boolean;
-    advantage?: boolean;
-    disadvantage?: boolean;
-  }) {
-    const useMods = opts?.useMods ?? true;
-    saveSnapshot();
-    setCharacters((prev) =>
-      prev.map((c) => {
-        const base = rollInitiativeOnce({
-          advantage: opts?.advantage,
-          disadvantage: opts?.disadvantage,
-        });
-        const mod = useMods ? getInitMod(c) : 0;
-        return { ...c, initiative: capInit(base + mod) };
-      })
-    );
-    // show ordered list immediately if you’re using auto mode
-    setInitiativeMode("auto");
-    // (optionally) reset pointer:
-    // setCurrentTurn(0);
-  }
+  // function rollAllInitiative(opts?: {
+  //   useMods?: boolean;
+  //   advantage?: boolean;
+  //   disadvantage?: boolean;
+  // }) {
+  //   const useMods = opts?.useMods ?? true;
+  //   saveSnapshot();
+  //   setCharacters((prev) =>
+  //     prev.map((c) => {
+  //       const base = rollInitiativeOnce({
+  //         advantage: opts?.advantage,
+  //         disadvantage: opts?.disadvantage,
+  //       });
+  //       const mod = useMods ? getInitMod(c) : 0;
+  //       return { ...c, initiative: capInit(base + mod) };
+  //     })
+  //   );
+  //   // show ordered list immediately if you’re using auto mode
+  //   setInitiativeMode('auto');
+  //   // (optionally) reset pointer:
+  //   // setCurrentTurn(0);
+  // }
+
   // list of character IDs in manual order
   const [initiativeOrder, setInitiativeOrder] = useState<string[]>(() =>
     characters.map((c) => c.id)
@@ -506,19 +384,18 @@ export default function App() {
   }, [characters]);
 
   // custom object states
-  const [customObjects, setCustomObjects] =
-    useState<CustomObj[]>(INITIAL_OBJECTS);
+  const [customObjects, setCustomObjects] = useState<CustomObj[]>(INITIAL_OBJECTS);
 
-  const [newObjLabel, setNewObjLabel] = useState("");
-  const [newObjColor, setNewObjColor] = useState("#8B4513");
-  const [newObjIcon, setNewObjIcon] = useState("");
+  const [newObjLabel, setNewObjLabel] = useState('');
+  const [newObjColor, setNewObjColor] = useState('#8B4513');
+  const [newObjIcon, setNewObjIcon] = useState('');
 
   const slugify = (s: string) =>
     s
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
 
   const handleAddCustomObject = () => {
     const label = newObjLabel.trim();
@@ -535,27 +412,27 @@ export default function App() {
       },
     ]);
     setSelectedTool(id);
-    setNewObjLabel("");
-    setNewObjIcon("");
-    setNewObjColor("#8B4513");
+    setNewObjLabel('');
+    setNewObjIcon('');
+    setNewObjColor('#8B4513');
   };
 
   // delete characters
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedCharacter) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCharacter) {
         e.preventDefault();
         handleDeleteCharacter(selectedCharacter);
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [selectedCharacter]);
 
   // cancel measurement
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         // Cancel active measurement first
         if (measurementStart) {
           e.preventDefault();
@@ -572,8 +449,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [measurementStart, selectedCharacter]);
 
   // center on character token
@@ -600,7 +477,7 @@ export default function App() {
       el.scrollTo({
         left: Math.max(0, cx - el.clientWidth / 2),
         top: Math.max(0, cy - el.clientHeight / 2),
-        behavior: "smooth",
+        behavior: 'smooth',
       });
     }
   }, [selectedCharacter]);
@@ -611,27 +488,10 @@ export default function App() {
     !BUILTIN_TERRAIN.has(t) && customObjects.some((o) => o.id === t);
 
   // find the object meta by id ("chest", "maomao", …)
-  const getCustomObject = (typeId: string) =>
-    customObjects.find((o) => o.id === typeId);
+  const getCustomObject = (typeId: string) => customObjects.find((o) => o.id === typeId);
 
-  // // pick black/white text that contrasts with a hex bg color
-  // const textColorOn = (hex: string) => {
-  //   const h = hex.replace("#", "");
-  //   const full = h.length === 3 ? h.replace(/(.)/g, "$1$1") : h;
-  //   const n = parseInt(full, 16);
-  //   const r = (n >> 16) & 255,
-  //     g = (n >> 8) & 255,
-  //     b = n & 255;
-  //   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  //   return yiq >= 128 ? "#000" : "#fff";
-  // };
-
-  const hasTerrainAt = (
-    type: string,
-    x: number,
-    y: number,
-    terrain: Terrain[]
-  ) => terrain.some((t) => t.type === type && t.x === x && t.y === y);
+  const hasTerrainAt = (type: string, x: number, y: number, terrain: Terrain[]) =>
+    terrain.some((t) => t.type === type && t.x === x && t.y === y);
 
   // add exactly one terrain of this type at (x,y), replacing any existing terrain **of any type** at that cell
   const addTerrainAt = (type: string, x: number, y: number) => {
@@ -643,9 +503,7 @@ export default function App() {
   };
 
   const removeTerrainAt = (type: string, x: number, y: number) => {
-    setTerrain((prev) =>
-      prev.filter((t) => !(t.type === type && t.x === x && t.y === y))
-    );
+    setTerrain((prev) => prev.filter((t) => !(t.type === type && t.x === x && t.y === y)));
   };
 
   // helper to detect walls (your terrain tiles use lowercase types)
@@ -655,9 +513,9 @@ export default function App() {
     for (let i = 0; i < terrain.length; i++) {
       const t = terrain[i];
       if (t.x === x && t.y === y) {
-        const tt = (t as any).type;
-        const tag = (typeof tt === "string" ? tt : String(tt)).toLowerCase();
-        return tag === "wall";
+        const tt = (t as Terrain).type;
+        const tag = (typeof tt === 'string' ? tt : String(tt)).toLowerCase();
+        return tag === 'wall';
         // If you track doors later:
         // return tag === "wall" || (tag === "door" && !t.open);
       }
@@ -667,20 +525,19 @@ export default function App() {
 
   const getTerrainColor = (type: string) => {
     const colors = {
-      wall: "#8B7355",
-      difficult: "#D2691E",
-      door: "#8B4513",
-      chest: "#8B4513",
-      pillar: "#A9A9A9",
-      table: "#654321",
-      shelves: "#C19A6B",
+      wall: '#8B7355',
+      difficult: '#D2691E',
+      door: '#8B4513',
+      chest: '#8B4513',
+      pillar: '#A9A9A9',
+      table: '#654321',
+      shelves: '#C19A6B',
     };
-    return colors[type as keyof typeof colors] || "#666666";
+    return colors[type as keyof typeof colors] || '#666666';
   };
 
   // find the currently selected character once
-  const getSelectedChar = () =>
-    characters.find((c) => c.id === selectedCharacter) || null;
+  const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
 
   // help button
   const [showHelp, setShowHelp] = useState(false);
@@ -690,19 +547,19 @@ export default function App() {
    * step diagonally until aligned, then straight.
    * Returns the *intermediate* squares you pass through (not including start).
    */
-  const computePathCells = (x1: number, y1: number, x2: number, y2: number) => {
-    const cells: { x: number; y: number }[] = [];
-    let cx = x1,
-      cy = y1;
-    while (cx !== x2 || cy !== y2) {
-      if (cx < x2) cx++;
-      else if (cx > x2) cx--;
-      if (cy < y2) cy++;
-      else if (cy > y2) cy--;
-      cells.push({ x: cx, y: cy });
-    }
-    return cells;
-  };
+  // const computePathCells = (x1: number, y1: number, x2: number, y2: number) => {
+  //   const cells: { x: number; y: number }[] = [];
+  //   let cx = x1,
+  //     cy = y1;
+  //   while (cx !== x2 || cy !== y2) {
+  //     if (cx < x2) cx++;
+  //     else if (cx > x2) cx--;
+  //     if (cy < y2) cy++;
+  //     else if (cy > y2) cy--;
+  //     cells.push({ x: cx, y: cy });
+  //   }
+  //   return cells;
+  // };
 
   // undo/redo
   const takeSnapshot = (): AppSnapshot => ({
@@ -718,12 +575,10 @@ export default function App() {
   });
 
   const saveSnapshot = () => {
-    console.log("snapshot", takeSnapshot());
+    console.log('snapshot', takeSnapshot());
     setUndoStack((prev) => {
       const next = [...prev, takeSnapshot()];
-      return next.length > MAX_HISTORY
-        ? next.slice(next.length - MAX_HISTORY)
-        : next;
+      return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
     });
     setRedoStack([]); // clear redo on any new action
   };
@@ -764,7 +619,7 @@ export default function App() {
   };
 
   const handleCharacterClick = (charId: string) => {
-    if (selectedTool !== "select") return;
+    if (selectedTool !== 'select') return;
 
     // toggle selection; only center when selecting (not when de-selecting)
     setSelectedCharacter((prev) => {
@@ -781,7 +636,7 @@ export default function App() {
   const paintSnap = useRef(false);
 
   const handleCellMouseDown = (e: MouseEvent, x: number, y: number) => {
-    if (selectedTool === "select") return;
+    if (selectedTool === 'select') return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -796,8 +651,7 @@ export default function App() {
     // - Right click => erase
     // - Left click => toggle: if cell already has this tool => erase, else paint
     const exists = hasTerrainAt(tool, x, y, terrain);
-    const mode: "paint" | "erase" =
-      e.button === 2 ? "erase" : exists ? "erase" : "paint";
+    const mode: 'paint' | 'erase' = e.button === 2 ? 'erase' : exists ? 'erase' : 'paint';
 
     e.preventDefault();
     e.stopPropagation();
@@ -805,18 +659,18 @@ export default function App() {
     setDragMode(mode);
     setLastCell({ x, y });
 
-    if (mode === "paint") addTerrainAt(tool, x, y);
+    if (mode === 'paint') addTerrainAt(tool, x, y);
     else removeTerrainAt(tool, x, y);
   };
 
   // When dragging across cells with the mouse held down
   const handleCellMouseEnter = (_e: MouseEvent, x: number, y: number) => {
-    if (!isDragging || !dragMode || selectedTool === "select") return;
+    if (!isDragging || !dragMode || selectedTool === 'select') return;
 
     if (lastCell && lastCell.x === x && lastCell.y === y) return; // skip repeats
 
     const tool = selectedTool;
-    if (dragMode === "paint") {
+    if (dragMode === 'paint') {
       if (!hasTerrainAt(tool, x, y, terrain)) addTerrainAt(tool, x, y);
     } else {
       if (hasTerrainAt(tool, x, y, terrain)) removeTerrainAt(tool, x, y);
@@ -840,11 +694,11 @@ export default function App() {
   };
 
   // handle moving initiative order
-  const moveInInitiative = (charId: string, dir: "up" | "down") => {
+  const moveInInitiative = (charId: string, dir: 'up' | 'down') => {
     setInitiativeOrder((prev) => {
       const idx = prev.indexOf(charId);
       if (idx === -1) return prev;
-      const swapWith = dir === "up" ? idx - 1 : idx + 1;
+      const swapWith = dir === 'up' ? idx - 1 : idx + 1;
       if (swapWith < 0 || swapWith >= prev.length) return prev;
       const copy = [...prev];
       [copy[idx], copy[swapWith]] = [copy[swapWith], copy[idx]];
@@ -855,7 +709,7 @@ export default function App() {
   const setManualFromCurrentSort = () => {
     const sorted = [...characters].sort((a, b) => b.initiative - a.initiative);
     setInitiativeOrder(sorted.map((c) => c.id));
-    setInitiativeMode("manual");
+    setInitiativeMode('manual');
   };
 
   const addPartyFromPresets = () => {
@@ -878,8 +732,8 @@ export default function App() {
         initiative: p.initiative ?? 0,
         initiativeMod: p.initiativeMod ?? 0,
         isPlayer: true,
-        color: p.color ?? "#3B82F6",
-        ac: (p as any).ac,
+        color: p.color ?? '#3B82F6',
+        ac: p.ac,
       };
 
       const { added, id } = upsertPlayerByName(incoming);
@@ -887,7 +741,7 @@ export default function App() {
     });
 
     // If you have a manual initiative list, append only truly-new entries
-    if (initiativeMode === "manual" && newlyAddedIds.length) {
+    if (initiativeMode === 'manual' && newlyAddedIds.length) {
       setInitiativeOrder((prev) => [...prev, ...newlyAddedIds]);
     }
   };
@@ -911,12 +765,12 @@ export default function App() {
       initiative: p.initiative ?? 0,
       initiativeMod: p.initiativeMod ?? 0,
       isPlayer: true,
-      color: p.color ?? "#3B82F6",
-      ac: (p as any).ac,
+      color: p.color ?? '#3B82F6',
+      ac: p.ac,
     };
 
     const { added, id } = upsertPlayerByName(incoming);
-    if (initiativeMode === "manual" && added) {
+    if (initiativeMode === 'manual' && added) {
       setInitiativeOrder((prev) => [...prev, id]);
     }
   };
@@ -927,16 +781,9 @@ export default function App() {
     if (!name) return;
 
     // Parse numbers; default to 0 when blank or invalid
-    const init = Number.isFinite(parseInt(newCharInit))
-      ? parseInt(newCharInit)
-      : 0;
-    const dmg = Number.isFinite(parseInt(newCharDmg))
-      ? Math.max(0, parseInt(newCharDmg))
-      : 0;
+    const dmg = Number.isFinite(parseInt(newCharDmg)) ? Math.max(0, parseInt(newCharDmg)) : 0;
 
-    const mod = Number.isFinite(parseInt(newCharInit))
-      ? parseInt(newCharInit, 10)
-      : 0;
+    const mod = Number.isFinite(parseInt(newCharInit)) ? parseInt(newCharInit, 10) : 0;
 
     // If your Character requires hp/maxHp, keep them (hidden in UI)
     const newChar: Character = {
@@ -949,7 +796,7 @@ export default function App() {
       initiativeMod: mod,
       initiative: 0, // <-- rolled later
       isPlayer: false, // NPC
-      color: "#EF4444",
+      color: '#EF4444',
       damage: dmg,
     };
 
@@ -958,21 +805,19 @@ export default function App() {
     setCharacters((prev) => [...prev, newChar]);
 
     // reset the form – leave fields blank again
-    setNewCharName("");
-    setNewCharDmg(""); // keep input empty so placeholder shows
-    setNewCharInit("");
+    setNewCharName('');
+    setNewCharDmg(''); // keep input empty so placeholder shows
+    setNewCharInit('');
     setShowAddChar(false);
   };
 
   // Remember the last paint subtool the user picked
-  const [lastPaintTool, setLastPaintTool] = useState<
-    "wall" | "difficult" | "door"
-  >("wall");
+  const [lastPaintTool, setLastPaintTool] = useState<'wall' | 'difficult' | 'door'>('wall');
 
   // add damage to existing NPC damage score
   const applyDamageDelta = (charId: string) => {
     const raw = damageDelta[charId];
-    if (raw == null || raw.trim() === "") return;
+    if (raw == null || raw.trim() === '') return;
     const delta = parseInt(raw, 10);
     if (Number.isNaN(delta)) return;
 
@@ -987,7 +832,7 @@ export default function App() {
           : c
       )
     );
-    setDamageDelta((prev) => ({ ...prev, [charId]: "" }));
+    setDamageDelta((prev) => ({ ...prev, [charId]: '' }));
   };
 
   const normName = (s: string) => s.trim().toLowerCase();
@@ -995,9 +840,7 @@ export default function App() {
   /** Upsert a *player* by name; preserves id/x/y if updating.
    *  Returns { added, id } so callers can update initiativeOrder for new entries.
    */
-  const upsertPlayerByName = (
-    incoming: Character
-  ): { added: boolean; id: string } => {
+  const upsertPlayerByName = (incoming: Character): { added: boolean; id: string } => {
     const n = normName(incoming.name);
     let added = false;
     let keptId = incoming.id;
@@ -1011,7 +854,7 @@ export default function App() {
         const next: Character = {
           ...cur,
           color: incoming.color ?? cur.color,
-          ac: (incoming as any).ac ?? (cur as any).ac,
+          ac: incoming.ac ?? cur.ac,
           // only set initiativeMod if provided on incoming; otherwise keep current
           initiativeMod: incoming.initiativeMod ?? cur.initiativeMod,
           isPlayer: true,
@@ -1020,13 +863,12 @@ export default function App() {
         // Optional: seed HP/MaxHP once if current is unset
         if ((cur.maxHp ?? 0) === 0 && (incoming.maxHp ?? 0) > 0) {
           next.maxHp = incoming.maxHp;
-          if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0)
-            next.hp = incoming.hp;
+          if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0) next.hp = incoming.hp;
         }
 
         if (
           next.color === cur.color &&
-          (next as any).ac === (cur as any).ac &&
+          next.ac === cur.ac &&
           next.initiativeMod === cur.initiativeMod &&
           next.maxHp === cur.maxHp &&
           next.hp === cur.hp
@@ -1060,43 +902,20 @@ export default function App() {
     );
   };
 
-  // const handleUpdateDamage = (charId: string, newDmg: number) => {
-  //   saveSnapshot();
-  //   setCharacters((prev) =>
-  //     prev.map((c) =>
-  //       c.id === charId ? { ...c, damage: Math.max(0, newDmg) } : c
-  //     )
-  //   );
-  // };
-
-  // const handleUpdateInitiative = (charId: string, newInit: number) => {
-  //   saveSnapshot();
-  //   setCharacters((prev) =>
-  //     prev.map((c) =>
-  //       c.id === charId
-  //         ? {
-  //             ...c,
-  //             initiative: Math.max(0, capInit(isNaN(newInit) ? 0 : newInit)),
-  //           }
-  //         : c
-  //     )
-  //   );
-  // };
-
   // Small setters
-  const setMode = (m: "select" | "measure" | "paint") => {
-    if (m === "paint") setSelectedTool(lastPaintTool);
+  const setMode = (m: 'select' | 'measure' | 'paint') => {
+    if (m === 'paint') setSelectedTool(lastPaintTool);
     else setSelectedTool(m);
   };
 
-  const setPaintTool = (t: "wall" | "difficult" | "door") => {
+  const setPaintTool = (t: 'wall' | 'difficult' | 'door') => {
     setLastPaintTool(t);
     setSelectedTool(t);
   };
 
   const handleNextTurn = () => {
     const list =
-      initiativeMode === "auto"
+      initiativeMode === 'auto'
         ? [...characters].sort((a, b) => b.initiative - a.initiative)
         : initiativeOrder
             .map((id) => characters.find((c) => c.id === id))
@@ -1117,25 +936,25 @@ export default function App() {
       if (isTypingTarget(e.target)) return;
 
       // ---- Undo / Redo (Meta/Ctrl) ----
-      if (meta && key === "z" && !e.shiftKey) {
+      if (meta && key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
         return;
       }
-      if (meta && ((key === "z" && e.shiftKey) || key === "y")) {
+      if (meta && ((key === 'z' && e.shiftKey) || key === 'y')) {
         e.preventDefault();
         redo();
         return;
       }
 
       // ---- Turn controls (optional; remove if you don't want them) ----
-      if (key === " " || key === "enter") {
+      if (key === ' ' || key === 'enter') {
         // next
         e.preventDefault();
         handleNextTurn();
         return;
       }
-      if (key === "backspace" || (e.shiftKey && key === " ")) {
+      if (key === 'backspace' || (e.shiftKey && key === ' ')) {
         // prev
         e.preventDefault();
         setCurrentTurn((v) => Math.max(0, v - 1));
@@ -1143,40 +962,40 @@ export default function App() {
       }
 
       // ---- Mode switching ----
-      if (key === "v") {
+      if (key === 'v') {
         e.preventDefault();
-        setMode("select");
+        setMode('select');
         return;
       }
-      if (key === "m") {
+      if (key === 'm') {
         e.preventDefault();
-        setMode("measure");
+        setMode('measure');
         return;
       }
-      if (key === "b") {
+      if (key === 'b') {
         e.preventDefault();
-        setMode("paint");
+        setMode('paint');
         return;
       }
 
       // ---- Paint subtools (only when painting) ----
-      if (mode === "paint") {
-        if (key === "1") {
+      if (mode === 'paint') {
+        if (key === '1') {
           e.preventDefault();
-          setPaintTool("wall");
+          setPaintTool('wall');
           return;
         }
-        if (key === "2") {
+        if (key === '2') {
           e.preventDefault();
-          setPaintTool("difficult");
+          setPaintTool('difficult');
           return;
         }
-        if (key === "3") {
+        if (key === '3') {
           e.preventDefault();
-          setPaintTool("door");
+          setPaintTool('door');
           return;
         }
-        if (key === "h") {
+        if (key === 'h') {
           e.preventDefault();
           setShowHelp((v) => !v);
           return;
@@ -1184,12 +1003,12 @@ export default function App() {
       }
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool]);
 
   const sortedCharacters =
-    initiativeMode === "auto"
+    initiativeMode === 'auto'
       ? [...characters].sort((a, b) => b.initiative - a.initiative)
       : initiativeOrder
           .map((id) => characters.find((c) => c.id === id))
@@ -1200,9 +1019,7 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
-        <h1 className="text-lg font-semibold">
-          Shadow Over Orlovia (Stain ya pants)
-        </h1>
+        <h1 className="text-lg font-semibold">Shadow Over Orlovia (Stain ya pants)</h1>
       </header>
 
       <main className="flex-1 flex gap-4 p-4">
@@ -1210,7 +1027,6 @@ export default function App() {
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel
             customObjects={customObjects}
-            setCustomObjects={setCustomObjects}
             selectedTool={selectedTool}
             setSelectedTool={setSelectedTool}
             newObjLabel={newObjLabel}

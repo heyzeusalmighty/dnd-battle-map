@@ -1,12 +1,11 @@
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 
-import type { CustomObj } from "../types";
+import type { CustomObj } from '../types';
 
 interface ObjectPanelProps {
   customObjects: CustomObj[];
-  setCustomObjects: React.Dispatch<React.SetStateAction<CustomObj[]>>;
   selectedTool: string;
   setSelectedTool: React.Dispatch<React.SetStateAction<string>>;
   newObjLabel: string;
@@ -18,7 +17,6 @@ interface ObjectPanelProps {
 
 const ObjectPanel = ({
   customObjects,
-  setCustomObjects,
   selectedTool,
   setSelectedTool,
   newObjLabel,
@@ -40,7 +38,7 @@ const ObjectPanel = ({
             <Button
               key={o.id}
               size="sm"
-              variant={selectedTool === o.id ? "default" : "outline"}
+              variant={selectedTool === o.id ? 'default' : 'outline'}
               className="h-8 px-2"
               onClick={() => setSelectedTool(o.id)}
               title={o.label}
@@ -63,7 +61,7 @@ const ObjectPanel = ({
               <Button
                 key={o.id}
                 size="sm"
-                variant={selectedTool === o.id ? "default" : "outline"}
+                variant={selectedTool === o.id ? 'default' : 'outline'}
                 className="h-8 px-2"
                 onClick={() => setSelectedTool(o.id)}
                 title={o.label}
