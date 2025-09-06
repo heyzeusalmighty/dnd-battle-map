@@ -30,7 +30,7 @@ import UtilityPanel from './components/UtilityPanel';
 import InitiativePanel from './components/InitiativePanel';
 import HelpDialog from './components/HelpDialog';
 import MapGrid from './components/MapGrid';
-import { Button } from '../components/ui/button';
+import ConnectedPeersButton from '../components/ConnectedPeersButton';
 
 const INITIAL_OBJECTS: CustomObj[] = [
   {
@@ -71,9 +71,7 @@ const Map = () => {
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
 
-  const { peer, connection, remotePeerId, connectToPeer, sendData } = useHostPeerSession(mapName);
-
-  // console.log(peer, connection, remotePeerId);
+  const { peer, connections, broadcastData } = useHostPeerSession(mapName);
 
   function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
     const el = mapScrollRef.current;
@@ -1028,10 +1026,6 @@ const Map = () => {
 
   const currentCharacter = sortedCharacters[currentTurn];
 
-  const handlePeerButtonClick = () => {
-    sendData({ type: 'request-peers' });
-  };
-
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
@@ -1040,9 +1034,12 @@ const Map = () => {
 
       <main className="flex-1 flex gap-4 p-4">
         {/* Left Panel - Tools */}
-        <Button className="absolute top-4 right-4 z-10" onClick={handlePeerButtonClick}>
-          Peer Things
-        </Button>
+        <ConnectedPeersButton
+          connections={connections}
+          sendData={broadcastData}
+          peer={peer}
+          mapName={mapName}
+        />
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel
             customObjects={customObjects}

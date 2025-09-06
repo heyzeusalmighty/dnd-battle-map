@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import Peer, { DataConnection } from 'peerjs';
 
-export function useGuestMap(hostId: string) {
+export function useGuestMap({
+  hostId,
+  username,
+  start,
+}: {
+  hostId: string | null;
+  username: string | null;
+  start: boolean;
+}) {
   const [connected, setConnected] = useState(false);
   const [connection, setConnection] = useState<DataConnection | null>(null);
   const peerRef = useRef<Peer | null>(null);
 
   useEffect(() => {
-    if (!hostId) return;
+    if (!hostId || !start) return;
 
     // Create a new Peer instance with a random ID
     const peer = new Peer();
@@ -15,7 +23,9 @@ export function useGuestMap(hostId: string) {
 
     peer.on('open', () => {
       // Connect to the host
-      const conn = peer.connect(hostId);
+      const conn = peer.connect(hostId, {
+        metadata: { username },
+      });
 
       conn.on('open', () => {
         setConnected(true);
@@ -38,17 +48,17 @@ export function useGuestMap(hostId: string) {
       setConnected(false);
       setConnection(null);
     };
-  }, [hostId]);
+  }, [hostId, start]);
 
   // Send data to host
-  const send = (data: any) => {
+  const send = (data: unknown) => {
     if (connection && connected) {
       connection.send(data);
     }
   };
 
   // Listen for data from host
-  const onData = (callback: (data: any) => void) => {
+  const onData = (callback: (data: unknown) => void) => {
     if (connection) {
       connection.on('data', callback);
     }
