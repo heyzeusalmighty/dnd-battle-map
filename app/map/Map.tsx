@@ -1,6 +1,8 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect, MouseEvent, useMemo } from 'react';
+
 import { GRID_SIZE } from './utils/constants';
 import { demoCharacters, demoTerrain } from './utils/demo';
 import { rollInitiativeOnce, capInit } from './utils/dice';
@@ -18,6 +20,8 @@ import type {
   AppSnapshot,
 } from './types';
 
+import { useHostPeerSession } from '../hooks/rtc/useHostMap';
+
 import { DEFAULT_PARTY } from './utils/partyPresets';
 
 import ObjectPanel from './components/ObjectPanel';
@@ -26,6 +30,7 @@ import UtilityPanel from './components/UtilityPanel';
 import InitiativePanel from './components/InitiativePanel';
 import HelpDialog from './components/HelpDialog';
 import MapGrid from './components/MapGrid';
+import ConnectedPeersButton from '../components/ConnectedPeersButton';
 
 const INITIAL_OBJECTS: CustomObj[] = [
   {
@@ -54,7 +59,7 @@ const INITIAL_OBJECTS: CustomObj[] = [
   },
 ];
 
-export default function App() {
+const Map = () => {
   // Map configuration
   const [mapWidth, setMapWidth] = useState(25);
   const [mapHeight, setMapHeight] = useState(20);
@@ -62,6 +67,11 @@ export default function App() {
   const [distanceRule, setDistanceRule] = useState<DistanceRule>('5e');
 
   const mapScrollRef = useRef<HTMLDivElement>(null);
+
+  const searchParams = useSearchParams();
+  const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
+
+  const { peer, connections, broadcastData } = useHostPeerSession(mapName);
 
   function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
     const el = mapScrollRef.current;
@@ -1019,11 +1029,17 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
-        <h1 className="text-lg font-semibold">Shadow Over Orlovia (Stain ya pants)</h1>
+        <h1 className="text-lg font-semibold">{mapName}</h1>
       </header>
 
       <main className="flex-1 flex gap-4 p-4">
         {/* Left Panel - Tools */}
+        <ConnectedPeersButton
+          connections={connections}
+          sendData={broadcastData}
+          peer={peer}
+          mapName={mapName}
+        />
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel
             customObjects={customObjects}
@@ -1181,4 +1197,6 @@ export default function App() {
       </main>
     </div>
   );
-}
+};
+
+export default Map;
