@@ -78,3 +78,12 @@ export type LastInitRoll = {
   capped: number; // after capInit()
   flags?: "adv" | "dis" | null; // optional
 };
+
+export type RollScope = "all" | "pcs" | "npcs" | "selected";
+
+export type RollPreset = {
+  scope: RollScope;
+  useMods?: boolean;
+  advantage?: boolean;
+  disadvantage?: boolean;
+};
