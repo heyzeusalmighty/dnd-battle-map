@@ -1,0 +1,674 @@
+import React, { FC, useState } from "react";
+import { Card } from "@/app/components/ui/card";
+import { Badge } from "@/app/components/ui/badge";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+
+import {
+  MousePointer,
+  BrickWall,
+  DoorOpen,
+  Dice5,
+  Mountain,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  Shield,
+  Paintbrush,
+  Heart,
+  Sword,
+  Settings,
+  Ruler,
+  Expand,
+  HelpCircle,
+  MoreVertical,
+} from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/app/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select";
+
+import Map_GridLines from "@/app/components/Map_GridLines";
+import Measurement_Overlay from "@/app/components/Measurement_Overlay";
+import Movement_Overlay from "@/app/components/Movement_Overlay";
+import Terrain_Layer from "@/app/components/Terrain_Layer";
+import Tokens_Layer from "@/app/components/Tokens_Layer";
+
+import { GRID_SIZE } from "@/app/map/utils/constants";
+
+import {
+  clipMovementAtWalls,
+  measureFeet,
+  traceLineCells,
+} from "@/app/map/utils/distance";
+
+import type {
+  Character,
+  CustomObj,
+  DistanceRule,
+  Measurement,
+  Terrain,
+  InitiativeMode,
+  RollPreset,
+  RollScope,
+} from "@/app/map/types";
+
+interface MapGridProps {
+  gridScale: number;
+  distanceRule: DistanceRule;
+  mapWidth: number;
+  mapHeight: number;
+  selectedCharacter: string | null;
+  characters: any[];
+  terrain: any[];
+  measurements: any[];
+  mode: string;
+
+  selectedTool: string;
+  isWallAt: (x: number, y: number) => boolean;
+  isDifficultAt: (x: number, y: number) => boolean;
+  getTerrainColor: (type: string) => string;
+  isCustomObjectType: (type: string) => boolean;
+  getCustomObject: (type: string) => any;
+  tokenClasses: (isPlayer: boolean, isSelected: boolean) => string;
+  handleCharacterClick: (charId: string) => void;
+  handleCellMouseDown: (e: React.MouseEvent, x: number, y: number) => void;
+  handleCellMouseEnter: (e: React.MouseEvent, x: number, y: number) => void;
+  showMovePreview: boolean;
+  measurementStart: { x: number; y: number } | null;
+  setMeasurementStart: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number } | null>
+  >;
+  undoStack: any[];
+  redoStack: any[];
+  undo: () => void;
+  redo: () => void;
+  saveSnapshot: () => void;
+  showMapSettings: boolean;
+  setShowMapSettings: React.Dispatch<React.SetStateAction<boolean>>;
+  mapScrollRef: React.RefObject<HTMLDivElement | null>;
+  setMapWidth: React.Dispatch<React.SetStateAction<number>>;
+  setMapHeight: React.Dispatch<React.SetStateAction<number>>;
+  setGridScale: React.Dispatch<React.SetStateAction<number>>;
+  setDistanceRule: React.Dispatch<React.SetStateAction<DistanceRule>>;
+  paintSnap: React.MutableRefObject<boolean>;
+  isDragging: boolean;
+  setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
+
+  setDragMode: React.Dispatch<React.SetStateAction<"paint" | "erase" | null>>;
+
+  setLastCell: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number } | null>
+  >;
+  hoveredCell: { x: number; y: number } | null;
+  setHoveredCell: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number } | null>
+  >;
+  setMeasurements: React.Dispatch<React.SetStateAction<Measurement[]>>;
+  getId: () => string;
+  getSelectedChar: () => Character | null;
+  commit: (fn: () => void) => void;
+  setCharacters: React.Dispatch<React.SetStateAction<Character[]>>;
+  setTerrain: React.Dispatch<React.SetStateAction<Terrain[]>>;
+  setMode: (m: "select" | "measure" | "paint") => void;
+  setPaintTool: (tool: "wall" | "difficult" | "door") => void;
+}
+
+const MapGrid: FC<MapGridProps> = ({
+  gridScale,
+  distanceRule,
+  mapWidth,
+  mapHeight,
+  selectedCharacter,
+  characters,
+  terrain,
+  measurements,
+  mode,
+  measurementStart,
+  undoStack,
+  redoStack,
+  undo,
+  redo,
+  selectedTool,
+  isWallAt,
+  isDifficultAt,
+  getTerrainColor,
+  isCustomObjectType,
+  getCustomObject,
+  tokenClasses,
+  handleCharacterClick,
+  handleCellMouseDown,
+  handleCellMouseEnter,
+  showMovePreview,
+  saveSnapshot,
+  showMapSettings,
+  setShowMapSettings,
+  mapScrollRef,
+  setMapWidth,
+  setMapHeight,
+  setGridScale,
+  setDistanceRule,
+  paintSnap,
+  isDragging,
+  setIsDragging,
+  setDragMode,
+  setLastCell,
+  hoveredCell,
+  setHoveredCell,
+  setMeasurementStart,
+  setMeasurements,
+  getId,
+  getSelectedChar,
+  commit,
+  setCharacters,
+  setTerrain,
+  setMode,
+  setPaintTool,
+}) => {
+  const stageW = mapWidth * GRID_SIZE;
+  const stageH = mapHeight * GRID_SIZE;
+
+  // pick black/white text that contrasts with a hex bg color
+  const textColorOn = (hex: string) => {
+    const h = hex.replace("#", "");
+    const full = h.length === 3 ? h.replace(/(.)/g, "$1$1") : h;
+    const n = parseInt(full, 16);
+    const r = (n >> 16) & 255,
+      g = (n >> 8) & 255,
+      b = n & 255;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 128 ? "#000" : "#fff";
+  };
+
+  // calculating distance
+  const calculateDistance = (x1: number, y1: number, x2: number, y2: number) =>
+    measureFeet(x1, y1, x2, y2, distanceRule, gridScale);
+
+  // Event handlers
+  const handleCellClick = (x: number, y: number) => {
+    if (selectedTool === "measure") {
+      if (!measurementStart) {
+        setMeasurementStart({ x, y });
+      } else {
+        const distance = calculateDistance(
+          measurementStart.x,
+          measurementStart.y,
+          x,
+          y
+        );
+        const newMeasurement: Measurement = {
+          id: getId(),
+          startX: measurementStart.x,
+          startY: measurementStart.y,
+          endX: x,
+          endY: y,
+          distance,
+        };
+        saveSnapshot();
+        setMeasurements((prev) => [...prev, newMeasurement]);
+        setMeasurementStart(null);
+      }
+      return;
+    }
+
+    if (selectedTool === "select") {
+      if (selectedCharacter) {
+        const sel = getSelectedChar(); // or however you fetch it
+        if (!sel) return;
+
+        // no-op: same cell → skip snapshot & state write
+        if (sel.x === x && sel.y === y) return;
+
+        commit(() => {
+          setCharacters((prev) =>
+            prev.map((c) => (c.id === selectedCharacter ? { ...c, x, y } : c))
+          );
+        });
+      }
+      return;
+    }
+  };
+
+  // first letter fallback (label > id)
+  const getObjectLetter = (obj: CustomObj) => {
+    const s = (obj.label?.trim() || obj.id).trim();
+    return s ? s[0].toUpperCase() : "?";
+  };
+
+  const handleTerrainRightClick = (e: React.MouseEvent, terrainId: string) => {
+    e.preventDefault();
+    if (selectedTool === "select") {
+      saveSnapshot();
+      setTerrain((prev) => prev.filter((t) => t.id !== terrainId));
+    }
+  };
+
+  return (
+    <div className="flex-1 min-w-0 overflow-hidden">
+      <Card className="p-4 w-full h-full">
+        <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            Grid: {gridScale} ft/square | Size: {mapWidth}×{mapHeight}
+          </span>
+          {selectedCharacter && (
+            <Badge variant="outline">
+              {characters.find((c) => c.id === selectedCharacter)?.name}{" "}
+              selected - click to move
+            </Badge>
+          )}
+          {measurementStart && (
+            <Badge variant="outline">
+              Click another cell to measure distance
+            </Badge>
+          )}
+        </div>
+
+        {/* Top toolbar */}
+        <div className="mb-3 flex flex-col gap-2">
+          {/* Row 1: modes on the left, Undo/Redo/Settings on the right */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Modes */}
+            <div className="inline-flex rounded-md overflow-hidden border">
+              <Button
+                size="sm"
+                variant={mode === "select" ? "default" : "ghost"}
+                className="h-8 px-3 rounded-none"
+                onClick={() => setMode("select")}
+                title="Select (V)"
+              >
+                <MousePointer className="w-4 h-4 mr-1" />
+                Select
+              </Button>
+              <Button
+                size="sm"
+                variant={mode === "measure" ? "default" : "ghost"}
+                className="h-8 px-3 rounded-none"
+                onClick={() => setMode("measure")}
+                title="Measure (M)"
+              >
+                <Ruler className="w-4 h-4 mr-1" />
+                Measure
+              </Button>
+              <Button
+                size="sm"
+                variant={mode === "paint" ? "default" : "ghost"}
+                className="h-8 px-3 rounded-none"
+                onClick={() => setMode("paint")}
+                title="Paint terrain (B)"
+              >
+                <Paintbrush className="w-4 h-4 mr-1" />
+                Paint
+              </Button>
+            </div>
+
+            {/* Undo / Redo / Settings */}
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={undo}
+                disabled={!undoStack.length}
+                title="Undo (⌘/Ctrl+Z)"
+              >
+                Undo
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={redo}
+                disabled={!redoStack.length}
+                title="Redo (⇧+⌘/Ctrl+Z)"
+              >
+                Redo
+              </Button>
+
+              {/* Map Settings dialog (moved from Actions card) */}
+              <Dialog open={showMapSettings} onOpenChange={setShowMapSettings}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Map Settings
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Map Configuration</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-sm">Width</label>
+                        <Input
+                          type="number"
+                          value={mapWidth}
+                          onChange={(e) =>
+                            setMapWidth(
+                              Math.max(
+                                10,
+                                Math.min(50, parseInt(e.target.value) || 25)
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm">Height</label>
+                        <Input
+                          type="number"
+                          value={mapHeight}
+                          onChange={(e) =>
+                            setMapHeight(
+                              Math.max(
+                                10,
+                                Math.min(50, parseInt(e.target.value) || 20)
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm">Grid Scale</label>
+                      <Select
+                        value={String(gridScale)}
+                        onValueChange={(v) => {
+                          const next = parseInt(v, 10);
+                          if (!Number.isFinite(next) || next === gridScale)
+                            return;
+                          saveSnapshot();
+                          setGridScale(next);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={`${gridScale} feet per square`}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">
+                            5 feet (Standard D&D)
+                          </SelectItem>
+                          <SelectItem value="10">10 feet</SelectItem>
+                          <SelectItem value="1">1 foot</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <label className="text-sm">Diagonal Calculation</label>
+                    <Select
+                      value={distanceRule}
+                      onValueChange={(v) => {
+                        if (v === distanceRule) return;
+                        saveSnapshot();
+                        setDistanceRule(v as DistanceRule);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={distanceRule} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5e">
+                          5e (each square = 5 ft)
+                        </SelectItem>
+                        <SelectItem value="5105">
+                          5-10-5 (every 2nd diagonal 10 ft)
+                        </SelectItem>
+                        <SelectItem value="euclidean">
+                          Euclidean (true distance)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Button onClick={() => setShowMapSettings(false)}>
+                      Done
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Row 2: appears only in Paint mode */}
+          {mode === "paint" && (
+            <div className="w-fit">
+              {" "}
+              {/* <- new: shrink-wrap the row */}
+              <div className="inline-flex rounded-md overflow-hidden border">
+                <Button
+                  size="sm"
+                  variant={selectedTool === "wall" ? "default" : "ghost"}
+                  className="h-8 px-3 rounded-none flex-none" // <- flex-none
+                  onClick={() => setPaintTool("wall")}
+                  title="Wall (1)"
+                >
+                  <BrickWall className="w-4 h-4 mr-1" />
+                  Wall
+                </Button>
+                <Button
+                  size="sm"
+                  variant={selectedTool === "difficult" ? "default" : "ghost"}
+                  className="h-8 px-3 rounded-none flex-none"
+                  onClick={() => setPaintTool("difficult")}
+                  title="Difficult (2)"
+                >
+                  <Mountain className="w-4 h-4 mr-1" />
+                  Difficult
+                </Button>
+                <Button
+                  size="sm"
+                  variant={selectedTool === "door" ? "default" : "ghost"}
+                  className="h-8 px-3 rounded-none flex-none"
+                  onClick={() => setPaintTool("door")}
+                  title="Door (3)"
+                >
+                  <DoorOpen className="w-4 h-4 mr-1" />
+                  Door
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Map viewport (gets the scrollbars) */}
+        <div
+          ref={mapScrollRef}
+          className="relative overflow-auto rounded border-2 border-border select-none"
+          style={{
+            width: "100%",
+            maxWidth: "100%",
+            maxHeight: "calc(100vh - 180px)",
+          }}
+          onContextMenu={(e) => {
+            // block the browser/Figma right-click menu anywhere on the map
+            e.preventDefault(); // don't stopPropagation (lets per-cell handlers run first)
+          }}
+          onMouseUp={() => {
+            // end a paint/erase drag
+            paintSnap.current = false;
+            if (isDragging) {
+              setIsDragging(false);
+              setDragMode(null);
+              setLastCell(null);
+            }
+          }}
+          onMouseLeave={() => {
+            setHoveredCell(null);
+            // if we left while dragging, also end the gesture cleanly
+            if (isDragging) {
+              paintSnap.current = false;
+              setIsDragging(false);
+              setDragMode(null);
+              setLastCell(null);
+            }
+          }}
+        >
+          {/* Stage: sized exactly to the grid in pixels.
+      Everything that positions absolutely should be inside this. */}
+          <div className="relative" style={{ width: stageW, height: stageH }}>
+            <Map_GridLines
+              width={mapWidth}
+              height={mapHeight}
+              size={GRID_SIZE}
+            />
+            <Measurement_Overlay
+              measurements={measurements}
+              gridSize={GRID_SIZE}
+              width={mapWidth}
+              height={mapHeight}
+            />
+            {/* Measurement Preview (overlay SVG above gridlines) */}
+            {selectedTool === "measure" && measurementStart && hoveredCell && (
+              <svg
+                width={mapWidth * GRID_SIZE}
+                height={mapHeight * GRID_SIZE}
+                className="absolute inset-0 pointer-events-none"
+              >
+                <g opacity={0.7}>
+                  <line
+                    x1={measurementStart.x * GRID_SIZE + GRID_SIZE / 2}
+                    y1={measurementStart.y * GRID_SIZE + GRID_SIZE / 2}
+                    x2={hoveredCell.x * GRID_SIZE + GRID_SIZE / 2}
+                    y2={hoveredCell.y * GRID_SIZE + GRID_SIZE / 2}
+                    stroke="#FF6B35"
+                    strokeWidth={2}
+                    strokeDasharray="3,3"
+                  />
+                  <text
+                    x={
+                      ((measurementStart.x + hoveredCell.x) * GRID_SIZE) / 2 +
+                      GRID_SIZE / 2
+                    }
+                    y={
+                      ((measurementStart.y + hoveredCell.y) * GRID_SIZE) / 2 +
+                      GRID_SIZE / 2
+                    }
+                    fill="#FF6B35"
+                    fontSize="12"
+                    textAnchor="middle"
+                  >
+                    {calculateDistance(
+                      measurementStart.x,
+                      measurementStart.y,
+                      hoveredCell.x,
+                      hoveredCell.y
+                    )}
+                    ft
+                  </text>
+                </g>
+              </svg>
+            )}
+
+            {/* Movement preview (overlay SVG above gridlines) */}
+            {showMovePreview &&
+              selectedTool === "select" &&
+              selectedCharacter &&
+              hoveredCell &&
+              !measurementStart &&
+              (() => {
+                const sel = getSelectedChar();
+                if (!sel) return null;
+                return (
+                  <Movement_Overlay
+                    start={{ x: sel.x, y: sel.y }}
+                    end={hoveredCell}
+                    cellPx={GRID_SIZE}
+                    rule={distanceRule}
+                    gridScale={gridScale}
+                    isDifficultAt={isDifficultAt}
+                    isWallAt={isWallAt}
+                  />
+                );
+              })()}
+
+            {/* Clickable Cells (with paint/erase + drag) */}
+            {Array.from({ length: mapHeight }).map((_, y) =>
+              Array.from({ length: mapWidth }).map((_, x) => (
+                <div
+                  key={`${x}-${y}`}
+                  className={`absolute cursor-pointer hover:bg-accent/30 ${
+                    measurementStart?.x === x && measurementStart?.y === y
+                      ? "bg-orange-200"
+                      : ""
+                  }`}
+                  style={{
+                    left: x * GRID_SIZE,
+                    top: y * GRID_SIZE,
+                    width: GRID_SIZE,
+                    height: GRID_SIZE,
+                  }}
+                  // Only let onClick handle MEASURE and SELECT moves.
+                  // Terrain tools are handled by mouse down/drag (below).
+                  onClick={() => {
+                    if (
+                      selectedTool === "measure" ||
+                      selectedTool === "select"
+                    ) {
+                      handleCellClick(x, y);
+                    }
+                  }}
+                  // Start paint/erase (left = toggle paint/erase, right = erase)
+                  onMouseDown={(e) => handleCellMouseDown(e, x, y)}
+                  // Continue paint/erase while dragging over cells
+                  onMouseEnter={(e) => {
+                    setHoveredCell({ x, y });
+                    handleCellMouseEnter(e, x, y);
+                  }}
+                  onMouseLeave={() => setHoveredCell(null)}
+                  // Support single right-click erase without dragging
+                  onContextMenu={(e) => {
+                    e.preventDefault(); // no browser/Figma menu
+                    if (!isDragging && selectedTool !== "select") {
+                      handleCellMouseDown(
+                        Object.assign(e, { button: 2 }),
+                        x,
+                        y
+                      );
+                    }
+                  }}
+                />
+              ))
+            )}
+
+            {/* Terrain */}
+            <Terrain_Layer
+              tiles={terrain}
+              cellPx={GRID_SIZE}
+              isCustomObjectType={isCustomObjectType}
+              getCustomObject={getCustomObject}
+              getTerrainColor={getTerrainColor}
+              textColorOn={textColorOn}
+              getObjectLetter={getObjectLetter}
+              canInteract={selectedTool === "select" && !selectedCharacter}
+              onTerrainRightClick={handleTerrainRightClick}
+            />
+            {/* Characters */}
+            <Tokens_Layer
+              characters={characters}
+              cellPx={GRID_SIZE}
+              tokenClasses={tokenClasses}
+              selectedCharacterId={selectedCharacter}
+              onCharacterClick={handleCharacterClick}
+            />
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default MapGrid;

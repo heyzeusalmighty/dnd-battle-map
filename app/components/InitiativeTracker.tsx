@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -94,50 +94,32 @@ export function InitiativeTracker({
   onRemoveCondition,
   onUpdateTempHp,
 }: InitiativeTrackerProps) {
-  const [newCharacterName, setNewCharacterName] =
-    React.useState("");
-  const [newCharacterInit, setNewCharacterInit] =
-    React.useState("");
-  const [newCharacterHp, setNewCharacterHp] =
-    React.useState("");
-  const [newCharacterAc, setNewCharacterAc] =
-    React.useState("");
-  const [newCharacterType, setNewCharacterType] =
-    React.useState<
-      "player" | "minion" | "elite" | "boss" | "ally"
-    >("player");
-  const [selectedCondition, setSelectedCondition] =
-    React.useState("");
-  const [round, setRound] = React.useState(1);
-  const [showAddCharacter, setShowAddCharacter] =
-    React.useState(false);
+  const [newCharacterName, setNewCharacterName] = useState("");
+  const [newCharacterInit, setNewCharacterInit] = useState("");
+  const [newCharacterHp, setNewCharacterHp] = useState("");
+  const [newCharacterAc, setNewCharacterAc] = useState("");
+  const [newCharacterType, setNewCharacterType] = useState<
+    "player" | "minion" | "elite" | "boss" | "ally"
+  >("player");
+  const [selectedCondition, setSelectedCondition] = useState("");
+  const [round, setRound] = useState(1);
+  const [showAddCharacter, setShowAddCharacter] = useState(false);
 
   // Dialog states for damage/heal modals
-  const [showDamageDialog, setShowDamageDialog] =
-    React.useState(false);
-  const [showHealDialog, setShowHealDialog] =
-    React.useState(false);
-  const [selectedEntryId, setSelectedEntryId] = React.useState<
-    string | null
-  >(null);
-  const [damageAmount, setDamageAmount] = React.useState("");
-  const [healAmount, setHealAmount] = React.useState("");
+  const [showDamageDialog, setShowDamageDialog] = useState(false);
+  const [showHealDialog, setShowHealDialog] = useState(false);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [damageAmount, setDamageAmount] = useState("");
+  const [healAmount, setHealAmount] = useState("");
 
-  const sortedEntries = React.useMemo(() => {
+  const sortedEntries = useMemo(() => {
     return [...(entries || [])]
-      .filter(
-        (entry) =>
-          entry && typeof entry.initiative === "number",
-      )
+      .filter((entry) => entry && typeof entry.initiative === "number")
       .sort((a, b) => b.initiative - a.initiative);
   }, [entries]);
 
-  const handleAddCharacter = React.useCallback(() => {
-    if (
-      newCharacterName &&
-      newCharacterInit &&
-      newCharacterHp
-    ) {
+  const handleAddCharacter = useCallback(() => {
+    if (newCharacterName && newCharacterInit && newCharacterHp) {
       const hp = parseInt(newCharacterHp) || 1;
       onAddEntry({
         name: newCharacterName,
@@ -146,10 +128,7 @@ export function InitiativeTracker({
         maxHp: hp,
         ac: parseInt(newCharacterAc) || 10,
         isPlayer: newCharacterType === "player",
-        npcType:
-          newCharacterType === "player"
-            ? undefined
-            : newCharacterType,
+        npcType: newCharacterType === "player" ? undefined : newCharacterType,
         conditions: [],
         tempHp: 0,
         damageDealt: 0,
@@ -169,32 +148,24 @@ export function InitiativeTracker({
     onAddEntry,
   ]);
 
-  const handleNextTurnWithRound = React.useCallback(() => {
+  const handleNextTurnWithRound = useCallback(() => {
     if (currentTurn === Math.max(0, sortedEntries.length - 1)) {
       setRound((prev) => prev + 1);
     }
     onNextTurn();
   }, [currentTurn, sortedEntries.length, onNextTurn]);
 
-  const handleDamage = React.useCallback(
+  const handleDamage = useCallback(
     (id: string, damage: number) => {
-      const entry = (entries || []).find(
-        (e) => e && e.id === id,
-      );
+      const entry = (entries || []).find((e) => e && e.id === id);
       if (!entry || damage <= 0) return;
 
       let newHp = entry.hp;
 
       // Apply damage to temp HP first
       if (entry.tempHp && entry.tempHp > 0) {
-        const tempHpAfterDamage = Math.max(
-          0,
-          entry.tempHp - damage,
-        );
-        const remainingDamage = Math.max(
-          0,
-          damage - entry.tempHp,
-        );
+        const tempHpAfterDamage = Math.max(0, entry.tempHp - damage);
+        const remainingDamage = Math.max(0, damage - entry.tempHp);
         onUpdateTempHp(id, tempHpAfterDamage);
 
         if (remainingDamage > 0) {
@@ -206,41 +177,33 @@ export function InitiativeTracker({
         onUpdateHp(id, newHp);
       }
     },
-    [entries, onUpdateHp, onUpdateTempHp],
+    [entries, onUpdateHp, onUpdateTempHp]
   );
 
-  const handleHeal = React.useCallback(
+  const handleHeal = useCallback(
     (id: string, healing: number) => {
-      const entry = (entries || []).find(
-        (e) => e && e.id === id,
-      );
+      const entry = (entries || []).find((e) => e && e.id === id);
       if (!entry || healing <= 0) return;
 
       const newHp = entry.hp + healing; // no cap to allow for healing
       onUpdateHp(id, newHp);
     },
-    [entries, onUpdateHp],
+    [entries, onUpdateHp]
   );
 
-  const openDamageDialog = React.useCallback(
-    (entryId: string) => {
-      setSelectedEntryId(entryId);
-      setDamageAmount("");
-      setShowDamageDialog(true);
-    },
-    [],
-  );
+  const openDamageDialog = useCallback((entryId: string) => {
+    setSelectedEntryId(entryId);
+    setDamageAmount("");
+    setShowDamageDialog(true);
+  }, []);
 
-  const openHealDialog = React.useCallback(
-    (entryId: string) => {
-      setSelectedEntryId(entryId);
-      setHealAmount("");
-      setShowHealDialog(true);
-    },
-    [],
-  );
+  const openHealDialog = useCallback((entryId: string) => {
+    setSelectedEntryId(entryId);
+    setHealAmount("");
+    setShowHealDialog(true);
+  }, []);
 
-  const confirmDamage = React.useCallback(() => {
+  const confirmDamage = useCallback(() => {
     if (selectedEntryId && damageAmount) {
       const damage = parseInt(damageAmount);
       if (damage > 0) {
@@ -252,7 +215,7 @@ export function InitiativeTracker({
     setDamageAmount("");
   }, [selectedEntryId, damageAmount, handleDamage]);
 
-  const confirmHeal = React.useCallback(() => {
+  const confirmHeal = useCallback(() => {
     if (selectedEntryId && healAmount) {
       const healing = parseInt(healAmount);
       if (healing > 0) {
@@ -274,9 +237,7 @@ export function InitiativeTracker({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3>Initiative Tracker</h3>
-          <div className="text-sm text-muted-foreground">
-            Round {round}
-          </div>
+          <div className="text-sm text-muted-foreground">Round {round}</div>
         </div>
         <div className="flex gap-2">
           <Button
@@ -305,15 +266,11 @@ export function InitiativeTracker({
                 <Badge
                   variant="outline"
                   style={{
-                    borderColor:
-                      NPC_TYPE_COLORS[currentEntry.npcType],
-                    color:
-                      NPC_TYPE_COLORS[currentEntry.npcType],
+                    borderColor: NPC_TYPE_COLORS[currentEntry.npcType],
+                    color: NPC_TYPE_COLORS[currentEntry.npcType],
                   }}
                 >
-                  {currentEntry.npcType
-                    .charAt(0)
-                    .toUpperCase() +
+                  {currentEntry.npcType.charAt(0).toUpperCase() +
                     currentEntry.npcType.slice(1)}
                 </Badge>
               )}
@@ -335,22 +292,15 @@ export function InitiativeTracker({
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="font-medium">
-                  {entry.name}
-                </span>
-                <Badge
-                  variant={
-                    entry.isPlayer ? "default" : "secondary"
-                  }
-                >
+                <span className="font-medium">{entry.name}</span>
+                <Badge variant={entry.isPlayer ? "default" : "secondary"}>
                   {entry.isPlayer ? "PC" : "NPC"}
                 </Badge>
                 {entry.npcType && (
                   <Badge
                     variant="outline"
                     style={{
-                      borderColor:
-                        NPC_TYPE_COLORS[entry.npcType],
+                      borderColor: NPC_TYPE_COLORS[entry.npcType],
                       color: NPC_TYPE_COLORS[entry.npcType],
                     }}
                   >
@@ -358,9 +308,7 @@ export function InitiativeTracker({
                       entry.npcType.slice(1)}
                   </Badge>
                 )}
-                {entry.hp <= 0 && (
-                  <Badge variant="destructive">KO</Badge>
-                )}
+                {entry.hp <= 0 && <Badge variant="destructive">KO</Badge>}
               </div>
               <Button
                 size="sm"
@@ -373,44 +321,32 @@ export function InitiativeTracker({
 
             <div className="grid grid-cols-3 gap-2 text-sm mb-2">
               <div>
-                <label className="text-muted-foreground">
-                  Init
-                </label>
+                <label className="text-muted-foreground">Init</label>
                 <Input
                   type="number"
                   value={entry.initiative}
                   onChange={(e) =>
-                    onUpdateInitiative(
-                      entry.id,
-                      parseInt(e.target.value) || 0,
-                    )
+                    onUpdateInitiative(entry.id, parseInt(e.target.value) || 0)
                   }
                   className="h-8"
                 />
               </div>
               <div>
-                <label className="text-muted-foreground">
-                  HP
-                </label>
+                <label className="text-muted-foreground">HP</label>
                 <Input
                   type="number"
                   value={entry.hp}
                   onChange={(e) =>
                     onUpdateHp(
                       entry.id,
-                      Math.max(
-                        0,
-                        parseInt(e.target.value) || 0,
-                      ),
+                      Math.max(0, parseInt(e.target.value) || 0)
                     )
                   }
                   className="h-8"
                 />
               </div>
               <div>
-                <label className="text-muted-foreground">
-                  AC
-                </label>
+                <label className="text-muted-foreground">AC</label>
                 <div className="h-8 flex items-center justify-center bg-muted rounded text-sm">
                   <Shield className="w-3 h-3 mr-1" />
                   {entry.ac}
@@ -421,19 +357,14 @@ export function InitiativeTracker({
             {/* Temporary HP */}
             <div className="grid grid-cols-2 gap-2 text-sm mb-2">
               <div>
-                <label className="text-muted-foreground">
-                  Temp HP
-                </label>
+                <label className="text-muted-foreground">Temp HP</label>
                 <Input
                   type="number"
                   value={entry.tempHp || 0}
                   onChange={(e) =>
                     onUpdateTempHp(
                       entry.id,
-                      Math.max(
-                        0,
-                        parseInt(e.target.value) || 0,
-                      ),
+                      Math.max(0, parseInt(e.target.value) || 0)
                     )
                   }
                   className="h-8"
@@ -473,10 +404,10 @@ export function InitiativeTracker({
                       entry.hp / entry.maxHp > 0.75
                         ? "#10B981"
                         : entry.hp / entry.maxHp > 0.5
-                          ? "#84CC16"
-                          : entry.hp / entry.maxHp > 0.25
-                            ? "#F59E0B"
-                            : "#EF4444",
+                        ? "#84CC16"
+                        : entry.hp / entry.maxHp > 0.25
+                        ? "#F59E0B"
+                        : "#EF4444",
                   }}
                 />
                 {entry.tempHp && entry.tempHp > 0 && (
@@ -484,7 +415,10 @@ export function InitiativeTracker({
                     className="h-2 rounded-r absolute top-0 bg-blue-400"
                     style={{
                       left: `${Math.min(100, (entry.hp / entry.maxHp) * 100)}%`,
-                      width: `${Math.min(25, (entry.tempHp / entry.maxHp) * 100)}%`,
+                      width: `${Math.min(
+                        25,
+                        (entry.tempHp / entry.maxHp) * 100
+                      )}%`,
                     }}
                   />
                 )}
@@ -498,10 +432,7 @@ export function InitiativeTracker({
                   </span>
                 )}
                 {entry.tempHp && entry.tempHp > 0 && (
-                  <span className="text-blue-500">
-                    {" "}
-                    (+{entry.tempHp})
-                  </span>
+                  <span className="text-blue-500"> (+{entry.tempHp})</span>
                 )}
               </span>
             </div>
@@ -510,20 +441,16 @@ export function InitiativeTracker({
             <div className="space-y-2">
               {(entry.conditions || []).length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {(entry.conditions || []).map(
-                    (condition, conditionIndex) => (
-                      <Badge
-                        key={`${condition}-${conditionIndex}`}
-                        variant="destructive"
-                        className="text-xs cursor-pointer"
-                        onClick={() =>
-                          onRemoveCondition(entry.id, condition)
-                        }
-                      >
-                        {condition} ×
-                      </Badge>
-                    ),
-                  )}
+                  {(entry.conditions || []).map((condition, conditionIndex) => (
+                    <Badge
+                      key={`${condition}-${conditionIndex}`}
+                      variant="destructive"
+                      className="text-xs cursor-pointer"
+                      onClick={() => onRemoveCondition(entry.id, condition)}
+                    >
+                      {condition} ×
+                    </Badge>
+                  ))}
                 </div>
               )}
 
@@ -552,10 +479,7 @@ export function InitiativeTracker({
                   variant="outline"
                   onClick={() => {
                     if (selectedCondition) {
-                      onAddCondition(
-                        entry.id,
-                        selectedCondition,
-                      );
+                      onAddCondition(entry.id, selectedCondition);
                       setSelectedCondition("");
                     }
                   }}
@@ -576,9 +500,7 @@ export function InitiativeTracker({
           <Button
             size="sm"
             variant="outline"
-            onClick={() =>
-              setShowAddCharacter(!showAddCharacter)
-            }
+            onClick={() => setShowAddCharacter(!showAddCharacter)}
           >
             <Plus className="w-4 h-4 mr-1" />
             {showAddCharacter ? "Cancel" : "Add"}
@@ -591,63 +513,47 @@ export function InitiativeTracker({
               <Input
                 placeholder="Name"
                 value={newCharacterName}
-                onChange={(e) =>
-                  setNewCharacterName(e.target.value)
-                }
+                onChange={(e) => setNewCharacterName(e.target.value)}
                 className="text-sm"
               />
               <Input
                 placeholder="Initiative"
                 type="number"
                 value={newCharacterInit}
-                onChange={(e) =>
-                  setNewCharacterInit(e.target.value)
-                }
+                onChange={(e) => setNewCharacterInit(e.target.value)}
                 className="text-sm"
               />
               <Input
                 placeholder="HP"
                 type="number"
                 value={newCharacterHp}
-                onChange={(e) =>
-                  setNewCharacterHp(e.target.value)
-                }
+                onChange={(e) => setNewCharacterHp(e.target.value)}
                 className="text-sm"
               />
               <Input
                 placeholder="AC"
                 type="number"
                 value={newCharacterAc}
-                onChange={(e) =>
-                  setNewCharacterAc(e.target.value)
-                }
+                onChange={(e) => setNewCharacterAc(e.target.value)}
                 className="text-sm"
               />
             </div>
             <Select
               value={newCharacterType}
-              onValueChange={(value: any) =>
-                setNewCharacterType(value)
-              }
+              onValueChange={(value: any) => setNewCharacterType(value)}
             >
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Character Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="player">
-                  Player Character
-                </SelectItem>
+                <SelectItem value="player">Player Character</SelectItem>
                 <SelectItem value="minion">Minion</SelectItem>
                 <SelectItem value="elite">Elite</SelectItem>
                 <SelectItem value="boss">Boss</SelectItem>
                 <SelectItem value="ally">Ally</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              size="sm"
-              onClick={handleAddCharacter}
-              className="w-full"
-            >
+            <Button size="sm" onClick={handleAddCharacter} className="w-full">
               <Plus className="w-4 h-4 mr-2" />
               Add Character
             </Button>
@@ -656,25 +562,18 @@ export function InitiativeTracker({
       </div>
 
       {/* Damage Dialog */}
-      <Dialog
-        open={showDamageDialog}
-        onOpenChange={setShowDamageDialog}
-      >
+      <Dialog open={showDamageDialog} onOpenChange={setShowDamageDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Apply Damage</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">
-                Damage Amount
-              </label>
+              <label className="text-sm font-medium">Damage Amount</label>
               <Input
                 type="number"
                 value={damageAmount}
-                onChange={(e) =>
-                  setDamageAmount(e.target.value)
-                }
+                onChange={(e) => setDamageAmount(e.target.value)}
                 placeholder="Enter damage amount"
                 min="0"
               />
@@ -700,19 +599,14 @@ export function InitiativeTracker({
       </Dialog>
 
       {/* Heal Dialog */}
-      <Dialog
-        open={showHealDialog}
-        onOpenChange={setShowHealDialog}
-      >
+      <Dialog open={showHealDialog} onOpenChange={setShowHealDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Apply Healing</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">
-                Healing Amount
-              </label>
+              <label className="text-sm font-medium">Healing Amount</label>
               <Input
                 type="number"
                 value={healAmount}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, MouseEvent, useMemo } from "react";
 
 // import { Card } from "../components/
 import { Card } from "../components/ui/card";
@@ -68,6 +68,9 @@ import type {
   DistanceRule,
   Measurement,
   Terrain,
+  InitiativeMode,
+  RollPreset,
+  RollScope,
 } from "./types";
 
 import { DEFAULT_PARTY } from "./utils/partyPresets";
@@ -92,6 +95,13 @@ import {
   HelpCircle,
   MoreVertical,
 } from "lucide-react";
+
+import ObjectPanel from "./components/ObjectPanel";
+import CharacterPanel from "./components/CharacterPanel";
+import UtilityPanel from "./components/UtilityPanel";
+import InitiativePanel from "./components/InitiativePanel";
+import HelpDialog from "./components/HelpDialog";
+import MapGrid from "./components/MapGrid";
 
 const INITIAL_OBJECTS: CustomObj[] = [
   {
@@ -156,7 +166,7 @@ export default function App() {
   const [terrain, setTerrain] = useState<Terrain[]>(() => demoTerrain());
 
   // O(1) lookups for terrain difficulty
-  const difficultKeys = React.useMemo(() => {
+  const difficultKeys = useMemo(() => {
     const s = new Set<string>();
     for (const t of terrain) {
       if (t.type === "difficult") s.add(`${t.x},${t.y}`);
@@ -209,7 +219,7 @@ export default function App() {
   };
 
   // clear characters
-  const pcCount = React.useMemo(
+  const pcCount = useMemo(
     () => characters.filter((c) => c.isPlayer).length,
     [characters]
   );
@@ -257,11 +267,6 @@ export default function App() {
     null
   );
 
-  // Remember the last paint subtool the user picked
-  const [lastPaintTool, setLastPaintTool] = useState<
-    "wall" | "difficult" | "door"
-  >("wall");
-
   // Derive the high-level mode from your existing selectedTool
   const mode: "select" | "measure" | "paint" =
     selectedTool === "select"
@@ -269,17 +274,6 @@ export default function App() {
       : selectedTool === "measure"
       ? "measure"
       : "paint";
-
-  // Small setters
-  const setMode = (m: "select" | "measure" | "paint") => {
-    if (m === "paint") setSelectedTool(lastPaintTool);
-    else setSelectedTool(m);
-  };
-
-  const setPaintTool = (t: "wall" | "difficult" | "door") => {
-    setLastPaintTool(t);
-    setSelectedTool(t);
-  };
 
   // characters split panel
   const [charTab, setCharTab] = useState<"add" | "manage">("add");
@@ -376,18 +370,8 @@ export default function App() {
   const MAX_HISTORY = 50;
 
   // initiative states
-  type InitiativeMode = "auto" | "manual";
+
   const [initiativeMode, setInitiativeMode] = useState<InitiativeMode>("auto");
-
-  // initiative roll menu
-  type RollScope = "all" | "pcs" | "npcs" | "selected";
-
-  type RollPreset = {
-    scope: RollScope;
-    useMods?: boolean;
-    advantage?: boolean;
-    disadvantage?: boolean;
-  };
 
   const [rollPreset, setRollPreset] = useState<RollPreset>({
     scope: "all",
@@ -454,8 +438,8 @@ export default function App() {
     setCurrentTurn(0); // feel free to remove if you prefer keeping the pointer
   }
 
-  const [editInitId, setEditInitId] = React.useState<string | null>(null);
-  const [editInitVal, setEditInitVal] = React.useState("");
+  const [editInitId, setEditInitId] = useState<string | null>(null);
+  const [editInitVal, setEditInitVal] = useState("");
 
   function startEditInit(c: Character) {
     setEditInitId(c.id);
@@ -557,7 +541,7 @@ export default function App() {
   };
 
   // delete characters
-  React.useEffect(() => {
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key === "Delete" || e.key === "Backspace") && selectedCharacter) {
         e.preventDefault();
@@ -569,7 +553,7 @@ export default function App() {
   }, [selectedCharacter]);
 
   // cancel measurement
-  React.useEffect(() => {
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         // Cancel active measurement first
@@ -630,23 +614,17 @@ export default function App() {
   const getCustomObject = (typeId: string) =>
     customObjects.find((o) => o.id === typeId);
 
-  // first letter fallback (label > id)
-  const getObjectLetter = (obj: CustomObj) => {
-    const s = (obj.label?.trim() || obj.id).trim();
-    return s ? s[0].toUpperCase() : "?";
-  };
-
-  // pick black/white text that contrasts with a hex bg color
-  const textColorOn = (hex: string) => {
-    const h = hex.replace("#", "");
-    const full = h.length === 3 ? h.replace(/(.)/g, "$1$1") : h;
-    const n = parseInt(full, 16);
-    const r = (n >> 16) & 255,
-      g = (n >> 8) & 255,
-      b = n & 255;
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 128 ? "#000" : "#fff";
-  };
+  // // pick black/white text that contrasts with a hex bg color
+  // const textColorOn = (hex: string) => {
+  //   const h = hex.replace("#", "");
+  //   const full = h.length === 3 ? h.replace(/(.)/g, "$1$1") : h;
+  //   const n = parseInt(full, 16);
+  //   const r = (n >> 16) & 255,
+  //     g = (n >> 8) & 255,
+  //     b = n & 255;
+  //   const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  //   return yiq >= 128 ? "#000" : "#fff";
+  // };
 
   const hasTerrainAt = (
     type: string,
@@ -700,21 +678,12 @@ export default function App() {
     return colors[type as keyof typeof colors] || "#666666";
   };
 
-  const getCustomObjectIcon = (type: string) => {
-    const obj = customObjects.find((o) => o.id === type);
-    return obj?.icon || "?";
-  };
-
   // find the currently selected character once
   const getSelectedChar = () =>
     characters.find((c) => c.id === selectedCharacter) || null;
 
   // help button
   const [showHelp, setShowHelp] = useState(false);
-
-  // calculating distance
-  const calculateDistance = (x1: number, y1: number, x2: number, y2: number) =>
-    measureFeet(x1, y1, x2, y2, distanceRule, gridScale);
 
   /**
    * Chebyshev-minimal path from (x1,y1) to (x2,y2):
@@ -749,6 +718,7 @@ export default function App() {
   });
 
   const saveSnapshot = () => {
+    console.log("snapshot", takeSnapshot());
     setUndoStack((prev) => {
       const next = [...prev, takeSnapshot()];
       return next.length > MAX_HISTORY
@@ -793,51 +763,6 @@ export default function App() {
     });
   };
 
-  // Event handlers
-  const handleCellClick = (x: number, y: number) => {
-    if (selectedTool === "measure") {
-      if (!measurementStart) {
-        setMeasurementStart({ x, y });
-      } else {
-        const distance = calculateDistance(
-          measurementStart.x,
-          measurementStart.y,
-          x,
-          y
-        );
-        const newMeasurement: Measurement = {
-          id: getId(),
-          startX: measurementStart.x,
-          startY: measurementStart.y,
-          endX: x,
-          endY: y,
-          distance,
-        };
-        saveSnapshot();
-        setMeasurements((prev) => [...prev, newMeasurement]);
-        setMeasurementStart(null);
-      }
-      return;
-    }
-
-    if (selectedTool === "select") {
-      if (selectedCharacter) {
-        const sel = getSelectedChar(); // or however you fetch it
-        if (!sel) return;
-
-        // no-op: same cell → skip snapshot & state write
-        if (sel.x === x && sel.y === y) return;
-
-        commit(() => {
-          setCharacters((prev) =>
-            prev.map((c) => (c.id === selectedCharacter ? { ...c, x, y } : c))
-          );
-        });
-      }
-      return;
-    }
-  };
-
   const handleCharacterClick = (charId: string) => {
     if (selectedTool !== "select") return;
 
@@ -852,18 +777,10 @@ export default function App() {
     });
   };
 
-  const handleTerrainRightClick = (e: React.MouseEvent, terrainId: string) => {
-    e.preventDefault();
-    if (selectedTool === "select") {
-      saveSnapshot();
-      setTerrain((prev) => prev.filter((t) => t.id !== terrainId));
-    }
-  };
-
   // Left-down or Right-down on a cell
-  const paintSnap = React.useRef(false);
+  const paintSnap = useRef(false);
 
-  const handleCellMouseDown = (e: React.MouseEvent, x: number, y: number) => {
+  const handleCellMouseDown = (e: MouseEvent, x: number, y: number) => {
     if (selectedTool === "select") return;
     e.preventDefault();
     e.stopPropagation();
@@ -893,7 +810,7 @@ export default function App() {
   };
 
   // When dragging across cells with the mouse held down
-  const handleCellMouseEnter = (_e: React.MouseEvent, x: number, y: number) => {
+  const handleCellMouseEnter = (_e: MouseEvent, x: number, y: number) => {
     if (!isDragging || !dragMode || selectedTool === "select") return;
 
     if (lastCell && lastCell.x === x && lastCell.y === y) return; // skip repeats
@@ -908,12 +825,12 @@ export default function App() {
     setLastCell({ x, y });
   };
 
-  const handleCanvasMouseUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    setDragMode(null);
-    setLastCell(null);
-  };
+  // const handleCanvasMouseUp = () => {
+  //   if (!isDragging) return;
+  //   setIsDragging(false);
+  //   setDragMode(null);
+  //   setLastCell(null);
+  // };
 
   const handleDeleteCharacter = (charId: string) => {
     saveSnapshot();
@@ -1047,6 +964,11 @@ export default function App() {
     setShowAddChar(false);
   };
 
+  // Remember the last paint subtool the user picked
+  const [lastPaintTool, setLastPaintTool] = useState<
+    "wall" | "difficult" | "door"
+  >("wall");
+
   // add damage to existing NPC damage score
   const applyDamageDelta = (charId: string) => {
     const raw = damageDelta[charId];
@@ -1138,27 +1060,38 @@ export default function App() {
     );
   };
 
-  const handleUpdateDamage = (charId: string, newDmg: number) => {
-    saveSnapshot();
-    setCharacters((prev) =>
-      prev.map((c) =>
-        c.id === charId ? { ...c, damage: Math.max(0, newDmg) } : c
-      )
-    );
+  // const handleUpdateDamage = (charId: string, newDmg: number) => {
+  //   saveSnapshot();
+  //   setCharacters((prev) =>
+  //     prev.map((c) =>
+  //       c.id === charId ? { ...c, damage: Math.max(0, newDmg) } : c
+  //     )
+  //   );
+  // };
+
+  // const handleUpdateInitiative = (charId: string, newInit: number) => {
+  //   saveSnapshot();
+  //   setCharacters((prev) =>
+  //     prev.map((c) =>
+  //       c.id === charId
+  //         ? {
+  //             ...c,
+  //             initiative: Math.max(0, capInit(isNaN(newInit) ? 0 : newInit)),
+  //           }
+  //         : c
+  //     )
+  //   );
+  // };
+
+  // Small setters
+  const setMode = (m: "select" | "measure" | "paint") => {
+    if (m === "paint") setSelectedTool(lastPaintTool);
+    else setSelectedTool(m);
   };
 
-  const handleUpdateInitiative = (charId: string, newInit: number) => {
-    saveSnapshot();
-    setCharacters((prev) =>
-      prev.map((c) =>
-        c.id === charId
-          ? {
-              ...c,
-              initiative: Math.max(0, capInit(isNaN(newInit) ? 0 : newInit)),
-            }
-          : c
-      )
-    );
+  const setPaintTool = (t: "wall" | "difficult" | "door") => {
+    setLastPaintTool(t);
+    setSelectedTool(t);
   };
 
   const handleNextTurn = () => {
@@ -1175,7 +1108,7 @@ export default function App() {
   };
 
   // hotkey enablers
-  React.useEffect(() => {
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       const meta = e.metaKey || e.ctrlKey;
@@ -1275,1538 +1208,160 @@ export default function App() {
       <main className="flex-1 flex gap-4 p-4">
         {/* Left Panel - Tools */}
         <div className="w-64 flex-shrink-0 space-y-4">
-          <Card className="p-4">
-            <h3 className="text-base font-semibold mb-3">Objects</h3>
+          <ObjectPanel
+            customObjects={customObjects}
+            setCustomObjects={setCustomObjects}
+            selectedTool={selectedTool}
+            setSelectedTool={setSelectedTool}
+            newObjLabel={newObjLabel}
+            setNewObjLabel={setNewObjLabel}
+            newObjColor={newObjColor}
+            setNewObjColor={setNewObjColor}
+            handleAddCustomObject={handleAddCustomObject}
+          />
 
-            {/* Built-ins */}
-            <div className="mb-3">
-              <div className="text-xs text-muted-foreground mb-1">
-                Built-ins
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {customObjects
-                  .filter((o) => !!o.icon)
-                  .map((o) => (
-                    <Button
-                      key={o.id}
-                      size="sm"
-                      variant={selectedTool === o.id ? "default" : "outline"}
-                      className="h-8 px-2"
-                      onClick={() => setSelectedTool(o.id)}
-                      title={o.label}
-                    >
-                      <span className="mr-1">{o.icon}</span>
-                      {o.label}
-                    </Button>
-                  ))}
-              </div>
-            </div>
+          <CharacterPanel
+            characters={characters}
+            setCharacters={setCharacters}
+            selectedCharacter={selectedCharacter}
+            setSelectedCharacter={setSelectedCharacter}
+            initiativeMode={initiativeMode}
+            setInitiativeOrder={setInitiativeOrder}
+            mapHeight={mapHeight}
+            mapWidth={mapWidth}
+            isWallAt={isWallAt}
+            saveSnapshot={saveSnapshot}
+            charTab={charTab}
+            setCharTab={setCharTab}
+            handleCharacterClick={handleCharacterClick}
+            handleDeleteCharacter={handleDeleteCharacter}
+            presetToAdd={presetToAdd}
+            setPresetToAdd={setPresetToAdd}
+            addCharacterFromPreset={addCharacterFromPreset}
+            addPartyFromPresets={addPartyFromPresets}
+            showAddChar={showAddChar}
+            setShowAddChar={setShowAddChar}
+            addMode={addMode}
+            setAddMode={setAddMode}
+            newCharName={newCharName}
+            setNewCharName={setNewCharName}
+            newCharInit={newCharInit}
+            setNewCharInit={setNewCharInit}
+            newCharDmg={newCharDmg}
+            setNewCharDmg={setNewCharDmg}
+            handleAddCharacter={handleAddCharacter}
+            damageDelta={damageDelta}
+            setDamageDelta={setDamageDelta}
+            applyDamageDelta={applyDamageDelta}
+            charQuery={charQuery}
+            setCharQuery={setCharQuery}
+            charFilter={charFilter}
+            setCharFilter={setCharFilter}
+            filteredCharacters={filteredCharacters}
+            handleUpdateHp={handleUpdateHp}
+          />
 
-            {/* My objects (user-added) */}
-            {customObjects.some((o) => !o.icon) && (
-              <div className="mb-3">
-                <div className="text-xs text-muted-foreground mb-1">
-                  My objects
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {customObjects
-                    .filter((o) => !o.icon)
-                    .map((o) => (
-                      <Button
-                        key={o.id}
-                        size="sm"
-                        variant={selectedTool === o.id ? "default" : "outline"}
-                        className="h-8 px-2"
-                        onClick={() => setSelectedTool(o.id)}
-                        title={o.label}
-                      >
-                        <span
-                          className="inline-block w-3 h-3 rounded-sm mr-2"
-                          style={{ background: o.color }}
-                        />
-                        {o.label}
-                      </Button>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            <div className="border-t pt-3">
-              <div className="text-xs text-muted-foreground mb-1">
-                New object
-              </div>
-              <div className="grid grid-cols-[1fr_auto] gap-2">
-                <Input
-                  placeholder="Label (e.g., Crate)"
-                  value={newObjLabel}
-                  onChange={(e) => setNewObjLabel(e.target.value)}
-                />
-                <div className="relative">
-                  {/* The visible swatch */}
-                  <div
-                    className="h-9 w-12 rounded-md border shadow-inner"
-                    style={{ backgroundColor: newObjColor }}
-                    aria-label="Pick color"
-                  />
-
-                  {/* Invisible native color input stretched over the swatch */}
-                  <input
-                    type="color"
-                    value={newObjColor}
-                    onChange={(e) => setNewObjColor(e.target.value)}
-                    className="absolute inset-0 h-9 w-12 opacity-0 cursor-pointer"
-                    title="Color"
-                  />
-                </div>
-              </div>
-              <Button onClick={handleAddCustomObject} className="mt-2 w-full">
-                Add Object
-              </Button>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold">Characters</h3>
-              <div className="inline-flex rounded-md overflow-hidden border">
-                <Button
-                  size="sm"
-                  variant={charTab === "add" ? "default" : "ghost"}
-                  className="h-7 px-3 rounded-none"
-                  onClick={() => setCharTab("add")}
-                >
-                  Add
-                </Button>
-                <Button
-                  size="sm"
-                  variant={charTab === "manage" ? "default" : "ghost"}
-                  className="h-7 px-3 rounded-none"
-                  onClick={() => setCharTab("manage")}
-                >
-                  Manage
-                </Button>
-              </div>
-            </div>
-
-            {charTab === "add" ? (
-              // --- Add tab (your existing controls) ---
-              <div className="space-y-3">
-                {/* Preset + Add */}
-                <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-                  <div>
-                    <div className="text-sm mb-1">Add:</div>
-                    <Select value={presetToAdd} onValueChange={setPresetToAdd}>
-                      <SelectTrigger className="h-8">
-                        <SelectValue placeholder="Choose a preset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DEFAULT_PARTY.map((p) => (
-                          <SelectItem key={p.name} value={p.name}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button
-                    className="h-8"
-                    onClick={() => addCharacterFromPreset()}
-                  >
-                    Add
-                  </Button>
-                </div>
-
-                {/* Add whole party */}
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={addPartyFromPresets}
-                >
-                  Add Party ({DEFAULT_PARTY.length} presets)
-                </Button>
-
-                {/* Open Custom NPC dialog */}
-                <Dialog open={showAddChar} onOpenChange={setShowAddChar}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full" variant="outline">
-                      Add Custom NPC
-                    </Button>
-                  </DialogTrigger>
-
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Custom NPC</DialogTitle>
-                    </DialogHeader>
-
-                    {/* Mode toggle */}
-                    <div className="mb-3 inline-flex w-fit self-start rounded-md border overflow-hidden">
-                      <button
-                        className={`px-3 py-1 text-sm flex-none ${
-                          addMode === "single"
-                            ? "bg-black text-white"
-                            : "bg-transparent"
-                        }`}
-                        onClick={() => setAddMode("single")}
-                      >
-                        Single
-                      </button>
-                      <button
-                        className={`px-3 py-1 text-sm flex-none ${
-                          addMode === "bulk"
-                            ? "bg-black text-white"
-                            : "bg-transparent"
-                        }`}
-                        onClick={() => setAddMode("bulk")}
-                      >
-                        Bulk
-                      </button>
-                    </div>
-
-                    {addMode === "single" ? (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium">Name</label>
-                          <Input
-                            value={newCharName}
-                            onChange={(e) => setNewCharName(e.target.value)}
-                            placeholder="e.g., Zombie"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-sm font-medium">
-                              Initiative mod
-                            </label>
-                            <Input
-                              value={newCharInit}
-                              onChange={(e) => setNewCharInit(e.target.value)}
-                              placeholder="e.g., 2"
-                              inputMode="numeric"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">
-                              Starting damage (optional)
-                            </label>
-                            <Input
-                              value={newCharDmg}
-                              onChange={(e) => setNewCharDmg(e.target.value)}
-                              placeholder="e.g., 0"
-                              inputMode="numeric"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowAddChar(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              // you already have this function:
-                              // builds { id, name, x:0, y:0, hp:0, maxHp:0, initiativeMod, initiative:0, isPlayer:false, color:"#EF4444", damage }
-                              handleAddCharacter();
-                              setShowAddChar(false);
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <BulkNpcForm
-                        characters={characters}
-                        setCharacters={setCharacters}
-                        mapWidth={mapWidth}
-                        mapHeight={mapHeight}
-                        isWallAt={isWallAt}
-                        initiativeMode={initiativeMode}
-                        setInitiativeOrder={setInitiativeOrder}
-                        setSelectedCharacter={setSelectedCharacter}
-                        saveSnapshot={saveSnapshot}
-                      />
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </div>
-            ) : (
-              // --- Manage tab ---
-              <div className="space-y-3">
-                {/* Search + filter (stacked to save width) */}
-                <div className="flex flex-col gap-2">
-                  <Input
-                    placeholder="Search by name…"
-                    value={charQuery}
-                    onChange={(e) => setCharQuery(e.target.value)}
-                    className="h-8 w-full"
-                  />
-                  <div className="inline-flex rounded-md overflow-hidden border self-start">
-                    <Button
-                      size="sm"
-                      variant={charFilter === "all" ? "default" : "ghost"}
-                      className="h-8 px-2 rounded-none"
-                      onClick={() => setCharFilter("all")}
-                    >
-                      All
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={charFilter === "pc" ? "default" : "ghost"}
-                      className="h-8 px-2 rounded-none"
-                      onClick={() => setCharFilter("pc")}
-                    >
-                      PC
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={charFilter === "npc" ? "default" : "ghost"}
-                      className="h-8 px-2 rounded-none"
-                      onClick={() => setCharFilter("npc")}
-                    >
-                      NPC
-                    </Button>
-                  </div>
-                </div>
-
-                {/* List */}
-                <div className="rounded border divide-y max-h-72 overflow-y-auto overflow-x-hidden">
-                  {filteredCharacters.length === 0 ? (
-                    <div className="p-3 text-sm text-muted-foreground">
-                      No matches.
-                    </div>
-                  ) : (
-                    filteredCharacters.map((c) => {
-                      const isSelected = selectedCharacter === c.id;
-                      return (
-                        <div
-                          key={c.id}
-                          role="button"
-                          aria-selected={isSelected}
-                          onClick={() => handleCharacterClick(c.id)} // row = select
-                          className={[
-                            "group px-3 py-2 grid items-center gap-2 min-w-0",
-                            isSelected ? "bg-primary/5" : "",
-                          ].join(" ")}
-                          style={{
-                            gridTemplateColumns: "1fr auto",
-                          }} // name/controls | menu
-                        >
-                          {/* left column */}
-                          <div className="min-w-0">
-                            {/* header: full name (wrap) + pills underneath */}
-                            <div className="min-w-0">
-                              <div className="text-sm font-semibold leading-tight break-words whitespace-normal">
-                                {c.name}
-                              </div>
-
-                              <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
-                                {/* tiny color dot to tie to token */}
-                                <span
-                                  className="inline-block w-2 h-2 rounded-full mr-1"
-                                  style={{
-                                    backgroundColor: c.color,
-                                  }}
-                                  aria-hidden
-                                />
-                                <Badge
-                                  variant={c.isPlayer ? "default" : "secondary"}
-                                >
-                                  {c.isPlayer ? "PC" : "NPC"}
-                                </Badge>
-
-                                {c.isPlayer ? (
-                                  <Badge variant="outline">
-                                    HP {c.hp}/{c.maxHp}
-                                    {c.hp > c.maxHp && (
-                                      <span className="text-green-600">
-                                        {" "}
-                                        (+{c.hp - c.maxHp})
-                                      </span>
-                                    )}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline">
-                                    DMG {c.damage ?? 0}
-                                  </Badge>
-                                )}
-
-                                {/* optional disambiguator for names ending in a number, e.g., "Zombie 3" */}
-                                {/\s(\d+)$/.test(c.name) && (
-                                  <Badge variant="secondary">
-                                    #{c.name.match(/\s(\d+)$/)![1]}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* line 2: inline editor (hidden until hover or selected) */}
-                            <div
-                              className={`mt-1 ${
-                                isSelected ? "flex" : "hidden group-hover:flex"
-                              } items-center gap-1`}
-                            >
-                              {c.isPlayer ? (
-                                <>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      saveSnapshot?.();
-                                      handleUpdateHp(
-                                        c.id,
-                                        Math.max(0, c.hp - 1)
-                                      );
-                                    }}
-                                    aria-label="HP -1"
-                                  >
-                                    –
-                                  </Button>
-                                  <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    className="h-7 w-16 text-center text-xs"
-                                    value={String(c.hp)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) =>
-                                      handleUpdateHp(
-                                        c.id,
-                                        parseInt(e.target.value, 10) || 0
-                                      )
-                                    }
-                                    onFocus={(e) => e.currentTarget.select()}
-                                  />
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    / {c.maxHp}
-                                  </span>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-7 w-7"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      saveSnapshot?.();
-                                      handleUpdateHp(
-                                        c.id,
-                                        Math.min(c.maxHp, c.hp + 1)
-                                      );
-                                    }}
-                                    aria-label="HP +1"
-                                  >
-                                    +
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    Δ
-                                  </span>
-                                  <Input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="-?[0-9]*"
-                                    placeholder="+/-"
-                                    className="h-7 w-16 text-center text-xs"
-                                    value={damageDelta[c.id] ?? ""}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) =>
-                                      setDamageDelta((prev) => ({
-                                        ...prev,
-                                        [c.id]: e.target.value,
-                                      }))
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.stopPropagation();
-                                        saveSnapshot?.();
-                                        applyDamageDelta(c.id);
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      saveSnapshot?.();
-                                      applyDamageDelta(c.id);
-                                    }}
-                                    title="Enter a delta (e.g. -3, +5)"
-                                  />
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* right column: more menu (delete only) */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 opacity-60 group-hover:opacity-100"
-                                onClick={(e) => e.stopPropagation()}
-                                aria-label="More actions"
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-36">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (window.confirm(`Delete ${c.name}?`)) {
-                                    saveSnapshot?.();
-                                    handleDeleteCharacter(c.id);
-                                  }
-                                }}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-          </Card>
-
-          <Card className="p-4">
-            <h4 className="mb-2">Utilities</h4>
-            <div className="space-y-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  saveSnapshot();
-                  setTerrain([]);
-                }}
-                className="w-full"
-              >
-                Clear Terrain
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={clearMeasurements}
-                className="w-full"
-              >
-                Clear Measurements ({measurements.length})
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleClearNPCs}
-              >
-                Clear NPCs {npcCount > 0 ? `(${npcCount})` : ""}
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleClearPCs}
-              >
-                Clear PCs {pcCount > 0 ? `(${pcCount})` : ""}
-              </Button>
-
-              <Button
-                size="sm"
-                variant={showMovePreview ? "default" : "outline"}
-                onClick={() => setShowMovePreview((v) => !v)}
-                className="w-full"
-              >
-                {showMovePreview
-                  ? "Movement Preview: On"
-                  : "Movement Preview: Off"}
-              </Button>
-            </div>
-          </Card>
+          <UtilityPanel
+            measurements={measurements}
+            clearMeasurements={clearMeasurements}
+            setTerrain={setTerrain}
+            npcCount={npcCount}
+            pcCount={pcCount}
+            handleClearNPCs={handleClearNPCs}
+            handleClearPCs={handleClearPCs}
+            showMovePreview={showMovePreview}
+            setShowMovePreview={setShowMovePreview}
+            saveSnapshot={saveSnapshot}
+          />
         </div>
 
         {/* Center - Map */}
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <Card className="p-4 w-full h-full">
-            <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                Grid: {gridScale} ft/square | Size: {mapWidth}×{mapHeight}
-              </span>
-              {selectedCharacter && (
-                <Badge variant="outline">
-                  {characters.find((c) => c.id === selectedCharacter)?.name}{" "}
-                  selected - click to move
-                </Badge>
-              )}
-              {measurementStart && (
-                <Badge variant="outline">
-                  Click another cell to measure distance
-                </Badge>
-              )}
-            </div>
-
-            {/* Top toolbar */}
-            <div className="mb-3 flex flex-col gap-2">
-              {/* Row 1: modes on the left, Undo/Redo/Settings on the right */}
-              <div className="flex items-center justify-between gap-2">
-                {/* Modes */}
-                <div className="inline-flex rounded-md overflow-hidden border">
-                  <Button
-                    size="sm"
-                    variant={mode === "select" ? "default" : "ghost"}
-                    className="h-8 px-3 rounded-none"
-                    onClick={() => setMode("select")}
-                    title="Select (V)"
-                  >
-                    <MousePointer className="w-4 h-4 mr-1" />
-                    Select
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={mode === "measure" ? "default" : "ghost"}
-                    className="h-8 px-3 rounded-none"
-                    onClick={() => setMode("measure")}
-                    title="Measure (M)"
-                  >
-                    <Ruler className="w-4 h-4 mr-1" />
-                    Measure
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={mode === "paint" ? "default" : "ghost"}
-                    className="h-8 px-3 rounded-none"
-                    onClick={() => setMode("paint")}
-                    title="Paint terrain (B)"
-                  >
-                    <Paintbrush className="w-4 h-4 mr-1" />
-                    Paint
-                  </Button>
-                </div>
-
-                {/* Undo / Redo / Settings */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8"
-                    onClick={undo}
-                    disabled={!undoStack.length}
-                    title="Undo (⌘/Ctrl+Z)"
-                  >
-                    Undo
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8"
-                    onClick={redo}
-                    disabled={!redoStack.length}
-                    title="Redo (⇧+⌘/Ctrl+Z)"
-                  >
-                    Redo
-                  </Button>
-
-                  {/* Map Settings dialog (moved from Actions card) */}
-                  <Dialog
-                    open={showMapSettings}
-                    onOpenChange={setShowMapSettings}
-                  >
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="h-8">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Map Settings
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Map Configuration</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-sm">Width</label>
-                            <Input
-                              type="number"
-                              value={mapWidth}
-                              onChange={(e) =>
-                                setMapWidth(
-                                  Math.max(
-                                    10,
-                                    Math.min(50, parseInt(e.target.value) || 25)
-                                  )
-                                )
-                              }
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm">Height</label>
-                            <Input
-                              type="number"
-                              value={mapHeight}
-                              onChange={(e) =>
-                                setMapHeight(
-                                  Math.max(
-                                    10,
-                                    Math.min(50, parseInt(e.target.value) || 20)
-                                  )
-                                )
-                              }
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm">Grid Scale</label>
-                          <Select
-                            value={String(gridScale)}
-                            onValueChange={(v) => {
-                              const next = parseInt(v, 10);
-                              if (!Number.isFinite(next) || next === gridScale)
-                                return;
-                              saveSnapshot();
-                              setGridScale(next);
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={`${gridScale} feet per square`}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="5">
-                                5 feet (Standard D&D)
-                              </SelectItem>
-                              <SelectItem value="10">10 feet</SelectItem>
-                              <SelectItem value="1">1 foot</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <label className="text-sm">Diagonal Calculation</label>
-                        <Select
-                          value={distanceRule}
-                          onValueChange={(v) => {
-                            if (v === distanceRule) return;
-                            saveSnapshot();
-                            setDistanceRule(v as DistanceRule);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={distanceRule} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5e">
-                              5e (each square = 5 ft)
-                            </SelectItem>
-                            <SelectItem value="5105">
-                              5-10-5 (every 2nd diagonal 10 ft)
-                            </SelectItem>
-                            <SelectItem value="euclidean">
-                              Euclidean (true distance)
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        <Button onClick={() => setShowMapSettings(false)}>
-                          Done
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-
-              {/* Row 2: appears only in Paint mode */}
-              {mode === "paint" && (
-                <div className="w-fit">
-                  {" "}
-                  {/* <- new: shrink-wrap the row */}
-                  <div className="inline-flex rounded-md overflow-hidden border">
-                    <Button
-                      size="sm"
-                      variant={selectedTool === "wall" ? "default" : "ghost"}
-                      className="h-8 px-3 rounded-none flex-none" // <- flex-none
-                      onClick={() => setPaintTool("wall")}
-                      title="Wall (1)"
-                    >
-                      <BrickWall className="w-4 h-4 mr-1" />
-                      Wall
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={
-                        selectedTool === "difficult" ? "default" : "ghost"
-                      }
-                      className="h-8 px-3 rounded-none flex-none"
-                      onClick={() => setPaintTool("difficult")}
-                      title="Difficult (2)"
-                    >
-                      <Mountain className="w-4 h-4 mr-1" />
-                      Difficult
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={selectedTool === "door" ? "default" : "ghost"}
-                      className="h-8 px-3 rounded-none flex-none"
-                      onClick={() => setPaintTool("door")}
-                      title="Door (3)"
-                    >
-                      <DoorOpen className="w-4 h-4 mr-1" />
-                      Door
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Map viewport (gets the scrollbars) */}
-            <div
-              ref={mapScrollRef}
-              className="relative overflow-auto rounded border-2 border-border select-none"
-              style={{
-                width: "100%",
-                maxWidth: "100%",
-                maxHeight: "calc(100vh - 180px)",
-              }}
-              onContextMenu={(e) => {
-                // block the browser/Figma right-click menu anywhere on the map
-                e.preventDefault(); // don't stopPropagation (lets per-cell handlers run first)
-              }}
-              onMouseUp={() => {
-                // end a paint/erase drag
-                paintSnap.current = false;
-                if (isDragging) {
-                  setIsDragging(false);
-                  setDragMode(null);
-                  setLastCell(null);
-                }
-              }}
-              onMouseLeave={() => {
-                setHoveredCell(null);
-                // if we left while dragging, also end the gesture cleanly
-                if (isDragging) {
-                  paintSnap.current = false;
-                  setIsDragging(false);
-                  setDragMode(null);
-                  setLastCell(null);
-                }
-              }}
-            >
-              {/* Stage: sized exactly to the grid in pixels.
-      Everything that positions absolutely should be inside this. */}
-              <div
-                className="relative"
-                style={{ width: stageW, height: stageH }}
-              >
-                <Map_GridLines
-                  width={mapWidth}
-                  height={mapHeight}
-                  size={GRID_SIZE}
-                />
-                <Measurement_Overlay
-                  measurements={measurements}
-                  gridSize={GRID_SIZE}
-                  width={mapWidth}
-                  height={mapHeight}
-                />
-                {/* Measurement Preview (overlay SVG above gridlines) */}
-                {selectedTool === "measure" &&
-                  measurementStart &&
-                  hoveredCell && (
-                    <svg
-                      width={mapWidth * GRID_SIZE}
-                      height={mapHeight * GRID_SIZE}
-                      className="absolute inset-0 pointer-events-none"
-                    >
-                      <g opacity={0.7}>
-                        <line
-                          x1={measurementStart.x * GRID_SIZE + GRID_SIZE / 2}
-                          y1={measurementStart.y * GRID_SIZE + GRID_SIZE / 2}
-                          x2={hoveredCell.x * GRID_SIZE + GRID_SIZE / 2}
-                          y2={hoveredCell.y * GRID_SIZE + GRID_SIZE / 2}
-                          stroke="#FF6B35"
-                          strokeWidth={2}
-                          strokeDasharray="3,3"
-                        />
-                        <text
-                          x={
-                            ((measurementStart.x + hoveredCell.x) * GRID_SIZE) /
-                              2 +
-                            GRID_SIZE / 2
-                          }
-                          y={
-                            ((measurementStart.y + hoveredCell.y) * GRID_SIZE) /
-                              2 +
-                            GRID_SIZE / 2
-                          }
-                          fill="#FF6B35"
-                          fontSize="12"
-                          textAnchor="middle"
-                        >
-                          {calculateDistance(
-                            measurementStart.x,
-                            measurementStart.y,
-                            hoveredCell.x,
-                            hoveredCell.y
-                          )}
-                          ft
-                        </text>
-                      </g>
-                    </svg>
-                  )}
-
-                {/* Movement preview (overlay SVG above gridlines) */}
-                {showMovePreview &&
-                  selectedTool === "select" &&
-                  selectedCharacter &&
-                  hoveredCell &&
-                  !measurementStart &&
-                  (() => {
-                    const sel = getSelectedChar();
-                    if (!sel) return null;
-                    return (
-                      <Movement_Overlay
-                        start={{ x: sel.x, y: sel.y }}
-                        end={hoveredCell}
-                        cellPx={GRID_SIZE}
-                        rule={distanceRule}
-                        gridScale={gridScale}
-                        isDifficultAt={isDifficultAt}
-                        isWallAt={isWallAt}
-                      />
-                    );
-                  })()}
-
-                {/* Clickable Cells (with paint/erase + drag) */}
-                {Array.from({ length: mapHeight }).map((_, y) =>
-                  Array.from({ length: mapWidth }).map((_, x) => (
-                    <div
-                      key={`${x}-${y}`}
-                      className={`absolute cursor-pointer hover:bg-accent/30 ${
-                        measurementStart?.x === x && measurementStart?.y === y
-                          ? "bg-orange-200"
-                          : ""
-                      }`}
-                      style={{
-                        left: x * GRID_SIZE,
-                        top: y * GRID_SIZE,
-                        width: GRID_SIZE,
-                        height: GRID_SIZE,
-                      }}
-                      // Only let onClick handle MEASURE and SELECT moves.
-                      // Terrain tools are handled by mouse down/drag (below).
-                      onClick={() => {
-                        if (
-                          selectedTool === "measure" ||
-                          selectedTool === "select"
-                        ) {
-                          handleCellClick(x, y);
-                        }
-                      }}
-                      // Start paint/erase (left = toggle paint/erase, right = erase)
-                      onMouseDown={(e) => handleCellMouseDown(e, x, y)}
-                      // Continue paint/erase while dragging over cells
-                      onMouseEnter={(e) => {
-                        setHoveredCell({ x, y });
-                        handleCellMouseEnter(e, x, y);
-                      }}
-                      onMouseLeave={() => setHoveredCell(null)}
-                      // Support single right-click erase without dragging
-                      onContextMenu={(e) => {
-                        e.preventDefault(); // no browser/Figma menu
-                        if (!isDragging && selectedTool !== "select") {
-                          handleCellMouseDown(
-                            Object.assign(e, { button: 2 }),
-                            x,
-                            y
-                          );
-                        }
-                      }}
-                    />
-                  ))
-                )}
-
-                {/* Terrain */}
-                <Terrain_Layer
-                  tiles={terrain}
-                  cellPx={GRID_SIZE}
-                  isCustomObjectType={isCustomObjectType}
-                  getCustomObject={getCustomObject}
-                  getTerrainColor={getTerrainColor}
-                  textColorOn={textColorOn}
-                  getObjectLetter={getObjectLetter}
-                  canInteract={selectedTool === "select" && !selectedCharacter}
-                  onTerrainRightClick={handleTerrainRightClick}
-                />
-                {/* Characters */}
-                <Tokens_Layer
-                  characters={characters}
-                  cellPx={GRID_SIZE}
-                  tokenClasses={tokenClasses}
-                  selectedCharacterId={selectedCharacter}
-                  onCharacterClick={handleCharacterClick}
-                />
-              </div>
-            </div>
-          </Card>
-        </div>
+        <MapGrid
+          gridScale={gridScale}
+          distanceRule={distanceRule}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          selectedCharacter={selectedCharacter}
+          characters={characters}
+          terrain={terrain}
+          measurements={measurements}
+          mode={mode}
+          measurementStart={measurementStart}
+          setMode={setMode}
+          undoStack={undoStack}
+          redoStack={redoStack}
+          undo={undo}
+          redo={redo}
+          selectedTool={selectedTool}
+          setPaintTool={setPaintTool}
+          isWallAt={isWallAt}
+          isDifficultAt={isDifficultAt}
+          getTerrainColor={getTerrainColor}
+          isCustomObjectType={isCustomObjectType}
+          getCustomObject={getCustomObject}
+          tokenClasses={tokenClasses}
+          handleCharacterClick={handleCharacterClick}
+          handleCellMouseDown={handleCellMouseDown}
+          handleCellMouseEnter={handleCellMouseEnter}
+          showMovePreview={showMovePreview}
+          saveSnapshot={saveSnapshot}
+          showMapSettings={showMapSettings}
+          setShowMapSettings={setShowMapSettings}
+          mapScrollRef={mapScrollRef}
+          setMapWidth={setMapWidth}
+          setMapHeight={setMapHeight}
+          setGridScale={setGridScale}
+          setDistanceRule={setDistanceRule}
+          paintSnap={paintSnap}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
+          setDragMode={setDragMode}
+          setLastCell={setLastCell}
+          hoveredCell={hoveredCell}
+          setHoveredCell={setHoveredCell}
+          setMeasurementStart={setMeasurementStart}
+          setMeasurements={setMeasurements}
+          getId={getId}
+          getSelectedChar={getSelectedChar}
+          commit={commit}
+          setCharacters={setCharacters}
+          setTerrain={setTerrain}
+        />
 
         {/* Right Panel - Initiative */}
-        <div className="w-64 flex-shrink-0 flex flex-col gap-4">
-          <Card className="p-0 flex flex-col overflow-hidden">
-            {/* Sticky header */}
-            <div className="sticky top-0 z-10 px-4 py-3 border-b bg-background">
-              {/* Row 1: title + round/order on left, turn controls on right */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-base font-semibold">Initiative</h3>
-                  <div className="text-sm text-muted-foreground">
-                    Round {round}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Order:{" "}
-                    {initiativeMode === "auto" ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={setManualFromCurrentSort}
-                        className="px-1 h-5 text-xs"
-                      >
-                        Auto
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setInitiativeMode("auto")}
-                        className="px-1 h-5 text-xs"
-                      >
-                        Manual
-                      </Button>
-                    )}
-                  </div>
-                </div>
 
-                <div className="inline-flex rounded-md overflow-hidden">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    onClick={() => setCurrentTurn(Math.max(0, currentTurn - 1))}
-                    title="Previous turn"
-                  >
-                    Prev
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    onClick={handleNextTurn}
-                    title="Next turn"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-
-              {/* Row 2: full-width Roll split-button, like your Select */}
-              <div className="mt-2 flex w-full">
-                <div className="inline-flex w-full rounded-md overflow-hidden">
-                  {/* main: repeat last preset */}
-                  <Button
-                    size="sm"
-                    className="h-8 flex-1 justify-center"
-                    title="Roll initiative (uses last preset)"
-                    onClick={() =>
-                      rollInitiativeForScope(rollPreset.scope, rollPreset)
-                    }
-                  >
-                    <Dice5 className="w-4 h-4 mr-1" />
-                    Roll
-                  </Button>
-
-                  {/* chevron: opens options */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                        aria-haspopup="menu"
-                        aria-label="Roll menu"
-                      >
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
-                      <DropdownMenuLabel>Roll d20 + mods</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "all",
-                            useMods: true,
-                          })
-                        }
-                      >
-                        All
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "pcs",
-                            useMods: true,
-                          })
-                        }
-                      >
-                        PCs only
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "npcs",
-                            useMods: true,
-                          })
-                        }
-                      >
-                        NPCs only
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={!selectedCharacter}
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "selected",
-                            useMods: true,
-                          })
-                        }
-                      >
-                        Selected token
-                      </DropdownMenuItem>
-
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuLabel>With advantage</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "all",
-                            useMods: true,
-                            advantage: true,
-                          })
-                        }
-                      >
-                        All (adv)
-                      </DropdownMenuItem>
-
-                      <DropdownMenuLabel className="mt-1">
-                        With disadvantage
-                      </DropdownMenuLabel>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "all",
-                            useMods: true,
-                            disadvantage: true,
-                          })
-                        }
-                      >
-                        All (dis)
-                      </DropdownMenuItem>
-
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() =>
-                          setAndRoll({
-                            scope: "all",
-                            useMods: false,
-                          })
-                        }
-                      >
-                        All (no mods)
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              {currentCharacter && (
-                <div className="mt-2 p-2 bg-primary/10 rounded border border-primary">
-                  <div className="text-sm">{currentCharacter.name}'s Turn</div>
-                </div>
-              )}
-            </div>
-
-            {/* Rows */}
-            <div className="max-h-[50vh] overflow-y-auto divide-y">
-              {sortedCharacters.map((char, index) => {
-                const isActiveTurn = index === currentTurn;
-                const isSelected = selectedCharacter === char.id;
-
-                return (
-                  <div
-                    key={char.id}
-                    role="button"
-                    onClick={() => handleCharacterClick(char.id)}
-                    className={[
-                      "px-4 py-2 transition cursor-pointer",
-                      isActiveTurn ? "bg-primary/5" : "",
-                      isSelected ? "ring-2 ring-primary/50" : "",
-                    ].join(" ")}
-                  >
-                    {/* Row header: Name + PC/NPC + Initiative */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{char.name}</span>
-                        <Badge
-                          variant={char.isPlayer ? "default" : "secondary"}
-                        >
-                          {char.isPlayer ? "PC" : "NPC"}
-                        </Badge>
-                      </div>
-
-                      {(() => {
-                        const isEditing = editInitId === char.id;
-
-                        if (!isEditing) {
-                          return (
-                            <button
-                              type="button"
-                              className="inline-flex items-center gap-1 text-xs"
-                              title={
-                                char.lastInitRoll
-                                  ? `d20: ${char.lastInitRoll.die}${
-                                      char.lastInitRoll.flags
-                                        ? ` (${char.lastInitRoll.flags})`
-                                        : ""
-                                    } + mod: ${char.lastInitRoll.mod} = ${
-                                      char.lastInitRoll.total
-                                    } → capped: ${char.lastInitRoll.capped}`
-                                  : "Click to edit initiative"
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditInit(char);
-                              }}
-                            >
-                              <span className="text-muted-foreground">
-                                Init:
-                              </span>
-                              <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 font-medium">
-                                {char.initiative}
-                              </span>
-                            </button>
-                          );
-                        }
-
-                        return (
-                          <input
-                            type="text" // ← no spinners
-                            inputMode="numeric" // ← mobile numeric keypad
-                            pattern="[0-9]*"
-                            value={editInitVal}
-                            onChange={(e) =>
-                              setEditInitVal(
-                                e.target.value.replace(/[^\d]/g, "")
-                              )
-                            }
-                            className="h-6 w-14 px-2 text-xs rounded-md border bg-muted focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.stopPropagation();
-                                commitEditInit();
-                              }
-                              if (e.key === "Escape") {
-                                e.stopPropagation();
-                                setEditInitId(null);
-                              }
-                            }}
-                            onBlur={commitEditInit}
-                            autoFocus
-                          />
-                        );
-                      })()}
-                    </div>
-
-                    {/* Inline stats: HP for PCs, DMG for NPCs */}
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {char.isPlayer ? (
-                        <>
-                          HP: {char.hp}/{char.maxHp}
-                        </>
-                      ) : (
-                        <>DMG: {char.damage ?? 0}</>
-                      )}
-                    </div>
-
-                    {/* Manual mode controls */}
-                    {initiativeMode === "manual" && (
-                      <div className="mt-2 flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          title="Move up"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveInInitiative(char.id, "up");
-                          }}
-                        >
-                          <ChevronUp className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          title="Move down"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveInInitiative(char.id, "down");
-                          }}
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
+        <InitiativePanel
+          characters={characters}
+          selectedCharacter={selectedCharacter}
+          sortedCharacters={sortedCharacters}
+          currentTurn={currentTurn}
+          setCurrentTurn={setCurrentTurn}
+          initiativeMode={initiativeMode}
+          setInitiativeMode={setInitiativeMode}
+          moveInInitiative={moveInInitiative}
+          setManualFromCurrentSort={setManualFromCurrentSort}
+          round={round}
+          handleNextTurn={handleNextTurn}
+          rollInitiativeForScope={rollInitiativeForScope}
+          rollPreset={rollPreset}
+          setAndRoll={setAndRoll}
+          currentCharacter={currentCharacter}
+          handleCharacterClick={handleCharacterClick}
+          editInitId={editInitId}
+          setEditInitId={setEditInitId}
+          editInitVal={editInitVal}
+          setEditInitVal={setEditInitVal}
+          startEditInit={startEditInit}
+          commitEditInit={commitEditInit}
+        />
 
         {/* Help button + dialog (replaces always-on instructions) */}
-        <div className="fixed bottom-4 right-8 z-50">
-          <Dialog open={showHelp} onOpenChange={setShowHelp}>
-            <DialogTrigger asChild>
-              <Button
-                size="sm"
-                className="rounded-full shadow-lg flex gap-1"
-                title="Show controls (H)"
-              >
-                <HelpCircle className="w-5 h-5" />
-                <span>Controls</span>
-              </Button>
-            </DialogTrigger>
-
-            <DialogContent
-              className="w-[92vw] sm:w-[640px] max-w-[95vw] max-h-[80vh]
-             p-0 overflow-hidden flex flex-col"
-            >
-              <DialogHeader className="p-4 pb-2 border-b shrink-0">
-                <DialogTitle>Controls</DialogTitle>
-              </DialogHeader>
-              <div className="flex-1 min-h-0 overflow-y-auto px-4">
-                <div className="space-y-4 text-sm leading-6">
-                  {/* Tools */}
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                      Tools
-                    </div>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>
-                        <span className="font-mono">Select</span>: Click a token
-                        to select. Hover shows a dashed preview; walls block
-                        with a red stop. Click to move the lil homie.
-                      </li>
-                      <li>
-                        <span className="font-mono">Measure</span>: Click–drag
-                        to measure distances. Uses{" "}
-                        <span className="font-mono">{distanceRule}</span> at{" "}
-                        <span className="font-mono">{gridScale}ft</span>
-                        /square, though you can muck that up good if you want.
-                      </li>
-                      <li>
-                        <span className="font-mono">Paint</span>: Place{" "}
-                        <span className="font-mono">Wall</span>s (shit you can't
-                        move through),{" "}
-                        <span className="font-mono">Difficult</span> (2x move
-                        stuff) terrain, or{" "}
-                        <span className="font-mono">Door</span>
-                        s. Can click-drag to apply and Right-click(-drag) to
-                        delete.
-                      </li>
-                      <li>
-                        <span className="font-mono">Map Settings </span>
-                        Screw around with grid size/scale/diagonal distance
-                        calculation (nerd shyt)
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Characters */}
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                      Characters
-                    </div>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>
-                        <span className="font-mono">Add</span>: You can{" "}
-                        <strong>Add</strong> one party member at a time should
-                        you wish.{" "}
-                        <ul>
-                          <strong>Add Party</strong> brings the milkshake to the
-                          yard.{" "}
-                        </ul>
-                        <ul>
-                          None of this will overwrite existing characters.
-                        </ul>
-                        <ul>
-                          <strong>Add Custom NPC</strong> has{" "}
-                          <strong>Single</strong> or <strong>Bulk</strong>{" "}
-                          options.
-                        </ul>
-                        <ul>
-                          Bulk auto-names gaggles of bros like{" "}
-                          <span className="font-mono">Zombie 1..N</span>.
-                        </ul>
-                      </li>
-                      <li>
-                        <span className="font-mono">Manage</span> Can update
-                        health/ouchies, kill homies off, etc.
-                        <ul>
-                          <strong>HP/DMG</strong>: PCs show HP; NPCs show DMG
-                          only so Dakota can LIE.
-                        </ul>
-                        <ul>
-                          <strong>Selection</strong>: Selecting a character's
-                          lil list entry centers it on the map.
-                        </ul>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Initiative */}
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                      Initiative
-                    </div>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>
-                        <strong>Roll</strong>: Uses modifiers input during
-                        character create (NPCs) or stored (PCs).
-                      </li>
-                      <li>
-                        <strong>Modes</strong>:{" "}
-                        <span className="font-mono">Auto</span> sorts by
-                        initiative; <span className="font-mono">Manual</span>{" "}
-                        preserves your custom order. This button is styled like
-                        straight buns and sits just below the{" "}
-                        <strong>Round</strong> indicator.
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Shortcuts */}
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                      Shortcuts
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          H
-                        </span>{" "}
-                        Open/close Controls
-                      </div>
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          Esc
-                        </span>{" "}
-                        Cancel measure / Deselect
-                      </div>
-
-                      <div className="col-span-2 my-1 border-t" />
-
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          ⌘/Ctrl+Z
-                        </span>{" "}
-                        Undo
-                      </div>
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          ⇧⌘/Ctrl+Z
-                        </span>{" "}
-                        <span className="font-mono inline-block rounded border px-1 ml-1">
-                          Ctrl+Y
-                        </span>{" "}
-                        Redo
-                      </div>
-
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          Space
-                        </span>{" "}
-                        or{" "}
-                        <span className="font-mono inline-block rounded border px-1">
-                          Enter
-                        </span>{" "}
-                        Next turn
-                      </div>
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          Backspace
-                        </span>{" "}
-                        or{" "}
-                        <span className="font-mono inline-block rounded border px-1">
-                          ⇧Space
-                        </span>{" "}
-                        Previous turn
-                      </div>
-
-                      <div className="col-span-2 my-1 border-t" />
-
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          V
-                        </span>{" "}
-                        Select mode
-                      </div>
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          M
-                        </span>{" "}
-                        Measure mode
-                      </div>
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          B
-                        </span>{" "}
-                        Paint mode
-                      </div>
-                      <div>
-                        <span className="font-mono inline-block rounded border px-1">
-                          1
-                        </span>{" "}
-                        Wall{" "}
-                        <span className="font-mono inline-block rounded border px-1 ml-1">
-                          2
-                        </span>{" "}
-                        Difficult{" "}
-                        <span className="font-mono inline-block rounded border px-1 ml-1">
-                          3
-                        </span>{" "}
-                        Door{" "}
-                        <span className="text-muted-foreground">
-                          (when painting)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 border-t flex justify-end shrink-0">
-                <Button variant="outline" onClick={() => setShowHelp(false)}>
-                  Close
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <HelpDialog
+          showHelp={showHelp}
+          setShowHelp={setShowHelp}
+          distanceRule={distanceRule}
+          gridScale={gridScale}
+        />
       </main>
     </div>
   );
