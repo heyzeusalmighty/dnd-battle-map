@@ -38,7 +38,7 @@ const MapView = () => {
         return;
       }
 
-      if (data && typeof data === 'object' && 'type' in data && (data as any).type === 'snapshot') {
+      if (data && typeof data === 'object' && 'type' in data && data.type === 'snapshot') {
         setMapState(data.snapShot as AppSnapshot);
       }
       setSentData((prev) => [...prev, data]);
