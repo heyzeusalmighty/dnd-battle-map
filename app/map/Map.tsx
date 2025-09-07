@@ -533,19 +533,6 @@ const Map = () => {
     return false;
   }
 
-  const getTerrainColor = (type: string) => {
-    const colors = {
-      wall: '#8B7355',
-      difficult: '#D2691E',
-      door: '#8B4513',
-      chest: '#8B4513',
-      pillar: '#A9A9A9',
-      table: '#654321',
-      shelves: '#C19A6B',
-    };
-    return colors[type as keyof typeof colors] || '#666666';
-  };
-
   // find the currently selected character once
   const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
 
@@ -582,15 +569,17 @@ const Map = () => {
     round,
     currentTurn,
     selectedTool,
+    customObjects: JSON.parse(JSON.stringify(customObjects)),
   });
 
   const saveSnapshot = () => {
-    console.log('snapshot', takeSnapshot());
+    const snapShot = takeSnapshot();
     setUndoStack((prev) => {
-      const next = [...prev, takeSnapshot()];
+      const next = [...prev, snapShot];
       return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
     });
     setRedoStack([]); // clear redo on any new action
+    broadcastData({ type: 'snapshot', snapShot });
   };
 
   // manage undo / redo snapshots
@@ -1128,7 +1117,6 @@ const Map = () => {
           setPaintTool={setPaintTool}
           isWallAt={isWallAt}
           isDifficultAt={isDifficultAt}
-          getTerrainColor={getTerrainColor}
           isCustomObjectType={isCustomObjectType}
           getCustomObject={getCustomObject}
           tokenClasses={tokenClasses}

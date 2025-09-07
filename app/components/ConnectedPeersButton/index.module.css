@@ -1,0 +1,64 @@
+.statusWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.statusButton {
+  position: relative;
+}
+
+.redDot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #ef4444;
+  pointer-events: none;
+}
+
+.greenDot {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  background: #04cf69;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #04cf69;
+  pointer-events: none;
+}
+
+.peerList {
+  display: none;
+  position: absolute;
+  top: 110%;
+  right: 0;
+  min-width: 180px;
+  background: rgba(31, 38, 135, 0.95);
+  color: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px #0005;
+  padding: 0.75rem 1rem;
+  z-index: 2000;
+  font-size: 0.95rem;
+}
+
+.statusWrapper:hover .peerList,
+.statusButton:focus + .peerList {
+  display: block;
+}
+
+.peerListTitle {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.peerListItem {
+  margin-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  list-style: disc inside;
+}

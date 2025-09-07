@@ -1,6 +1,8 @@
 import Peer from 'peerjs';
-import { Button } from './ui/button';
+import { Button } from '../ui/button';
 import { ClipboardCopyIcon } from 'lucide-react';
+
+import styles from './index.module.css';
 
 interface Connection {
   peer: string;
@@ -50,13 +52,33 @@ const ConnectedPeersButton = ({
       : 'No peers connected';
 
   return (
-    <div className="absolute top-4 right-4 z-10 flex gap-2 items-center`">
+    <div className="absolute top-4 right-4 z-20 flex gap-2 items-center">
       <Button onClick={copyToClipboard} title="Copy Link to Clipboard" variant="outline">
         <ClipboardCopyIcon />
       </Button>
-      <Button className="" onClick={handlePeerButtonClick} title={users.join(', ')}>
-        {buttonMessage}
-      </Button>
+      <div className={styles.statusWrapper}>
+        <Button
+          id="connection-status"
+          onClick={handlePeerButtonClick}
+          title={users.join(', ')}
+          className={styles.statusButton}
+        >
+          {buttonMessage}
+          {peer?.disconnected && <span className={styles.redDot} />}
+        </Button>
+        {users.length > 0 && (
+          <div className={styles.peerList}>
+            <div className={styles.peerListTitle}>Connected Peers:</div>
+            <ul>
+              {connections.map((c) => (
+                <li key={c.peer} className={styles.peerListItem}>
+                  {c.metadata?.username || c.peer}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

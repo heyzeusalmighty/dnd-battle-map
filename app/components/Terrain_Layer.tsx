@@ -1,19 +1,14 @@
 // components/Terrain_Layer.tsx
-import React from "react";
-import type { Terrain, CustomObj } from "../map/types";
+import React from 'react';
+import type { Terrain, CustomObj } from '../map/types';
+
+import { getTerrainColor, textColorOn, getObjectLetter } from '@/app/map/utils/terrain';
 
 type Props = {
   tiles: Terrain[];
   cellPx: number;
-
-  // helpers you already have in App.tsx (passed in so this stays pure)
   isCustomObjectType: (type: string) => boolean;
   getCustomObject: (id: string) => CustomObj | undefined;
-  getTerrainColor: (type: string) => string;
-  textColorOn: (hex: string) => string;
-  getObjectLetter: (obj: CustomObj) => string;
-
-  // UI state/handlers
   canInteract: boolean; // selectedTool === "select"
   onTerrainRightClick?: (e: React.MouseEvent, tileId: string) => void;
 };
@@ -23,9 +18,6 @@ export default function Terrain_Layer({
   cellPx,
   isCustomObjectType,
   getCustomObject,
-  getTerrainColor,
-  textColorOn,
-  getObjectLetter,
   canInteract,
   onTerrainRightClick,
 }: Props) {
@@ -36,12 +28,10 @@ export default function Terrain_Layer({
         const left = tile.x * cellPx;
         const top = tile.y * cellPx;
 
-        const baseClass = `absolute ${
-          canInteract ? "cursor-context-menu" : "pointer-events-none"
-        }`;
+        const baseClass = `absolute ${canInteract ? 'cursor-context-menu' : 'pointer-events-none'}`;
 
-        const bg = isCustom ? "transparent" : getTerrainColor(tile.type);
-        const opacity = !isCustom && tile.type === "difficult" ? 0.6 : 1;
+        const bg = isCustom ? 'transparent' : getTerrainColor(tile.type);
+        const opacity = !isCustom && tile.type === 'difficult' ? 0.6 : 1;
 
         return (
           <div
@@ -56,7 +46,7 @@ export default function Terrain_Layer({
               opacity,
             }}
             onContextMenu={(e) => onTerrainRightClick?.(e, tile.id)}
-            title={canInteract ? "Right-click to delete" : undefined}
+            title={canInteract ? 'Right-click to delete' : undefined}
           >
             {isCustom ? (
               (() => {
@@ -81,7 +71,7 @@ export default function Terrain_Layer({
                 }
 
                 // user-added object: colored badge with first letter
-                const badgeBg = obj.color || "#6b7280";
+                const badgeBg = obj.color || '#6b7280';
                 const fg = textColorOn(badgeBg);
                 const size = Math.floor(cellPx * 0.78);
 
@@ -104,7 +94,7 @@ export default function Terrain_Layer({
                   </div>
                 );
               })()
-            ) : tile.type === "door" ? (
+            ) : tile.type === 'door' ? (
               // keep your door label
               <div className="w-full h-full flex items-center justify-center text-white">
                 <span className="text-xs">D</span>

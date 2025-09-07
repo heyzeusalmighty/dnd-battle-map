@@ -36,7 +36,6 @@ import Terrain_Layer from '@/app/components/Terrain_Layer';
 import Tokens_Layer from '@/app/components/Tokens_Layer';
 
 import { GRID_SIZE } from '@/app/map/utils/constants';
-
 import { measureFeet } from '@/app/map/utils/distance';
 
 import type {
@@ -62,7 +61,6 @@ interface MapGridProps {
   selectedTool: string;
   isWallAt: (x: number, y: number) => boolean;
   isDifficultAt: (x: number, y: number) => boolean;
-  getTerrainColor: (type: string) => string;
   isCustomObjectType: (type: string) => boolean;
   getCustomObject: (type: string) => CustomObj | undefined;
   tokenClasses: (isPlayer: boolean, isSelected: boolean) => string;
@@ -119,7 +117,6 @@ const MapGrid: FC<MapGridProps> = ({
   selectedTool,
   isWallAt,
   isDifficultAt,
-  getTerrainColor,
   isCustomObjectType,
   getCustomObject,
   tokenClasses,
@@ -154,18 +151,6 @@ const MapGrid: FC<MapGridProps> = ({
 }) => {
   const stageW = mapWidth * GRID_SIZE;
   const stageH = mapHeight * GRID_SIZE;
-
-  // pick black/white text that contrasts with a hex bg color
-  const textColorOn = (hex: string) => {
-    const h = hex.replace('#', '');
-    const full = h.length === 3 ? h.replace(/(.)/g, '$1$1') : h;
-    const n = parseInt(full, 16);
-    const r = (n >> 16) & 255,
-      g = (n >> 8) & 255,
-      b = n & 255;
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 128 ? '#000' : '#fff';
-  };
 
   // calculating distance
   const calculateDistance = (x1: number, y1: number, x2: number, y2: number) =>
@@ -209,12 +194,6 @@ const MapGrid: FC<MapGridProps> = ({
       }
       return;
     }
-  };
-
-  // first letter fallback (label > id)
-  const getObjectLetter = (obj: CustomObj) => {
-    const s = (obj.label?.trim() || obj.id).trim();
-    return s ? s[0].toUpperCase() : '?';
   };
 
   const handleTerrainRightClick = (e: MouseEvent, terrainId: string) => {
@@ -575,9 +554,6 @@ const MapGrid: FC<MapGridProps> = ({
               cellPx={GRID_SIZE}
               isCustomObjectType={isCustomObjectType}
               getCustomObject={getCustomObject}
-              getTerrainColor={getTerrainColor}
-              textColorOn={textColorOn}
-              getObjectLetter={getObjectLetter}
               canInteract={selectedTool === 'select' && !selectedCharacter}
               onTerrainRightClick={handleTerrainRightClick}
             />

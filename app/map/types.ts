@@ -98,4 +98,5 @@ export type AppSnapshot = {
   round: number;
   currentTurn: number;
   selectedTool: string;
+  customObjects: CustomObj[];
 };
