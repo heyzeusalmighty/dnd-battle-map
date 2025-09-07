@@ -32,18 +32,17 @@ const MapView = () => {
     guestMap.onData((data: unknown) => {
       console.log('data from host:', data);
 
-      if (data?.type === 'snapshot') {
+      if (
+        data &&
+        typeof data === 'object' &&
+        'type' in data &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (data as any).type === 'snapshot'
+      ) {
         setMapState((data as SnapshotUpdate).snapShot);
         console.log('snapshot received', data);
-        return;
       }
 
-      if (data && typeof data === 'object' && 'type' in data && data.type === 'snapshot') {
-        setMapState(data.snapShot as AppSnapshot);
-      }
-      setSentData((prev) => [...prev, data]);
-      // setMapState(data as Snapshot); --- IGNORE ---
-      //
       setSentData((prev) => [...prev, data]);
     });
   }
