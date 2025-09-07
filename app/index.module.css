@@ -1,0 +1,113 @@
+body {
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
+  background-size: 400% 400%;
+  animation: gradient-x 15s ease infinite;
+}
+@keyframes gradient-x {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.pageWrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glassCard {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 28rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  text-shadow:
+    0 2px 8px #7c3aed,
+    0 4px 24px #ec4899;
+  letter-spacing: 0.05em;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.input {
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  border: 2px solid #ec4899;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px #7c3aed44;
+  outline: none;
+  transition:
+    box-shadow 0.3s,
+    border-color 0.3s;
+}
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+.input:focus {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 4px #ec489988;
+}
+.input:invalid + .button {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #ec4899 0%, #fbbf24 50%, #7c3aed 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.125rem;
+  box-shadow: 0 2px 12px #ec489988;
+  border: none;
+  cursor: pointer;
+  transition:
+    transform 0.3s,
+    background 0.3s;
+}
+.button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(90deg, #db2777 0%, #fbbf24 60%, #6d28d9 100%);
+}
