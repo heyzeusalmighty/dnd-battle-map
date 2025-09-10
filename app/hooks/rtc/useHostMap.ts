@@ -2,12 +2,15 @@ import { useEffect, useState, useRef } from 'react';
 import Peer, { DataConnection } from 'peerjs';
 
 import { getCookie, setCookie } from '@/app/utils/cookie';
+import { AppSnapshot, SnapshotUpdate } from '@/app/map/types';
 
 export function useHostPeerSession(mapName: string) {
   const [peer, setPeer] = useState<Peer | null>(null);
   const [connections, setConnections] = useState<DataConnection[]>([]);
   const [peerId, setPeerId] = useState<string>('');
+  const [gameState, setGameState] = useState<AppSnapshot | undefined>(undefined);
   const connectionsRef = useRef<DataConnection[]>([]);
+  const [messageCount, setMessageCount] = useState(0);
 
   useEffect(() => {
     let id = getCookie(`peerId-${mapName}`);
@@ -34,6 +37,10 @@ export function useHostPeerSession(mapName: string) {
         return updated;
       });
       console.log('New connection from', conn.peer);
+
+      // send the current game state immediately upon connection
+      conn.send({ type: 'snapshot', snapShot: gameState } as SnapshotUpdate);
+
       conn.on('data', (data) => {
         console.log(`Received from ${conn.peer}:`, data);
         // Handle incoming data per connection here
@@ -83,6 +90,14 @@ export function useHostPeerSession(mapName: string) {
 
   // Broadcast data to all connected peers
   const broadcastData = (data: unknown) => {
+    if (data.type === 'snapshot') {
+      setMessageCount((c) => c + 1);
+      const snap = data as SnapshotUpdate;
+      setGameState(snap.snapShot);
+      console.log('message count', messageCount);
+      console.log('ref count', connectionsRef.current.length);
+    }
+
     connectionsRef.current.forEach((conn) => {
       if (conn.open) conn.send(data);
     });

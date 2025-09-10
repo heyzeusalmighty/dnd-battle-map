@@ -1,5 +1,3 @@
-// src/types.ts
-
 // Movement / measurement
 export type DistanceRule = '5e' | '5105' | 'euclidean';
 
@@ -99,4 +97,10 @@ export type AppSnapshot = {
   currentTurn: number;
   selectedTool: string;
   customObjects: CustomObj[];
+  id: number;
 };
+
+export interface SnapshotUpdate {
+  type: 'snapshot';
+  snapShot: AppSnapshot;
+}

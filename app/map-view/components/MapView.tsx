@@ -4,20 +4,16 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useGuestMap } from '../../hooks/rtc/useGuestMap';
 import ReadOnlyGrid from './ReadOnlyGrid';
-import { AppSnapshot } from '@/app/map/types';
+import { AppSnapshot, SnapshotUpdate } from '@/app/map/types';
 import ConnectionCard from './ConnectionCard';
 
 import '../../map/index.css';
 
-interface SnapshotUpdate {
-  type: 'snapshot';
-  snapShot: AppSnapshot;
-}
-
 const MapView = () => {
   const [username, setUsername] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [sentData, setSentData] = useState<unknown[]>([]);
+  const [messageCount, setMessageCount] = useState(0);
+
   const [mapState, setMapState] = useState<AppSnapshot | null>(null);
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
@@ -30,7 +26,8 @@ const MapView = () => {
   // Listen for data if connected
   if (guestMap && guestMap.onData) {
     guestMap.onData((data: unknown) => {
-      console.log('data from host:', data);
+      // console.log('data from host:', data);
+      setMessageCount((c) => c + 1);
 
       if (
         data &&
@@ -39,15 +36,26 @@ const MapView = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (data as any).type === 'snapshot'
       ) {
-        setMapState((data as SnapshotUpdate).snapShot);
-        console.log('snapshot received', data);
-      }
+        const dataObj = data as SnapshotUpdate;
+        const newId = dataObj.snapShot.id;
+        const oldId = mapState?.id;
 
-      setSentData((prev) => [...prev, data]);
+        if (!mapState) {
+          setMapState(dataObj.snapShot);
+
+          return;
+        }
+
+        if (oldId && oldId !== newId && oldId < newId) {
+          console.log(`Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`);
+          console.log(dataObj.snapShot.terrain);
+          setMapState((data as SnapshotUpdate).snapShot);
+        }
+      }
     });
   }
 
-  console.log('mapState', mapState);
+  // console.log('mapState', mapState);
 
   return (
     <main className="flex-1 flex gap-4 p-4">
@@ -64,6 +72,7 @@ const MapView = () => {
       <div style={{ width: '100%', height: '100%' }}>
         <div>
           <h3>Current Map State:</h3>
+          <p>Messages received: {messageCount}</p>
 
           <ReadOnlyGrid
             mapWidth={mapState?.mapWidth || 0}
@@ -86,16 +95,6 @@ const MapView = () => {
             MAP: {mapState?.mapWidth}x{mapState?.mapHeight}
           </pre>
         </div>
-        <h3>Data from Host:</h3>
-        {sentData && sentData.length > 0 ? (
-          <ul>
-            {sentData.map((data, index) => (
-              <li key={index}>{JSON.stringify(data)}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No data received yet.</p>
-        )}
       </div>
     </main>
   );

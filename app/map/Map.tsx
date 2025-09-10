@@ -492,6 +492,23 @@ const Map = () => {
     }
   }, [selectedCharacter]);
 
+  // broadcast snapshots on every state change
+  useEffect(() => {
+    const snapShot = takeSnapshot();
+    broadcastData({ type: 'snapshot', snapShot });
+  }, [
+    characters,
+    terrain,
+    measurements,
+    mapWidth,
+    mapHeight,
+    gridScale,
+    round,
+    currentTurn,
+    selectedTool,
+    customObjects,
+  ]);
+
   // Helper functions
 
   const isCustomObjectType = (t: string) =>
@@ -570,6 +587,7 @@ const Map = () => {
     currentTurn,
     selectedTool,
     customObjects: JSON.parse(JSON.stringify(customObjects)),
+    id: Date.now(), // simple unique ID for debugging
   });
 
   const saveSnapshot = () => {
@@ -579,7 +597,8 @@ const Map = () => {
       return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
     });
     setRedoStack([]); // clear redo on any new action
-    broadcastData({ type: 'snapshot', snapShot });
+    console.log('Snapshot taken', snapShot.id, snapShot.terrain.length);
+    console.log('terrain', terrain);
   };
 
   // manage undo / redo snapshots
