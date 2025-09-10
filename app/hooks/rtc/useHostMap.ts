@@ -90,7 +90,12 @@ export function useHostPeerSession(mapName: string) {
 
   // Broadcast data to all connected peers
   const broadcastData = (data: unknown) => {
-    if (data.type === 'snapshot') {
+    if (
+      typeof data === 'object' &&
+      data !== null &&
+      'type' in data &&
+      (data as { type: string }).type === 'snapshot'
+    ) {
       setMessageCount((c) => c + 1);
       const snap = data as SnapshotUpdate;
       setGameState(snap.snapShot);
