@@ -23,6 +23,7 @@ import type {
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
 
 import { DEFAULT_PARTY } from './utils/partyPresets';
+import { saveToLocalStorage, getFromLocalStorage } from '../utils/localStorage';
 
 import ObjectPanel from './components/ObjectPanel';
 import CharacterPanel from './components/CharacterPanel';
@@ -31,6 +32,7 @@ import InitiativePanel from './components/InitiativePanel';
 import HelpDialog from './components/HelpDialog';
 import MapGrid from './components/MapGrid';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
+import SaveMapCard from './components/SaveMapCard';
 
 const INITIAL_OBJECTS: CustomObj[] = [
   {
@@ -1034,6 +1036,33 @@ const Map = () => {
 
   const currentCharacter = sortedCharacters[currentTurn];
 
+  const handleSaveMap = () => {
+    const snapShot = takeSnapshot();
+    saveToLocalStorage(mapName, snapShot);
+  };
+
+  const handleLoadMap = () => {
+    const loadedMap = getFromLocalStorage<AppSnapshot>(mapName);
+    if (loadedMap) {
+      restoreSnapshot(loadedMap);
+    }
+  };
+
+  const restoreSnapshot = (s: AppSnapshot) => {
+    saveSnapshot();
+    setCharacters(s.characters);
+    setTerrain(s.terrain);
+    setMapWidth(s.mapWidth);
+    setMapHeight(s.mapHeight);
+    setGridScale(s.gridScale);
+    setCustomObjects(s.customObjects ?? INITIAL_OBJECTS);
+    setSelectedTool('select');
+    setMeasurements(s.measurements);
+    setRound(s.round);
+    setCurrentTurn(s.currentTurn);
+    setInitiativeMode('auto');
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
@@ -1169,30 +1198,34 @@ const Map = () => {
 
         {/* Right Panel - Initiative */}
 
-        <InitiativePanel
-          characters={characters}
-          selectedCharacter={selectedCharacter}
-          sortedCharacters={sortedCharacters}
-          currentTurn={currentTurn}
-          setCurrentTurn={setCurrentTurn}
-          initiativeMode={initiativeMode}
-          setInitiativeMode={setInitiativeMode}
-          moveInInitiative={moveInInitiative}
-          setManualFromCurrentSort={setManualFromCurrentSort}
-          round={round}
-          handleNextTurn={handleNextTurn}
-          rollInitiativeForScope={rollInitiativeForScope}
-          rollPreset={rollPreset}
-          setAndRoll={setAndRoll}
-          currentCharacter={currentCharacter}
-          handleCharacterClick={handleCharacterClick}
-          editInitId={editInitId}
-          setEditInitId={setEditInitId}
-          editInitVal={editInitVal}
-          setEditInitVal={setEditInitVal}
-          startEditInit={startEditInit}
-          commitEditInit={commitEditInit}
-        />
+        <div className="w-64 flex-shrink-0 flex flex-col gap-4">
+          <InitiativePanel
+            characters={characters}
+            selectedCharacter={selectedCharacter}
+            sortedCharacters={sortedCharacters}
+            currentTurn={currentTurn}
+            setCurrentTurn={setCurrentTurn}
+            initiativeMode={initiativeMode}
+            setInitiativeMode={setInitiativeMode}
+            moveInInitiative={moveInInitiative}
+            setManualFromCurrentSort={setManualFromCurrentSort}
+            round={round}
+            handleNextTurn={handleNextTurn}
+            rollInitiativeForScope={rollInitiativeForScope}
+            rollPreset={rollPreset}
+            setAndRoll={setAndRoll}
+            currentCharacter={currentCharacter}
+            handleCharacterClick={handleCharacterClick}
+            editInitId={editInitId}
+            setEditInitId={setEditInitId}
+            editInitVal={editInitVal}
+            setEditInitVal={setEditInitVal}
+            startEditInit={startEditInit}
+            commitEditInit={commitEditInit}
+          />
+
+          <SaveMapCard handleSaveMap={handleSaveMap} handleLoadMap={handleLoadMap} />
+        </div>
 
         {/* Help button + dialog (replaces always-on instructions) */}
         <HelpDialog
