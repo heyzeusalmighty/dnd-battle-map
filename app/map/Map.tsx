@@ -31,12 +31,14 @@ import HelpDialog from './components/HelpDialog';
 import MapGrid from './components/MapGrid';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import SaveMapCard from './components/SaveMapCard';
+import { MapProvider } from './context/MapContext';
 
 import { useMapContext } from './context/MapContext';
+import useHotkeys from './hooks/useHotKeys';
 
 const Map = () => {
   // Map configuration
-  const { state, actions } = useMapContext();
+  const { state, actions, mapScrollRef, handlers } = useMapContext();
   const {
     mapWidth,
     mapHeight,
@@ -57,7 +59,6 @@ const Map = () => {
     charTab,
     charQuery,
     charFilter,
-    lastPaintTool,
     showMovePreview,
     newCharName,
     newCharDmg,
@@ -79,6 +80,8 @@ const Map = () => {
     newObjColor,
     newObjIcon,
     showHelp,
+    mode,
+    filteredCharacters,
   } = state;
 
   const {
@@ -101,7 +104,6 @@ const Map = () => {
     setCharTab,
     setCharQuery,
     setCharFilter,
-    setLastPaintTool,
     setShowMovePreview,
     setNewCharName,
     setNewCharDmg,
@@ -111,8 +113,6 @@ const Map = () => {
     setAddMode,
     setDamageDelta,
     setPresetToAdd,
-    setUndoStack,
-    setRedoStack,
     setInitiativeMode,
     setRollPreset,
     setEditInitId,
@@ -123,12 +123,24 @@ const Map = () => {
     setNewObjColor,
     setNewObjIcon,
     setShowHelp,
+    setMode,
+    setPaintTool,
   } = actions;
 
-  const mapScrollRef = useRef<HTMLDivElement>(null);
+  const { handleNextTurn, undo, redo, saveSnapshot, takeSnapshot } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
+  useHotkeys({
+    mode,
+    setMode,
+    setPaintTool,
+    undo,
+    redo,
+    handleNextTurn,
+    setCurrentTurn,
+    setShowHelp,
+  });
 
   const { peer, connections, broadcastData } = useHostPeerSession(mapName);
 
@@ -145,30 +157,12 @@ const Map = () => {
     el.scrollTo({ left, top, behavior });
   }
 
-  // Game state
-
-  // click-and-drag state
-
-  // useEffect(() => {
-  //   if (!isDragging) return;
-
-  //   // End the drag even if the mouse is released outside the canvas
-  //   const onUp = () => {
-  //     setIsDragging(false);
-  //     setDragMode(null);
-  //     setLastCell(null);
-  //   };
-
-  //   window.addEventListener('mouseup', onUp);
-  //   return () => window.removeEventListener('mouseup', onUp);
-  // }, [isDragging, setIsDragging, setDragMode, setLastCell]);
-
-  // hotkey guard
-  const isTypingTarget = (t: EventTarget | null) => {
-    if (!(t instanceof HTMLElement)) return false;
-    const tag = t.tagName.toLowerCase();
-    return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
-  };
+  // // hotkey guard
+  // const isTypingTarget = (t: EventTarget | null) => {
+  //   if (!(t instanceof HTMLElement)) return false;
+  //   const tag = t.tagName.toLowerCase();
+  //   return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
+  // };
 
   const clearMeasurements = () => {
     saveSnapshot();
@@ -210,20 +204,6 @@ const Map = () => {
 
   // UI state
 
-  // Derive the high-level mode from your existing selectedTool
-  const mode: 'select' | 'measure' | 'paint' =
-    selectedTool === 'select' ? 'select' : selectedTool === 'measure' ? 'measure' : 'paint';
-
-  const filteredCharacters = characters.filter((c) => {
-    if (charFilter === 'pc' && !c.isPlayer) return false;
-    if (charFilter === 'npc' && c.isPlayer) return false;
-    if (charQuery.trim()) {
-      const q = charQuery.trim().toLowerCase();
-      if (!c.name.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
-
   // function commitMove(
   //   charId: string,
   //   from: { x: number; y: number },
@@ -241,8 +221,6 @@ const Map = () => {
     saveSnapshot();
     mutator();
   }
-
-  const MAX_HISTORY = 50;
 
   // initiative states
 
@@ -347,22 +325,17 @@ const Map = () => {
   //   // setCurrentTurn(0);
   // }
 
-  // drop removed characters from init order, append new characters at end, preserve manual reordering
+  // delete characters
   useEffect(() => {
-    setInitiativeOrder((prev) => {
-      const idsNow = characters.map((c) => c.id);
-      const nowSet = new Set(idsNow);
-
-      // keep existing order for ids that still exist
-      const kept = prev.filter((id) => nowSet.has(id));
-
-      // append any new ids not already in the order
-      const keptSet = new Set(kept);
-      const added = idsNow.filter((id) => !keptSet.has(id));
-
-      return [...kept, ...added];
-    });
-  }, [characters]);
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCharacter) {
+        e.preventDefault();
+        handleDeleteCharacter(selectedCharacter);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedCharacter]);
 
   const slugify = (s: string) =>
     s
@@ -390,71 +363,6 @@ const Map = () => {
     setNewObjIcon('');
     setNewObjColor('#8B4513');
   };
-
-  // delete characters
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCharacter) {
-        e.preventDefault();
-        handleDeleteCharacter(selectedCharacter);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [selectedCharacter]);
-
-  // cancel measurement
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Cancel active measurement first
-        if (measurementStart) {
-          e.preventDefault();
-          setMeasurementStart(null);
-          setHoveredCell(null); // optional: hide preview instantly
-          return;
-        }
-        // Otherwise, deselect any selected character (cancels move preview)
-        if (selectedCharacter) {
-          e.preventDefault();
-          setSelectedCharacter(null);
-          setHoveredCell(null); // optional
-        }
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [measurementStart, selectedCharacter]);
-
-  // center on character token
-  useEffect(() => {
-    if (!selectedCharacter) return;
-    const c = characters.find((ch) => ch.id === selectedCharacter);
-    if (!c) return;
-
-    const cellSize = GRID_SIZE;
-    const el = mapScrollRef.current;
-    if (!el) return;
-
-    const cx = c.x * cellSize + cellSize / 2;
-    const cy = c.y * cellSize + cellSize / 2;
-
-    // optional: only scroll if off-screen
-    const inView =
-      cx >= el.scrollLeft &&
-      cx <= el.scrollLeft + el.clientWidth &&
-      cy >= el.scrollTop &&
-      cy <= el.scrollTop + el.clientHeight;
-
-    if (!inView) {
-      el.scrollTo({
-        left: Math.max(0, cx - el.clientWidth / 2),
-        top: Math.max(0, cy - el.clientHeight / 2),
-        behavior: 'smooth',
-      });
-    }
-  }, [selectedCharacter]);
 
   // broadcast snapshots on every state change
   useEffect(() => {
@@ -516,86 +424,6 @@ const Map = () => {
 
   // find the currently selected character once
   const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
-
-  /**
-   * Chebyshev-minimal path from (x1,y1) to (x2,y2):
-   * step diagonally until aligned, then straight.
-   * Returns the *intermediate* squares you pass through (not including start).
-   */
-  // const computePathCells = (x1: number, y1: number, x2: number, y2: number) => {
-  //   const cells: { x: number; y: number }[] = [];
-  //   let cx = x1,
-  //     cy = y1;
-  //   while (cx !== x2 || cy !== y2) {
-  //     if (cx < x2) cx++;
-  //     else if (cx > x2) cx--;
-  //     if (cy < y2) cy++;
-  //     else if (cy > y2) cy--;
-  //     cells.push({ x: cx, y: cy });
-  //   }
-  //   return cells;
-  // };
-
-  // undo/redo
-  const takeSnapshot = (): AppSnapshot => ({
-    characters: JSON.parse(JSON.stringify(characters)),
-    terrain: JSON.parse(JSON.stringify(terrain)),
-    measurements: JSON.parse(JSON.stringify(measurements)),
-    mapWidth,
-    mapHeight,
-    gridScale,
-    round,
-    currentTurn,
-    selectedTool: selectedTool ?? 'select',
-    customObjects: JSON.parse(JSON.stringify(customObjects)),
-    id: Date.now(), // simple unique ID for debugging
-  });
-
-  const saveSnapshot = () => {
-    const snapShot = takeSnapshot();
-    setUndoStack((prev) => {
-      const next = [...prev, snapShot];
-      return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
-    });
-    setRedoStack([]); // clear redo on any new action
-    console.log('Snapshot taken', snapShot.id, snapShot.terrain.length);
-    console.log('terrain', terrain);
-  };
-
-  // manage undo / redo snapshots
-  const applySnapshot = (s: AppSnapshot) => {
-    setCharacters(s.characters);
-    setTerrain(s.terrain);
-    setMeasurements(s.measurements);
-    setMapWidth(s.mapWidth);
-    setMapHeight(s.mapHeight);
-    setGridScale(s.gridScale);
-    setRound(s.round);
-    setCurrentTurn(s.currentTurn);
-    setSelectedTool(s.selectedTool);
-  };
-
-  const undo = () => {
-    setUndoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      const rest = prev.slice(0, -1);
-      setRedoStack((r) => [...r, takeSnapshot()]);
-      applySnapshot(last);
-      return rest;
-    });
-  };
-
-  const redo = () => {
-    setRedoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      const rest = prev.slice(0, -1);
-      setUndoStack((u) => [...u, takeSnapshot()]);
-      applySnapshot(last);
-      return rest;
-    });
-  };
 
   const handleCharacterClick = (charId: string) => {
     if (selectedTool !== 'select') return;
@@ -880,111 +708,6 @@ const Map = () => {
     );
   };
 
-  // Small setters
-  const setMode = (m: 'select' | 'measure' | 'paint') => {
-    if (m === 'paint') setSelectedTool(lastPaintTool);
-    else setSelectedTool(m);
-  };
-
-  const setPaintTool = (t: 'wall' | 'difficult' | 'door') => {
-    setLastPaintTool(t);
-    setSelectedTool(t);
-  };
-
-  const handleNextTurn = () => {
-    const list =
-      initiativeMode === 'auto'
-        ? [...characters].sort((a, b) => b.initiative - a.initiative)
-        : initiativeOrder
-            .map((id) => characters.find((c) => c.id === id))
-            .filter((c): c is Character => !!c);
-
-    const nextTurn = (currentTurn + 1) % Math.max(1, list.length);
-    setCurrentTurn(nextTurn);
-    if (nextTurn === 0) setRound((prev) => prev + 1);
-  };
-
-  // hotkey enablers
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      const meta = e.metaKey || e.ctrlKey;
-
-      // don't hijack typing
-      if (isTypingTarget(e.target)) return;
-
-      // ---- Undo / Redo (Meta/Ctrl) ----
-      if (meta && key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-        return;
-      }
-      if (meta && ((key === 'z' && e.shiftKey) || key === 'y')) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-
-      // ---- Turn controls (optional; remove if you don't want them) ----
-      if (key === ' ' || key === 'enter') {
-        // next
-        e.preventDefault();
-        handleNextTurn();
-        return;
-      }
-      if (key === 'backspace' || (e.shiftKey && key === ' ')) {
-        // prev
-        e.preventDefault();
-        setCurrentTurn((v) => Math.max(0, v - 1));
-        return;
-      }
-
-      // ---- Mode switching ----
-      if (key === 'v') {
-        e.preventDefault();
-        setMode('select');
-        return;
-      }
-      if (key === 'm') {
-        e.preventDefault();
-        setMode('measure');
-        return;
-      }
-      if (key === 'b') {
-        e.preventDefault();
-        setMode('paint');
-        return;
-      }
-
-      // ---- Paint subtools (only when painting) ----
-      if (mode === 'paint') {
-        if (key === '1') {
-          e.preventDefault();
-          setPaintTool('wall');
-          return;
-        }
-        if (key === '2') {
-          e.preventDefault();
-          setPaintTool('difficult');
-          return;
-        }
-        if (key === '3') {
-          e.preventDefault();
-          setPaintTool('door');
-          return;
-        }
-        if (key === 'h') {
-          e.preventDefault();
-          setShowHelp((v) => !v);
-          return;
-        }
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool]);
-
   const sortedCharacters =
     initiativeMode === 'auto'
       ? [...characters].sort((a, b) => b.initiative - a.initiative)
@@ -1195,4 +918,10 @@ const Map = () => {
   );
 };
 
-export default Map;
+const MapWithContext = () => (
+  <MapProvider>
+    <Map />
+  </MapProvider>
+);
+
+export default MapWithContext;
