@@ -216,6 +216,89 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     });
   };
 
+  const restoreSnapshot = (s: AppSnapshot) => {
+    saveSnapshot();
+    setCharacters(s.characters);
+    setTerrain(s.terrain);
+    setMapWidth(s.mapWidth);
+    setMapHeight(s.mapHeight);
+    setGridScale(s.gridScale);
+    setCustomObjects(s.customObjects ?? []);
+    setSelectedTool('select');
+    setMeasurements(s.measurements);
+    setRound(s.round);
+    setCurrentTurn(s.currentTurn);
+    setInitiativeMode('auto');
+  };
+
+  function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
+    const el = mapScrollRef.current;
+    if (!el) return;
+    const cellSize = GRID_SIZE; // your existing constant
+    const targetX = x * cellSize + cellSize / 2;
+    const targetY = y * cellSize + cellSize / 2;
+
+    const left = Math.max(0, targetX - el.clientWidth / 2);
+    const top = Math.max(0, targetY - el.clientHeight / 2);
+
+    el.scrollTo({ left, top, behavior });
+  }
+
+  const handleCharacterClick = (charId: string) => {
+    if (selectedTool !== 'select') return;
+
+    // toggle selection; only center when selecting (not when de-selecting)
+    setSelectedCharacter((prev) => {
+      const next = prev === charId ? null : charId;
+      if (next) {
+        const c = characters.find((ch) => ch.id === next);
+        if (c) scrollCellIntoCenter(c.x, c.y); // uses the helper you added
+      }
+      return next;
+    });
+  };
+
+  const clearMeasurements = () => {
+    saveSnapshot();
+    setMeasurements([]); // remove saved segments
+    setMeasurementStart(null); // remove the orange/endpoint start cell
+    setHoveredCell(null); // kill preview end cell
+    // if you track any other preview state, clear it here too (e.g., setMeasurementPreview?.(null))
+  };
+
+  function clearBy(predicate: (c: Character) => boolean, label: string) {
+    const toRemove = characters.filter(predicate);
+    if (toRemove.length === 0) return;
+
+    if (!window.confirm(`Delete ${toRemove.length} ${label}?`)) return;
+
+    const removedIds = new Set(toRemove.map((c) => c.id));
+    saveSnapshot();
+
+    // Remove characters
+    setCharacters((prev) => prev.filter((c) => !removedIds.has(c.id)));
+
+    // Fix selection if it was cleared
+    setSelectedCharacter((sel) => (sel && removedIds.has(sel) ? null : sel));
+
+    // Drop from manual order too
+    setInitiativeOrder((prev) => prev.filter((id) => !removedIds.has(id)));
+  }
+
+  function handleClearNPCs() {
+    clearBy((c) => !c.isPlayer, 'NPC(s)');
+  }
+  function handleClearPCs() {
+    clearBy((c) => c.isPlayer, 'PC(s)');
+  }
+
+  const handleDeleteCharacter = (charId: string) => {
+    saveSnapshot();
+    setCharacters((prev) => prev.filter((c) => c.id !== charId));
+    if (selectedCharacter === charId) setSelectedCharacter(null);
+    // If you later add a manual initiative order, remember to also remove the id there.
+  };
+
   // useEffects
   useEffect(() => {
     if (!isDragging) return;
@@ -359,7 +442,6 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       setLastCell,
       setMeasurements,
       setCurrentTurn,
-      setRound,
       setSelectedTool,
       setMeasurementStart,
       setHoveredCell,
@@ -396,6 +478,12 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       redo,
       saveSnapshot,
       takeSnapshot,
+      restoreSnapshot,
+      clearMeasurements,
+      handleCharacterClick,
+      handleClearNPCs,
+      handleClearPCs,
+      handleDeleteCharacter,
     },
     mapScrollRef,
   };

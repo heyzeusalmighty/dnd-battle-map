@@ -2,7 +2,6 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRef, useEffect, MouseEvent, useMemo } from 'react';
-import { GRID_SIZE } from './utils/constants';
 import { rollInitiativeOnce, capInit } from './utils/dice';
 import { getId } from './utils/id';
 import { BUILTIN_TERRAIN } from './utils/terrain';
@@ -56,16 +55,11 @@ const Map = () => {
     measurementStart,
     hoveredCell,
     selectedCharacter,
-    charTab,
-    charQuery,
-    charFilter,
     showMovePreview,
     newCharName,
     newCharDmg,
     newCharInit,
     showMapSettings,
-    showAddChar,
-    addMode,
     damageDelta,
     presetToAdd,
     undoStack,
@@ -76,12 +70,8 @@ const Map = () => {
     editInitVal,
     initiativeOrder,
     customObjects,
-    newObjLabel,
-    newObjColor,
-    newObjIcon,
     showHelp,
     mode,
-    filteredCharacters,
   } = state;
 
   const {
@@ -96,38 +86,37 @@ const Map = () => {
     setLastCell,
     setMeasurements,
     setCurrentTurn,
-    setRound,
-    setSelectedTool,
     setMeasurementStart,
     setHoveredCell,
-    setSelectedCharacter,
-    setCharTab,
-    setCharQuery,
-    setCharFilter,
     setShowMovePreview,
     setNewCharName,
     setNewCharDmg,
     setNewCharInit,
     setShowMapSettings,
     setShowAddChar,
-    setAddMode,
     setDamageDelta,
-    setPresetToAdd,
     setInitiativeMode,
     setRollPreset,
     setEditInitId,
     setEditInitVal,
     setInitiativeOrder,
-    setCustomObjects,
-    setNewObjLabel,
-    setNewObjColor,
-    setNewObjIcon,
     setShowHelp,
     setMode,
     setPaintTool,
   } = actions;
 
-  const { handleNextTurn, undo, redo, saveSnapshot, takeSnapshot } = handlers;
+  const {
+    handleNextTurn,
+    undo,
+    redo,
+    saveSnapshot,
+    takeSnapshot,
+    restoreSnapshot,
+    clearMeasurements,
+    handleCharacterClick,
+    handleClearNPCs,
+    handleClearPCs,
+  } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
@@ -144,63 +133,9 @@ const Map = () => {
 
   const { peer, connections, broadcastData } = useHostPeerSession(mapName);
 
-  function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
-    const el = mapScrollRef.current;
-    if (!el) return;
-    const cellSize = GRID_SIZE; // your existing constant
-    const targetX = x * cellSize + cellSize / 2;
-    const targetY = y * cellSize + cellSize / 2;
-
-    const left = Math.max(0, targetX - el.clientWidth / 2);
-    const top = Math.max(0, targetY - el.clientHeight / 2);
-
-    el.scrollTo({ left, top, behavior });
-  }
-
-  // // hotkey guard
-  // const isTypingTarget = (t: EventTarget | null) => {
-  //   if (!(t instanceof HTMLElement)) return false;
-  //   const tag = t.tagName.toLowerCase();
-  //   return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
-  // };
-
-  const clearMeasurements = () => {
-    saveSnapshot();
-    setMeasurements([]); // remove saved segments
-    setMeasurementStart(null); // remove the orange/endpoint start cell
-    setHoveredCell(null); // kill preview end cell
-    // if you track any other preview state, clear it here too (e.g., setMeasurementPreview?.(null))
-  };
-
   // clear characters
   const pcCount = useMemo(() => characters.filter((c) => c.isPlayer).length, [characters]);
   const npcCount = characters.length - pcCount;
-
-  function clearBy(predicate: (c: Character) => boolean, label: string) {
-    const toRemove = characters.filter(predicate);
-    if (toRemove.length === 0) return;
-
-    if (!window.confirm(`Delete ${toRemove.length} ${label}?`)) return;
-
-    const removedIds = new Set(toRemove.map((c) => c.id));
-    saveSnapshot();
-
-    // Remove characters
-    setCharacters((prev) => prev.filter((c) => !removedIds.has(c.id)));
-
-    // Fix selection if it was cleared
-    setSelectedCharacter((sel) => (sel && removedIds.has(sel) ? null : sel));
-
-    // Drop from manual order too
-    setInitiativeOrder((prev) => prev.filter((id) => !removedIds.has(id)));
-  }
-
-  function handleClearNPCs() {
-    clearBy((c) => !c.isPlayer, 'NPC(s)');
-  }
-  function handleClearPCs() {
-    clearBy((c) => c.isPlayer, 'PC(s)');
-  }
 
   // UI state
 
@@ -325,45 +260,6 @@ const Map = () => {
   //   // setCurrentTurn(0);
   // }
 
-  // delete characters
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCharacter) {
-        e.preventDefault();
-        handleDeleteCharacter(selectedCharacter);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [selectedCharacter]);
-
-  const slugify = (s: string) =>
-    s
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-  const handleAddCustomObject = () => {
-    const label = newObjLabel.trim();
-    if (!label) return;
-    const id = slugify(label);
-    if (customObjects.some((o) => o.id === id)) return;
-    setCustomObjects((prev) => [
-      ...prev,
-      {
-        id,
-        label,
-        icon: newObjIcon.trim(),
-        color: newObjColor,
-      },
-    ]);
-    setSelectedTool(id);
-    setNewObjLabel('');
-    setNewObjIcon('');
-    setNewObjColor('#8B4513');
-  };
-
   // broadcast snapshots on every state change
   useEffect(() => {
     const snapShot = takeSnapshot();
@@ -425,20 +321,6 @@ const Map = () => {
   // find the currently selected character once
   const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
 
-  const handleCharacterClick = (charId: string) => {
-    if (selectedTool !== 'select') return;
-
-    // toggle selection; only center when selecting (not when de-selecting)
-    setSelectedCharacter((prev) => {
-      const next = prev === charId ? null : charId;
-      if (next) {
-        const c = characters.find((ch) => ch.id === next);
-        if (c) scrollCellIntoCenter(c.x, c.y); // uses the helper you added
-      }
-      return next;
-    });
-  };
-
   // Left-down or Right-down on a cell
   const paintSnap = useRef(false);
 
@@ -492,13 +374,6 @@ const Map = () => {
   //   setDragMode(null);
   //   setLastCell(null);
   // };
-
-  const handleDeleteCharacter = (charId: string) => {
-    saveSnapshot();
-    setCharacters((prev) => prev.filter((c) => c.id !== charId));
-    if (selectedCharacter === charId) setSelectedCharacter(null);
-    // If you later add a manual initiative order, remember to also remove the id there.
-  };
 
   // handle moving initiative order
   const moveInInitiative = (charId: string, dir: 'up' | 'down') => {
@@ -729,21 +604,6 @@ const Map = () => {
     }
   };
 
-  const restoreSnapshot = (s: AppSnapshot) => {
-    saveSnapshot();
-    setCharacters(s.characters);
-    setTerrain(s.terrain);
-    setMapWidth(s.mapWidth);
-    setMapHeight(s.mapHeight);
-    setGridScale(s.gridScale);
-    setCustomObjects(s.customObjects ?? []);
-    setSelectedTool('select');
-    setMeasurements(s.measurements);
-    setRound(s.round);
-    setCurrentTurn(s.currentTurn);
-    setInitiativeMode('auto');
-  };
-
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
@@ -759,55 +619,15 @@ const Map = () => {
           mapName={mapName}
         />
         <div className="w-64 flex-shrink-0 space-y-4">
-          <ObjectPanel
-            customObjects={customObjects}
-            selectedTool={selectedTool}
-            setSelectedTool={setSelectedTool}
-            newObjLabel={newObjLabel}
-            setNewObjLabel={setNewObjLabel}
-            newObjColor={newObjColor}
-            setNewObjColor={setNewObjColor}
-            handleAddCustomObject={handleAddCustomObject}
-          />
+          <ObjectPanel />
 
           <CharacterPanel
-            characters={characters}
-            setCharacters={setCharacters}
-            selectedCharacter={selectedCharacter}
-            setSelectedCharacter={setSelectedCharacter}
-            initiativeMode={initiativeMode}
-            setInitiativeOrder={setInitiativeOrder}
-            mapHeight={mapHeight}
-            mapWidth={mapWidth}
             isWallAt={isWallAt}
-            saveSnapshot={saveSnapshot}
-            charTab={charTab}
-            setCharTab={setCharTab}
-            handleCharacterClick={handleCharacterClick}
-            handleDeleteCharacter={handleDeleteCharacter}
-            presetToAdd={presetToAdd}
-            setPresetToAdd={setPresetToAdd}
             addCharacterFromPreset={addCharacterFromPreset}
             addPartyFromPresets={addPartyFromPresets}
-            showAddChar={showAddChar}
-            setShowAddChar={setShowAddChar}
-            addMode={addMode}
-            setAddMode={setAddMode}
-            newCharName={newCharName}
-            setNewCharName={setNewCharName}
-            newCharInit={newCharInit}
-            setNewCharInit={setNewCharInit}
-            newCharDmg={newCharDmg}
-            setNewCharDmg={setNewCharDmg}
             handleAddCharacter={handleAddCharacter}
-            damageDelta={damageDelta}
-            setDamageDelta={setDamageDelta}
+            handleCharacterClick={handleCharacterClick}
             applyDamageDelta={applyDamageDelta}
-            charQuery={charQuery}
-            setCharQuery={setCharQuery}
-            charFilter={charFilter}
-            setCharFilter={setCharFilter}
-            filteredCharacters={filteredCharacters}
             handleUpdateHp={handleUpdateHp}
           />
 

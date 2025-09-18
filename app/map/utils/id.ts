@@ -5,3 +5,11 @@ export function getId(): string {
   }
   return `${Date.now()}-${Math.random()}`;
 }
+
+
+export const slugify = (s: string) =>
+    s
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');

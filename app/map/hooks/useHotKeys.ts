@@ -9,7 +9,7 @@ interface UseHotkeysProps {
   redo: () => void;
   handleNextTurn: () => void;
   setCurrentTurn: (fn: (v: number) => number) => void;
-  setShowHelp: (v: boolean | ((v: boolean) => boolean)) => void;
+  setShowHelp: (v: boolean | ((v: boolean) => boolean)) => void;  
 }
 
 
@@ -23,7 +23,7 @@ const useHotkeys = (props: UseHotkeysProps) => {
     redo,
     handleNextTurn,
     setCurrentTurn,
-    setShowHelp,
+    setShowHelp,    
    } = props;
 
   // hotkey guard
@@ -113,6 +113,9 @@ const useHotkeys = (props: UseHotkeysProps) => {
       window.addEventListener('keydown', onKeyDown);
       return () => window.removeEventListener('keydown', onKeyDown);
     }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool]);
+
+
+ 
 }
 
 

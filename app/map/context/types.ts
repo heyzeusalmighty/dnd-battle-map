@@ -76,16 +76,14 @@ export interface MapContextType {
     setDragMode: Dispatch<SetStateAction<'paint' | 'erase' | null>>;
     setLastCell: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
     setMeasurements: Dispatch<SetStateAction<Measurement[]>>;
-    setCurrentTurn: Dispatch<SetStateAction<number>>;
-    setRound: Dispatch<SetStateAction<number>>;
+    setCurrentTurn: Dispatch<SetStateAction<number>>;    
     setSelectedTool: Dispatch<SetStateAction<string>>;
     setMeasurementStart: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
     setHoveredCell: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
     setSelectedCharacter: Dispatch<SetStateAction<string | null>>;
     setCharTab: Dispatch<SetStateAction<'add' | 'manage'>>;
     setCharQuery: Dispatch<SetStateAction<string>>;
-    setCharFilter: Dispatch<SetStateAction<'all' | 'pc' | 'npc'>>;
-    // setLastPaintTool: Dispatch<SetStateAction<'wall' | 'difficult' | 'door'>>;
+    setCharFilter: Dispatch<SetStateAction<'all' | 'pc' | 'npc'>>;    
     setShowMovePreview: Dispatch<SetStateAction<boolean>>;
     setNewCharName: Dispatch<SetStateAction<string>>;
     setNewCharDmg: Dispatch<SetStateAction<string>>;
@@ -114,6 +112,12 @@ export interface MapContextType {
     redo: () => void;
     saveSnapshot: () => void;
     takeSnapshot: () => void;
+    restoreSnapshot: (s: AppSnapshot) => void;    
+    clearMeasurements: () => void;
+    handleCharacterClick: (charId: string) => void;
+    handleClearNPCs: () => void;
+    handleClearPCs: () => void;
+    handleDeleteCharacter: (charId: string) => void;
   }
 }
 
