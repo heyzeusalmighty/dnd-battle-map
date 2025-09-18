@@ -1,4 +1,12 @@
-import { FC, SetStateAction, MouseEvent, RefObject, Dispatch, MutableRefObject } from 'react';
+import {
+  FC,
+  SetStateAction,
+  MouseEvent,
+  RefObject,
+  Dispatch,
+  MutableRefObject,
+  useMemo,
+} from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
@@ -60,10 +68,8 @@ interface MapGridProps {
 
   selectedTool: string;
   isWallAt: (x: number, y: number) => boolean;
-  isDifficultAt: (x: number, y: number) => boolean;
   isCustomObjectType: (type: string) => boolean;
   getCustomObject: (type: string) => CustomObj | undefined;
-  tokenClasses: (isPlayer: boolean, isSelected: boolean) => string;
   handleCharacterClick: (charId: string) => void;
   handleCellMouseDown: (e: MouseEvent, x: number, y: number) => void;
   handleCellMouseEnter: (e: MouseEvent, x: number, y: number) => void;
@@ -116,10 +122,8 @@ const MapGrid: FC<MapGridProps> = ({
   redo,
   selectedTool,
   isWallAt,
-  isDifficultAt,
   isCustomObjectType,
   getCustomObject,
-  tokenClasses,
   handleCharacterClick,
   handleCellMouseDown,
   handleCellMouseEnter,
@@ -203,6 +207,37 @@ const MapGrid: FC<MapGridProps> = ({
       setTerrain((prev) => prev.filter((t) => t.id !== terrainId));
     }
   };
+
+  // choose token classes based on PC/NPC and selection
+  const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
+    [
+      'absolute z-10 flex items-center justify-center',
+      isPlayer ? 'rounded-full' : 'rounded-md',
+
+      // Base (subtle) outline via ring; no borders at all
+      'ring-1 ring-black/10 dark:ring-white/20',
+      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
+
+      // Selection emphasis
+      isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
+
+      // Optional: small polish
+      'shadow-sm transition-all duration-150',
+      // If you set fill inline via style={{ backgroundColor: c.color }},
+      // you can drop bg-background. Keep it only if you rely on a CSS var:
+      // "bg-background",
+    ].join(' ');
+
+  // O(1) lookups for terrain difficulty
+  const difficultKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const t of terrain) {
+      if (t.type === 'difficult') s.add(`${t.x},${t.y}`);
+    }
+    return s;
+  }, [terrain]);
+
+  const isDifficultAt = (x: number, y: number) => difficultKeys.has(`${x},${y}`);
 
   return (
     <div className="flex-1 min-w-0 overflow-hidden">

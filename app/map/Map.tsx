@@ -1,23 +1,20 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useRef, useEffect, MouseEvent, useMemo } from 'react';
-
-import { GRID_SIZE } from './utils/constants';
-import { demoCharacters, demoTerrain } from './utils/demo';
+import { useRef, useEffect, MouseEvent, useMemo } from 'react';
 import { rollInitiativeOnce, capInit } from './utils/dice';
 import { getId } from './utils/id';
 import { BUILTIN_TERRAIN } from './utils/terrain';
 import type {
   Character,
-  CustomObj,
-  DistanceRule,
-  Measurement,
   Terrain,
-  InitiativeMode,
   RollPreset,
   RollScope,
   AppSnapshot,
+  // CustomObj,
+  // DistanceRule,
+  // Measurement,
+  // InitiativeMode,
 } from './types';
 
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
@@ -33,199 +30,114 @@ import HelpDialog from './components/HelpDialog';
 import MapGrid from './components/MapGrid';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import SaveMapCard from './components/SaveMapCard';
+import { MapProvider } from './context/MapContext';
 
-const INITIAL_OBJECTS: CustomObj[] = [
-  {
-    id: 'chest',
-    label: 'Chest',
-    icon: '📦',
-    color: '#8B4513',
-  },
-  {
-    id: 'pillar',
-    label: 'Pillar',
-    icon: '🏛️',
-    color: '#A9A9A9',
-  },
-  {
-    id: 'table',
-    label: 'Table',
-    icon: '⛩',
-    color: '#654321',
-  },
-  {
-    id: 'shelves',
-    label: 'Shelves',
-    icon: '🗄️',
-    color: '#C19A6B',
-  },
-];
+import { useMapContext } from './context/MapContext';
+import useHotkeys from './hooks/useHotKeys';
 
 const Map = () => {
   // Map configuration
-  const [mapWidth, setMapWidth] = useState(25);
-  const [mapHeight, setMapHeight] = useState(20);
-  const [gridScale, setGridScale] = useState(5);
-  const [distanceRule, setDistanceRule] = useState<DistanceRule>('5e');
+  const { state, actions, mapScrollRef, handlers } = useMapContext();
+  const {
+    mapWidth,
+    mapHeight,
+    gridScale,
+    distanceRule,
+    characters,
+    terrain,
+    isDragging,
+    dragMode,
+    lastCell,
+    measurements,
+    selectedTool,
+    currentTurn,
+    round,
+    measurementStart,
+    hoveredCell,
+    selectedCharacter,
+    showMovePreview,
+    newCharName,
+    newCharDmg,
+    newCharInit,
+    showMapSettings,
+    damageDelta,
+    presetToAdd,
+    undoStack,
+    redoStack,
+    initiativeMode,
+    rollPreset,
+    editInitId,
+    editInitVal,
+    initiativeOrder,
+    customObjects,
+    showHelp,
+    mode,
+  } = state;
 
-  const mapScrollRef = useRef<HTMLDivElement>(null);
+  const {
+    setMapWidth,
+    setMapHeight,
+    setGridScale,
+    setDistanceRule,
+    setCharacters,
+    setTerrain,
+    setIsDragging,
+    setDragMode,
+    setLastCell,
+    setMeasurements,
+    setCurrentTurn,
+    setMeasurementStart,
+    setHoveredCell,
+    setShowMovePreview,
+    setNewCharName,
+    setNewCharDmg,
+    setNewCharInit,
+    setShowMapSettings,
+    setShowAddChar,
+    setDamageDelta,
+    setInitiativeMode,
+    setRollPreset,
+    setEditInitId,
+    setEditInitVal,
+    setInitiativeOrder,
+    setShowHelp,
+    setMode,
+    setPaintTool,
+  } = actions;
+
+  const {
+    handleNextTurn,
+    undo,
+    redo,
+    saveSnapshot,
+    takeSnapshot,
+    restoreSnapshot,
+    clearMeasurements,
+    handleCharacterClick,
+    handleClearNPCs,
+    handleClearPCs,
+  } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
+  useHotkeys({
+    mode,
+    setMode,
+    setPaintTool,
+    undo,
+    redo,
+    handleNextTurn,
+    setCurrentTurn,
+    setShowHelp,
+  });
 
   const { peer, connections, broadcastData } = useHostPeerSession(mapName);
-
-  function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
-    const el = mapScrollRef.current;
-    if (!el) return;
-    const cellSize = GRID_SIZE; // your existing constant
-    const targetX = x * cellSize + cellSize / 2;
-    const targetY = y * cellSize + cellSize / 2;
-
-    const left = Math.max(0, targetX - el.clientWidth / 2);
-    const top = Math.max(0, targetY - el.clientHeight / 2);
-
-    el.scrollTo({ left, top, behavior });
-  }
-
-  // Game state
-  const [characters, setCharacters] = useState<Character[]>(() => demoCharacters());
-  const [terrain, setTerrain] = useState<Terrain[]>(() => demoTerrain());
-
-  // O(1) lookups for terrain difficulty
-  const difficultKeys = useMemo(() => {
-    const s = new Set<string>();
-    for (const t of terrain) {
-      if (t.type === 'difficult') s.add(`${t.x},${t.y}`);
-    }
-    return s;
-  }, [terrain]);
-
-  // click-and-drag state
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragMode, setDragMode] = useState<'paint' | 'erase' | null>(null);
-  const [lastCell, setLastCell] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    // End the drag even if the mouse is released outside the canvas
-    const onUp = () => {
-      setIsDragging(false);
-      setDragMode(null);
-      setLastCell(null);
-    };
-
-    window.addEventListener('mouseup', onUp);
-    return () => window.removeEventListener('mouseup', onUp);
-  }, [isDragging, setIsDragging, setDragMode, setLastCell]);
-
-  const [measurements, setMeasurements] = useState<Measurement[]>([]);
-
-  // hotkey guard
-  const isTypingTarget = (t: EventTarget | null) => {
-    if (!(t instanceof HTMLElement)) return false;
-    const tag = t.tagName.toLowerCase();
-    return tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable;
-  };
-
-  const clearMeasurements = () => {
-    saveSnapshot();
-    setMeasurements([]); // remove saved segments
-    setMeasurementStart(null); // remove the orange/endpoint start cell
-    setHoveredCell(null); // kill preview end cell
-    // if you track any other preview state, clear it here too (e.g., setMeasurementPreview?.(null))
-  };
 
   // clear characters
   const pcCount = useMemo(() => characters.filter((c) => c.isPlayer).length, [characters]);
   const npcCount = characters.length - pcCount;
 
-  function clearBy(predicate: (c: Character) => boolean, label: string) {
-    const toRemove = characters.filter(predicate);
-    if (toRemove.length === 0) return;
-
-    if (!window.confirm(`Delete ${toRemove.length} ${label}?`)) return;
-
-    const removedIds = new Set(toRemove.map((c) => c.id));
-    saveSnapshot();
-
-    // Remove characters
-    setCharacters((prev) => prev.filter((c) => !removedIds.has(c.id)));
-
-    // Fix selection if it was cleared
-    setSelectedCharacter((sel) => (sel && removedIds.has(sel) ? null : sel));
-
-    // Drop from manual order too
-    setInitiativeOrder((prev) => prev.filter((id) => !removedIds.has(id)));
-  }
-
-  function handleClearNPCs() {
-    clearBy((c) => !c.isPlayer, 'NPC(s)');
-  }
-  function handleClearPCs() {
-    clearBy((c) => c.isPlayer, 'PC(s)');
-  }
-
   // UI state
-  const [selectedTool, setSelectedTool] = useState('select');
-  const [currentTurn, setCurrentTurn] = useState(0);
-  const [round, setRound] = useState(1);
-  const [measurementStart, setMeasurementStart] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [hoveredCell, setHoveredCell] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
-
-  // Derive the high-level mode from your existing selectedTool
-  const mode: 'select' | 'measure' | 'paint' =
-    selectedTool === 'select' ? 'select' : selectedTool === 'measure' ? 'measure' : 'paint';
-
-  // characters split panel
-  const [charTab, setCharTab] = useState<'add' | 'manage'>('add');
-  const [charQuery, setCharQuery] = useState('');
-  const [charFilter, setCharFilter] = useState<'all' | 'pc' | 'npc'>('all');
-
-  const filteredCharacters = characters.filter((c) => {
-    if (charFilter === 'pc' && !c.isPlayer) return false;
-    if (charFilter === 'npc' && c.isPlayer) return false;
-    if (charQuery.trim()) {
-      const q = charQuery.trim().toLowerCase();
-      if (!c.name.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
-
-  // choose token classes based on PC/NPC and selection
-  const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
-    [
-      'absolute z-10 flex items-center justify-center',
-      isPlayer ? 'rounded-full' : 'rounded-md',
-
-      // Base (subtle) outline via ring; no borders at all
-      'ring-1 ring-black/10 dark:ring-white/20',
-      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
-
-      // Selection emphasis
-      isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
-
-      // Optional: small polish
-      'shadow-sm transition-all duration-150',
-      // If you set fill inline via style={{ backgroundColor: c.color }},
-      // you can drop bg-background. Keep it only if you rely on a CSS var:
-      // "bg-background",
-    ].join(' ');
-
-  // move preview for characters
-  const [showMovePreview, setShowMovePreview] = useState(true);
-  const isDifficultAt = (x: number, y: number) => difficultKeys.has(`${x},${y}`);
 
   // function commitMove(
   //   charId: string,
@@ -238,17 +150,6 @@ const Map = () => {
   //   );
   // }
 
-  // Form states
-  const [newCharName, setNewCharName] = useState('');
-  const [newCharDmg, setNewCharDmg] = useState('');
-  const [newCharInit, setNewCharInit] = useState('');
-  const [showMapSettings, setShowMapSettings] = useState(false);
-  const [showAddChar, setShowAddChar] = useState(false);
-  const [addMode, setAddMode] = useState<'single' | 'bulk'>('single');
-  const [damageDelta, setDamageDelta] = useState<Record<string, string>>({});
-
-  const [presetToAdd, setPresetToAdd] = useState<string>(DEFAULT_PARTY[0]?.name ?? '');
-
   // ---- undo / redo snapshot
   // snapshot helper
   function commit(mutator: () => void) {
@@ -256,18 +157,7 @@ const Map = () => {
     mutator();
   }
 
-  const [undoStack, setUndoStack] = useState<AppSnapshot[]>([]);
-  const [redoStack, setRedoStack] = useState<AppSnapshot[]>([]);
-  const MAX_HISTORY = 50;
-
   // initiative states
-
-  const [initiativeMode, setInitiativeMode] = useState<InitiativeMode>('auto');
-
-  const [rollPreset, setRollPreset] = useState<RollPreset>({
-    scope: 'all',
-    useMods: true,
-  });
 
   // tiny helper so menu items both save preset and roll
   const setAndRoll = (p: RollPreset) => {
@@ -329,9 +219,6 @@ const Map = () => {
     setCurrentTurn(0); // feel free to remove if you prefer keeping the pointer
   }
 
-  const [editInitId, setEditInitId] = useState<string | null>(null);
-  const [editInitVal, setEditInitVal] = useState('');
-
   function startEditInit(c: Character) {
     setEditInitId(c.id);
     setEditInitVal(String(c.initiative ?? 0));
@@ -372,127 +259,6 @@ const Map = () => {
   //   // (optionally) reset pointer:
   //   // setCurrentTurn(0);
   // }
-
-  // list of character IDs in manual order
-  const [initiativeOrder, setInitiativeOrder] = useState<string[]>(() =>
-    characters.map((c) => c.id)
-  );
-
-  // drop removed characters from init order, append new characters at end, preserve manual reordering
-  useEffect(() => {
-    setInitiativeOrder((prev) => {
-      const idsNow = characters.map((c) => c.id);
-      const nowSet = new Set(idsNow);
-
-      // keep existing order for ids that still exist
-      const kept = prev.filter((id) => nowSet.has(id));
-
-      // append any new ids not already in the order
-      const keptSet = new Set(kept);
-      const added = idsNow.filter((id) => !keptSet.has(id));
-
-      return [...kept, ...added];
-    });
-  }, [characters]);
-
-  // custom object states
-  const [customObjects, setCustomObjects] = useState<CustomObj[]>(INITIAL_OBJECTS);
-
-  const [newObjLabel, setNewObjLabel] = useState('');
-  const [newObjColor, setNewObjColor] = useState('#8B4513');
-  const [newObjIcon, setNewObjIcon] = useState('');
-
-  const slugify = (s: string) =>
-    s
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-  const handleAddCustomObject = () => {
-    const label = newObjLabel.trim();
-    if (!label) return;
-    const id = slugify(label);
-    if (customObjects.some((o) => o.id === id)) return;
-    setCustomObjects((prev) => [
-      ...prev,
-      {
-        id,
-        label,
-        icon: newObjIcon.trim(),
-        color: newObjColor,
-      },
-    ]);
-    setSelectedTool(id);
-    setNewObjLabel('');
-    setNewObjIcon('');
-    setNewObjColor('#8B4513');
-  };
-
-  // delete characters
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCharacter) {
-        e.preventDefault();
-        handleDeleteCharacter(selectedCharacter);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [selectedCharacter]);
-
-  // cancel measurement
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Cancel active measurement first
-        if (measurementStart) {
-          e.preventDefault();
-          setMeasurementStart(null);
-          setHoveredCell(null); // optional: hide preview instantly
-          return;
-        }
-        // Otherwise, deselect any selected character (cancels move preview)
-        if (selectedCharacter) {
-          e.preventDefault();
-          setSelectedCharacter(null);
-          setHoveredCell(null); // optional
-        }
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [measurementStart, selectedCharacter]);
-
-  // center on character token
-  useEffect(() => {
-    if (!selectedCharacter) return;
-    const c = characters.find((ch) => ch.id === selectedCharacter);
-    if (!c) return;
-
-    const cellSize = GRID_SIZE;
-    const el = mapScrollRef.current;
-    if (!el) return;
-
-    const cx = c.x * cellSize + cellSize / 2;
-    const cy = c.y * cellSize + cellSize / 2;
-
-    // optional: only scroll if off-screen
-    const inView =
-      cx >= el.scrollLeft &&
-      cx <= el.scrollLeft + el.clientWidth &&
-      cy >= el.scrollTop &&
-      cy <= el.scrollTop + el.clientHeight;
-
-    if (!inView) {
-      el.scrollTo({
-        left: Math.max(0, cx - el.clientWidth / 2),
-        top: Math.max(0, cy - el.clientHeight / 2),
-        behavior: 'smooth',
-      });
-    }
-  }, [selectedCharacter]);
 
   // broadcast snapshots on every state change
   useEffect(() => {
@@ -555,103 +321,6 @@ const Map = () => {
   // find the currently selected character once
   const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
 
-  // help button
-  const [showHelp, setShowHelp] = useState(false);
-
-  /**
-   * Chebyshev-minimal path from (x1,y1) to (x2,y2):
-   * step diagonally until aligned, then straight.
-   * Returns the *intermediate* squares you pass through (not including start).
-   */
-  // const computePathCells = (x1: number, y1: number, x2: number, y2: number) => {
-  //   const cells: { x: number; y: number }[] = [];
-  //   let cx = x1,
-  //     cy = y1;
-  //   while (cx !== x2 || cy !== y2) {
-  //     if (cx < x2) cx++;
-  //     else if (cx > x2) cx--;
-  //     if (cy < y2) cy++;
-  //     else if (cy > y2) cy--;
-  //     cells.push({ x: cx, y: cy });
-  //   }
-  //   return cells;
-  // };
-
-  // undo/redo
-  const takeSnapshot = (): AppSnapshot => ({
-    characters: JSON.parse(JSON.stringify(characters)),
-    terrain: JSON.parse(JSON.stringify(terrain)),
-    measurements: JSON.parse(JSON.stringify(measurements)),
-    mapWidth,
-    mapHeight,
-    gridScale,
-    round,
-    currentTurn,
-    selectedTool,
-    customObjects: JSON.parse(JSON.stringify(customObjects)),
-    id: Date.now(), // simple unique ID for debugging
-  });
-
-  const saveSnapshot = () => {
-    const snapShot = takeSnapshot();
-    setUndoStack((prev) => {
-      const next = [...prev, snapShot];
-      return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
-    });
-    setRedoStack([]); // clear redo on any new action
-    console.log('Snapshot taken', snapShot.id, snapShot.terrain.length);
-    console.log('terrain', terrain);
-  };
-
-  // manage undo / redo snapshots
-  const applySnapshot = (s: AppSnapshot) => {
-    setCharacters(s.characters);
-    setTerrain(s.terrain);
-    setMeasurements(s.measurements);
-    setMapWidth(s.mapWidth);
-    setMapHeight(s.mapHeight);
-    setGridScale(s.gridScale);
-    setRound(s.round);
-    setCurrentTurn(s.currentTurn);
-    setSelectedTool(s.selectedTool);
-  };
-
-  const undo = () => {
-    setUndoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      const rest = prev.slice(0, -1);
-      setRedoStack((r) => [...r, takeSnapshot()]);
-      applySnapshot(last);
-      return rest;
-    });
-  };
-
-  const redo = () => {
-    setRedoStack((prev) => {
-      if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
-      const rest = prev.slice(0, -1);
-      setUndoStack((u) => [...u, takeSnapshot()]);
-      applySnapshot(last);
-      return rest;
-    });
-  };
-
-  const handleCharacterClick = (charId: string) => {
-    if (selectedTool !== 'select') return;
-
-    // toggle selection; only center when selecting (not when de-selecting)
-    setSelectedCharacter((prev) => {
-      const next = prev === charId ? null : charId;
-      if (next) {
-        const c = characters.find((ch) => ch.id === next);
-        if (c) scrollCellIntoCenter(c.x, c.y); // uses the helper you added
-      }
-      return next;
-    });
-  };
-
   // Left-down or Right-down on a cell
   const paintSnap = useRef(false);
 
@@ -705,13 +374,6 @@ const Map = () => {
   //   setDragMode(null);
   //   setLastCell(null);
   // };
-
-  const handleDeleteCharacter = (charId: string) => {
-    saveSnapshot();
-    setCharacters((prev) => prev.filter((c) => c.id !== charId));
-    if (selectedCharacter === charId) setSelectedCharacter(null);
-    // If you later add a manual initiative order, remember to also remove the id there.
-  };
 
   // handle moving initiative order
   const moveInInitiative = (charId: string, dir: 'up' | 'down') => {
@@ -832,7 +494,6 @@ const Map = () => {
   };
 
   // Remember the last paint subtool the user picked
-  const [lastPaintTool, setLastPaintTool] = useState<'wall' | 'difficult' | 'door'>('wall');
 
   // add damage to existing NPC damage score
   const applyDamageDelta = (charId: string) => {
@@ -922,111 +583,6 @@ const Map = () => {
     );
   };
 
-  // Small setters
-  const setMode = (m: 'select' | 'measure' | 'paint') => {
-    if (m === 'paint') setSelectedTool(lastPaintTool);
-    else setSelectedTool(m);
-  };
-
-  const setPaintTool = (t: 'wall' | 'difficult' | 'door') => {
-    setLastPaintTool(t);
-    setSelectedTool(t);
-  };
-
-  const handleNextTurn = () => {
-    const list =
-      initiativeMode === 'auto'
-        ? [...characters].sort((a, b) => b.initiative - a.initiative)
-        : initiativeOrder
-            .map((id) => characters.find((c) => c.id === id))
-            .filter((c): c is Character => !!c);
-
-    const nextTurn = (currentTurn + 1) % Math.max(1, list.length);
-    setCurrentTurn(nextTurn);
-    if (nextTurn === 0) setRound((prev) => prev + 1);
-  };
-
-  // hotkey enablers
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      const meta = e.metaKey || e.ctrlKey;
-
-      // don't hijack typing
-      if (isTypingTarget(e.target)) return;
-
-      // ---- Undo / Redo (Meta/Ctrl) ----
-      if (meta && key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-        return;
-      }
-      if (meta && ((key === 'z' && e.shiftKey) || key === 'y')) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-
-      // ---- Turn controls (optional; remove if you don't want them) ----
-      if (key === ' ' || key === 'enter') {
-        // next
-        e.preventDefault();
-        handleNextTurn();
-        return;
-      }
-      if (key === 'backspace' || (e.shiftKey && key === ' ')) {
-        // prev
-        e.preventDefault();
-        setCurrentTurn((v) => Math.max(0, v - 1));
-        return;
-      }
-
-      // ---- Mode switching ----
-      if (key === 'v') {
-        e.preventDefault();
-        setMode('select');
-        return;
-      }
-      if (key === 'm') {
-        e.preventDefault();
-        setMode('measure');
-        return;
-      }
-      if (key === 'b') {
-        e.preventDefault();
-        setMode('paint');
-        return;
-      }
-
-      // ---- Paint subtools (only when painting) ----
-      if (mode === 'paint') {
-        if (key === '1') {
-          e.preventDefault();
-          setPaintTool('wall');
-          return;
-        }
-        if (key === '2') {
-          e.preventDefault();
-          setPaintTool('difficult');
-          return;
-        }
-        if (key === '3') {
-          e.preventDefault();
-          setPaintTool('door');
-          return;
-        }
-        if (key === 'h') {
-          e.preventDefault();
-          setShowHelp((v) => !v);
-          return;
-        }
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool]);
-
   const sortedCharacters =
     initiativeMode === 'auto'
       ? [...characters].sort((a, b) => b.initiative - a.initiative)
@@ -1048,21 +604,6 @@ const Map = () => {
     }
   };
 
-  const restoreSnapshot = (s: AppSnapshot) => {
-    saveSnapshot();
-    setCharacters(s.characters);
-    setTerrain(s.terrain);
-    setMapWidth(s.mapWidth);
-    setMapHeight(s.mapHeight);
-    setGridScale(s.gridScale);
-    setCustomObjects(s.customObjects ?? INITIAL_OBJECTS);
-    setSelectedTool('select');
-    setMeasurements(s.measurements);
-    setRound(s.round);
-    setCurrentTurn(s.currentTurn);
-    setInitiativeMode('auto');
-  };
-
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
@@ -1078,55 +619,15 @@ const Map = () => {
           mapName={mapName}
         />
         <div className="w-64 flex-shrink-0 space-y-4">
-          <ObjectPanel
-            customObjects={customObjects}
-            selectedTool={selectedTool}
-            setSelectedTool={setSelectedTool}
-            newObjLabel={newObjLabel}
-            setNewObjLabel={setNewObjLabel}
-            newObjColor={newObjColor}
-            setNewObjColor={setNewObjColor}
-            handleAddCustomObject={handleAddCustomObject}
-          />
+          <ObjectPanel />
 
           <CharacterPanel
-            characters={characters}
-            setCharacters={setCharacters}
-            selectedCharacter={selectedCharacter}
-            setSelectedCharacter={setSelectedCharacter}
-            initiativeMode={initiativeMode}
-            setInitiativeOrder={setInitiativeOrder}
-            mapHeight={mapHeight}
-            mapWidth={mapWidth}
             isWallAt={isWallAt}
-            saveSnapshot={saveSnapshot}
-            charTab={charTab}
-            setCharTab={setCharTab}
-            handleCharacterClick={handleCharacterClick}
-            handleDeleteCharacter={handleDeleteCharacter}
-            presetToAdd={presetToAdd}
-            setPresetToAdd={setPresetToAdd}
             addCharacterFromPreset={addCharacterFromPreset}
             addPartyFromPresets={addPartyFromPresets}
-            showAddChar={showAddChar}
-            setShowAddChar={setShowAddChar}
-            addMode={addMode}
-            setAddMode={setAddMode}
-            newCharName={newCharName}
-            setNewCharName={setNewCharName}
-            newCharInit={newCharInit}
-            setNewCharInit={setNewCharInit}
-            newCharDmg={newCharDmg}
-            setNewCharDmg={setNewCharDmg}
             handleAddCharacter={handleAddCharacter}
-            damageDelta={damageDelta}
-            setDamageDelta={setDamageDelta}
+            handleCharacterClick={handleCharacterClick}
             applyDamageDelta={applyDamageDelta}
-            charQuery={charQuery}
-            setCharQuery={setCharQuery}
-            charFilter={charFilter}
-            setCharFilter={setCharFilter}
-            filteredCharacters={filteredCharacters}
             handleUpdateHp={handleUpdateHp}
           />
 
@@ -1164,10 +665,8 @@ const Map = () => {
           selectedTool={selectedTool}
           setPaintTool={setPaintTool}
           isWallAt={isWallAt}
-          isDifficultAt={isDifficultAt}
           isCustomObjectType={isCustomObjectType}
           getCustomObject={getCustomObject}
-          tokenClasses={tokenClasses}
           handleCharacterClick={handleCharacterClick}
           handleCellMouseDown={handleCellMouseDown}
           handleCellMouseEnter={handleCellMouseEnter}
@@ -1239,4 +738,10 @@ const Map = () => {
   );
 };
 
-export default Map;
+const MapWithContext = () => (
+  <MapProvider>
+    <Map />
+  </MapProvider>
+);
+
+export default MapWithContext;
