@@ -1,23 +1,21 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useRef, useEffect, MouseEvent, useMemo } from 'react';
-
+import { useRef, useEffect, MouseEvent, useMemo } from 'react';
 import { GRID_SIZE } from './utils/constants';
-import { demoCharacters, demoTerrain } from './utils/demo';
 import { rollInitiativeOnce, capInit } from './utils/dice';
 import { getId } from './utils/id';
 import { BUILTIN_TERRAIN } from './utils/terrain';
 import type {
   Character,
-  CustomObj,
-  DistanceRule,
-  Measurement,
   Terrain,
-  InitiativeMode,
   RollPreset,
   RollScope,
   AppSnapshot,
+  // CustomObj,
+  // DistanceRule,
+  // Measurement,
+  // InitiativeMode,
 } from './types';
 
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
@@ -34,39 +32,98 @@ import MapGrid from './components/MapGrid';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import SaveMapCard from './components/SaveMapCard';
 
-const INITIAL_OBJECTS: CustomObj[] = [
-  {
-    id: 'chest',
-    label: 'Chest',
-    icon: '📦',
-    color: '#8B4513',
-  },
-  {
-    id: 'pillar',
-    label: 'Pillar',
-    icon: '🏛️',
-    color: '#A9A9A9',
-  },
-  {
-    id: 'table',
-    label: 'Table',
-    icon: '⛩',
-    color: '#654321',
-  },
-  {
-    id: 'shelves',
-    label: 'Shelves',
-    icon: '🗄️',
-    color: '#C19A6B',
-  },
-];
+import { useMapContext } from './context/MapContext';
 
 const Map = () => {
   // Map configuration
-  const [mapWidth, setMapWidth] = useState(25);
-  const [mapHeight, setMapHeight] = useState(20);
-  const [gridScale, setGridScale] = useState(5);
-  const [distanceRule, setDistanceRule] = useState<DistanceRule>('5e');
+  const { state, actions } = useMapContext();
+  const {
+    mapWidth,
+    mapHeight,
+    gridScale,
+    distanceRule,
+    characters,
+    terrain,
+    isDragging,
+    dragMode,
+    lastCell,
+    measurements,
+    selectedTool,
+    currentTurn,
+    round,
+    measurementStart,
+    hoveredCell,
+    selectedCharacter,
+    charTab,
+    charQuery,
+    charFilter,
+    lastPaintTool,
+    showMovePreview,
+    newCharName,
+    newCharDmg,
+    newCharInit,
+    showMapSettings,
+    showAddChar,
+    addMode,
+    damageDelta,
+    presetToAdd,
+    undoStack,
+    redoStack,
+    initiativeMode,
+    rollPreset,
+    editInitId,
+    editInitVal,
+    initiativeOrder,
+    customObjects,
+    newObjLabel,
+    newObjColor,
+    newObjIcon,
+    showHelp,
+  } = state;
+
+  const {
+    setMapWidth,
+    setMapHeight,
+    setGridScale,
+    setDistanceRule,
+    setCharacters,
+    setTerrain,
+    setIsDragging,
+    setDragMode,
+    setLastCell,
+    setMeasurements,
+    setCurrentTurn,
+    setRound,
+    setSelectedTool,
+    setMeasurementStart,
+    setHoveredCell,
+    setSelectedCharacter,
+    setCharTab,
+    setCharQuery,
+    setCharFilter,
+    setLastPaintTool,
+    setShowMovePreview,
+    setNewCharName,
+    setNewCharDmg,
+    setNewCharInit,
+    setShowMapSettings,
+    setShowAddChar,
+    setAddMode,
+    setDamageDelta,
+    setPresetToAdd,
+    setUndoStack,
+    setRedoStack,
+    setInitiativeMode,
+    setRollPreset,
+    setEditInitId,
+    setEditInitVal,
+    setInitiativeOrder,
+    setCustomObjects,
+    setNewObjLabel,
+    setNewObjColor,
+    setNewObjIcon,
+    setShowHelp,
+  } = actions;
 
   const mapScrollRef = useRef<HTMLDivElement>(null);
 
@@ -89,41 +146,22 @@ const Map = () => {
   }
 
   // Game state
-  const [characters, setCharacters] = useState<Character[]>(() => demoCharacters());
-  const [terrain, setTerrain] = useState<Terrain[]>(() => demoTerrain());
-
-  // O(1) lookups for terrain difficulty
-  const difficultKeys = useMemo(() => {
-    const s = new Set<string>();
-    for (const t of terrain) {
-      if (t.type === 'difficult') s.add(`${t.x},${t.y}`);
-    }
-    return s;
-  }, [terrain]);
 
   // click-and-drag state
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragMode, setDragMode] = useState<'paint' | 'erase' | null>(null);
-  const [lastCell, setLastCell] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
 
-  useEffect(() => {
-    if (!isDragging) return;
+  // useEffect(() => {
+  //   if (!isDragging) return;
 
-    // End the drag even if the mouse is released outside the canvas
-    const onUp = () => {
-      setIsDragging(false);
-      setDragMode(null);
-      setLastCell(null);
-    };
+  //   // End the drag even if the mouse is released outside the canvas
+  //   const onUp = () => {
+  //     setIsDragging(false);
+  //     setDragMode(null);
+  //     setLastCell(null);
+  //   };
 
-    window.addEventListener('mouseup', onUp);
-    return () => window.removeEventListener('mouseup', onUp);
-  }, [isDragging, setIsDragging, setDragMode, setLastCell]);
-
-  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  //   window.addEventListener('mouseup', onUp);
+  //   return () => window.removeEventListener('mouseup', onUp);
+  // }, [isDragging, setIsDragging, setDragMode, setLastCell]);
 
   // hotkey guard
   const isTypingTarget = (t: EventTarget | null) => {
@@ -171,27 +209,10 @@ const Map = () => {
   }
 
   // UI state
-  const [selectedTool, setSelectedTool] = useState('select');
-  const [currentTurn, setCurrentTurn] = useState(0);
-  const [round, setRound] = useState(1);
-  const [measurementStart, setMeasurementStart] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [hoveredCell, setHoveredCell] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
 
   // Derive the high-level mode from your existing selectedTool
   const mode: 'select' | 'measure' | 'paint' =
     selectedTool === 'select' ? 'select' : selectedTool === 'measure' ? 'measure' : 'paint';
-
-  // characters split panel
-  const [charTab, setCharTab] = useState<'add' | 'manage'>('add');
-  const [charQuery, setCharQuery] = useState('');
-  const [charFilter, setCharFilter] = useState<'all' | 'pc' | 'npc'>('all');
 
   const filteredCharacters = characters.filter((c) => {
     if (charFilter === 'pc' && !c.isPlayer) return false;
@@ -202,30 +223,6 @@ const Map = () => {
     }
     return true;
   });
-
-  // choose token classes based on PC/NPC and selection
-  const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
-    [
-      'absolute z-10 flex items-center justify-center',
-      isPlayer ? 'rounded-full' : 'rounded-md',
-
-      // Base (subtle) outline via ring; no borders at all
-      'ring-1 ring-black/10 dark:ring-white/20',
-      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
-
-      // Selection emphasis
-      isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
-
-      // Optional: small polish
-      'shadow-sm transition-all duration-150',
-      // If you set fill inline via style={{ backgroundColor: c.color }},
-      // you can drop bg-background. Keep it only if you rely on a CSS var:
-      // "bg-background",
-    ].join(' ');
-
-  // move preview for characters
-  const [showMovePreview, setShowMovePreview] = useState(true);
-  const isDifficultAt = (x: number, y: number) => difficultKeys.has(`${x},${y}`);
 
   // function commitMove(
   //   charId: string,
@@ -238,17 +235,6 @@ const Map = () => {
   //   );
   // }
 
-  // Form states
-  const [newCharName, setNewCharName] = useState('');
-  const [newCharDmg, setNewCharDmg] = useState('');
-  const [newCharInit, setNewCharInit] = useState('');
-  const [showMapSettings, setShowMapSettings] = useState(false);
-  const [showAddChar, setShowAddChar] = useState(false);
-  const [addMode, setAddMode] = useState<'single' | 'bulk'>('single');
-  const [damageDelta, setDamageDelta] = useState<Record<string, string>>({});
-
-  const [presetToAdd, setPresetToAdd] = useState<string>(DEFAULT_PARTY[0]?.name ?? '');
-
   // ---- undo / redo snapshot
   // snapshot helper
   function commit(mutator: () => void) {
@@ -256,18 +242,9 @@ const Map = () => {
     mutator();
   }
 
-  const [undoStack, setUndoStack] = useState<AppSnapshot[]>([]);
-  const [redoStack, setRedoStack] = useState<AppSnapshot[]>([]);
   const MAX_HISTORY = 50;
 
   // initiative states
-
-  const [initiativeMode, setInitiativeMode] = useState<InitiativeMode>('auto');
-
-  const [rollPreset, setRollPreset] = useState<RollPreset>({
-    scope: 'all',
-    useMods: true,
-  });
 
   // tiny helper so menu items both save preset and roll
   const setAndRoll = (p: RollPreset) => {
@@ -329,9 +306,6 @@ const Map = () => {
     setCurrentTurn(0); // feel free to remove if you prefer keeping the pointer
   }
 
-  const [editInitId, setEditInitId] = useState<string | null>(null);
-  const [editInitVal, setEditInitVal] = useState('');
-
   function startEditInit(c: Character) {
     setEditInitId(c.id);
     setEditInitVal(String(c.initiative ?? 0));
@@ -373,11 +347,6 @@ const Map = () => {
   //   // setCurrentTurn(0);
   // }
 
-  // list of character IDs in manual order
-  const [initiativeOrder, setInitiativeOrder] = useState<string[]>(() =>
-    characters.map((c) => c.id)
-  );
-
   // drop removed characters from init order, append new characters at end, preserve manual reordering
   useEffect(() => {
     setInitiativeOrder((prev) => {
@@ -394,13 +363,6 @@ const Map = () => {
       return [...kept, ...added];
     });
   }, [characters]);
-
-  // custom object states
-  const [customObjects, setCustomObjects] = useState<CustomObj[]>(INITIAL_OBJECTS);
-
-  const [newObjLabel, setNewObjLabel] = useState('');
-  const [newObjColor, setNewObjColor] = useState('#8B4513');
-  const [newObjIcon, setNewObjIcon] = useState('');
 
   const slugify = (s: string) =>
     s
@@ -555,9 +517,6 @@ const Map = () => {
   // find the currently selected character once
   const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
 
-  // help button
-  const [showHelp, setShowHelp] = useState(false);
-
   /**
    * Chebyshev-minimal path from (x1,y1) to (x2,y2):
    * step diagonally until aligned, then straight.
@@ -587,7 +546,7 @@ const Map = () => {
     gridScale,
     round,
     currentTurn,
-    selectedTool,
+    selectedTool: selectedTool ?? 'select',
     customObjects: JSON.parse(JSON.stringify(customObjects)),
     id: Date.now(), // simple unique ID for debugging
   });
@@ -832,7 +791,6 @@ const Map = () => {
   };
 
   // Remember the last paint subtool the user picked
-  const [lastPaintTool, setLastPaintTool] = useState<'wall' | 'difficult' | 'door'>('wall');
 
   // add damage to existing NPC damage score
   const applyDamageDelta = (charId: string) => {
@@ -1055,7 +1013,7 @@ const Map = () => {
     setMapWidth(s.mapWidth);
     setMapHeight(s.mapHeight);
     setGridScale(s.gridScale);
-    setCustomObjects(s.customObjects ?? INITIAL_OBJECTS);
+    setCustomObjects(s.customObjects ?? []);
     setSelectedTool('select');
     setMeasurements(s.measurements);
     setRound(s.round);
@@ -1164,10 +1122,8 @@ const Map = () => {
           selectedTool={selectedTool}
           setPaintTool={setPaintTool}
           isWallAt={isWallAt}
-          isDifficultAt={isDifficultAt}
           isCustomObjectType={isCustomObjectType}
           getCustomObject={getCustomObject}
-          tokenClasses={tokenClasses}
           handleCharacterClick={handleCharacterClick}
           handleCellMouseDown={handleCellMouseDown}
           handleCellMouseEnter={handleCellMouseEnter}
