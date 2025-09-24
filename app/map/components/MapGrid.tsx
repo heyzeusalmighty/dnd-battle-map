@@ -48,24 +48,20 @@ import { useMapContext } from "../context/MapContext";
 import { getId } from "../utils/id";
 
 interface MapGridProps {
-	isWallAt: (x: number, y: number) => boolean;
 	isCustomObjectType: (type: string) => boolean;
 	getCustomObject: (type: string) => CustomObj | undefined;
 	handleCellMouseDown: (e: MouseEvent, x: number, y: number) => void;
 	handleCellMouseEnter: (e: MouseEvent, x: number, y: number) => void;
-	getSelectedChar: () => Character | null;
 	commit: (fn: () => void) => void;
 	paintSnap: MutableRefObject<boolean>;
 }
 
 const MapGrid: FC<MapGridProps> = ({
-	isWallAt,
 	isCustomObjectType,
 	getCustomObject,
 	handleCellMouseDown,
 	handleCellMouseEnter,
 	paintSnap,
-	getSelectedChar,
 	commit,
 }) => {
 	const { state, handlers, actions, mapScrollRef } = useMapContext();
@@ -203,6 +199,10 @@ const MapGrid: FC<MapGridProps> = ({
 
 	const isDifficultAt = (x: number, y: number) =>
 		difficultKeys.has(`${x},${y}`);
+
+	// find the currently selected character once
+	const getSelectedChar = () =>
+		characters.find((c) => c.id === selectedCharacter) || null;
 
 	return (
 		<div className="flex-1 min-w-0 overflow-hidden">
@@ -487,6 +487,7 @@ const MapGrid: FC<MapGridProps> = ({
 								height={mapHeight * GRID_SIZE}
 								className="absolute inset-0 pointer-events-none"
 							>
+								<title>Movement Measure</title>
 								<g opacity={0.7}>
 									<line
 										x1={measurementStart.x * GRID_SIZE + GRID_SIZE / 2}
@@ -539,7 +540,6 @@ const MapGrid: FC<MapGridProps> = ({
 										rule={distanceRule}
 										gridScale={gridScale}
 										isDifficultAt={isDifficultAt}
-										isWallAt={isWallAt}
 									/>
 								);
 							})()}
