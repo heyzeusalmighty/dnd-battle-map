@@ -25,27 +25,14 @@ import {
 	SelectValue,
 } from "../../components/ui/select";
 import { useMapContext } from "../context/MapContext";
+import type { Character } from "../types";
+import { getId } from "../utils/id";
 import { DEFAULT_PARTY } from "../utils/partyPresets";
 
-const CharacterPanel = ({
-	isWallAt,
-	addCharacterFromPreset,
-	addPartyFromPresets,
-	handleAddCharacter,
-	handleUpdateHp,
-	applyDamageDelta,
-}: {
-	isWallAt: (x: number, y: number) => boolean;
-	addCharacterFromPreset: () => void;
-	addPartyFromPresets: () => void;
-	handleAddCharacter: () => void;
-	handleUpdateHp: (id: string, newHp: number) => void;
-	applyDamageDelta: (id: string) => void;
-}) => {
+const CharacterPanel = () => {
 	const { handlers, state, actions } = useMapContext();
 	const {
 		setCharacters,
-		setSelectedCharacter,
 		setInitiativeOrder,
 		setCharTab,
 		setPresetToAdd,
@@ -61,11 +48,8 @@ const CharacterPanel = ({
 	const { handleDeleteCharacter, saveSnapshot, handleCharacterClick } =
 		handlers;
 	const {
-		characters,
 		selectedCharacter,
 		initiativeMode,
-		mapWidth,
-		mapHeight,
 		charTab,
 		presetToAdd,
 		showAddChar,
@@ -79,6 +63,199 @@ const CharacterPanel = ({
 		damageDelta,
 	} = state;
 
+	const addPartyFromPresets = () => {
+		const baseX = 1;
+		const baseY = 1;
+
+		// Take one snapshot for the batch (optional but nice)
+		saveSnapshot?.();
+
+		const newlyAddedIds: string[] = [];
+
+		DEFAULT_PARTY.forEach((p, i) => {
+			const incoming: Character = {
+				id: getId(),
+				name: p.name,
+				x: baseX + i,
+				y: baseY,
+				hp: p.hp,
+				maxHp: p.hp,
+				initiative: p.initiative ?? 0,
+				initiativeMod: p.initiativeMod ?? 0,
+				isPlayer: true,
+				color: p.color ?? "#3B82F6",
+				ac: p.ac,
+			};
+
+			const { added, id } = upsertPlayerByName(incoming);
+			if (added) newlyAddedIds.push(id);
+		});
+
+		// If you have a manual initiative list, append only truly-new entries
+		if (initiativeMode === "manual" && newlyAddedIds.length) {
+			setInitiativeOrder((prev) => [...prev, ...newlyAddedIds]);
+		}
+	};
+
+	const normName = (s: string) => s.trim().toLowerCase();
+
+	/** Upsert a *player* by name; preserves id/x/y if updating.
+	 *  Returns { added, id } so callers can update initiativeOrder for new entries.
+	 */
+	const upsertPlayerByName = (
+		incoming: Character,
+	): { added: boolean; id: string } => {
+		const n = normName(incoming.name);
+		let added = false;
+		let keptId = incoming.id;
+
+		setCharacters((prev) => {
+			const idx = prev.findIndex((c) => c.isPlayer && normName(c.name) === n);
+			if (idx !== -1) {
+				const cur = prev[idx];
+
+				// Build merged record (preserve id/pos; don’t clobber player-owned fields)
+				const next: Character = {
+					...cur,
+					color: incoming.color ?? cur.color,
+					ac: incoming.ac ?? cur.ac,
+					// only set initiativeMod if provided on incoming; otherwise keep current
+					initiativeMod: incoming.initiativeMod ?? cur.initiativeMod,
+					isPlayer: true,
+				};
+
+				// Optional: seed HP/MaxHP once if current is unset
+				if ((cur.maxHp ?? 0) === 0 && (incoming.maxHp ?? 0) > 0) {
+					next.maxHp = incoming.maxHp;
+					if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0)
+						next.hp = incoming.hp;
+				}
+
+				if (
+					next.color === cur.color &&
+					next.ac === cur.ac &&
+					next.initiativeMod === cur.initiativeMod &&
+					next.maxHp === cur.maxHp &&
+					next.hp === cur.hp
+				) {
+					return prev; // no-op
+				}
+
+				const copy = [...prev];
+				copy[idx] = next;
+				keptId = cur.id;
+				return copy;
+			}
+
+			// add new PC
+			added = true;
+			return [...prev, incoming];
+		});
+
+		return { added, id: keptId };
+	};
+
+	const handleAddCharacter = () => {
+		// Name is the only required field
+		const name = newCharName.trim();
+		if (!name) return;
+
+		// Parse numbers; default to 0 when blank or invalid
+		const dmg = Number.isFinite(parseInt(newCharDmg))
+			? Math.max(0, parseInt(newCharDmg))
+			: 0;
+
+		const mod = Number.isFinite(parseInt(newCharInit))
+			? parseInt(newCharInit, 10)
+			: 0;
+
+		// If your Character requires hp/maxHp, keep them (hidden in UI)
+		const newChar: Character = {
+			id: getId(),
+			name,
+			x: 0,
+			y: 0,
+			hp: 0,
+			maxHp: 0,
+			initiativeMod: mod,
+			initiative: 0, // <-- rolled later
+			isPlayer: false, // NPC
+			color: "#EF4444",
+			damage: dmg,
+		};
+
+		// (Optional) // saveSnapshot(); if you wired undo/redo
+		saveSnapshot();
+		setCharacters((prev) => [...prev, newChar]);
+
+		// reset the form – leave fields blank again
+		setNewCharName("");
+		setNewCharDmg(""); // keep input empty so placeholder shows
+		setNewCharInit("");
+		setShowAddChar(false);
+	};
+
+	const handleUpdateHp = (charId: string, newHp: number) => {
+		const v = Number.isFinite(newHp) ? Math.floor(newHp) : 0;
+		saveSnapshot();
+		setCharacters((prev) =>
+			prev.map((char) =>
+				char.id === charId
+					? { ...char, hp: Math.max(0, v) } // ← no upper cap
+					: char,
+			),
+		);
+	};
+
+	// add individual party member
+	const addCharacterFromPreset = (presetName?: string) => {
+		const name = presetName ?? presetToAdd;
+		const p = DEFAULT_PARTY.find((pp) => pp.name === name);
+		if (!p) return;
+
+		// choose a suggested slot; if upserting, existing position is preserved
+		const baseX = 1,
+			baseY = 1;
+		const incoming: Character = {
+			id: getId(),
+			name: p.name,
+			x: baseX,
+			y: baseY,
+			hp: p.hp,
+			maxHp: p.hp,
+			initiative: p.initiative ?? 0,
+			initiativeMod: p.initiativeMod ?? 0,
+			isPlayer: true,
+			color: p.color ?? "#3B82F6",
+			ac: p.ac,
+		};
+
+		const { added, id } = upsertPlayerByName(incoming);
+		if (initiativeMode === "manual" && added) {
+			setInitiativeOrder((prev) => [...prev, id]);
+		}
+	};
+
+	// add damage to existing NPC damage score
+	const applyDamageDelta = (charId: string) => {
+		const raw = damageDelta[charId];
+		if (raw == null || raw.trim() === "") return;
+		const delta = parseInt(raw, 10);
+		if (Number.isNaN(delta)) return;
+
+		saveSnapshot();
+		setCharacters((prev) =>
+			prev.map((c) =>
+				c.id === charId
+					? {
+							...c,
+							damage: Math.max(0, (c.damage ?? 0) + delta),
+						}
+					: c,
+			),
+		);
+		setDamageDelta((prev) => ({ ...prev, [charId]: "" }));
+	};
 	return (
 		<Card className="p-4">
 			<div className="flex items-center justify-between mb-3">
@@ -247,17 +424,7 @@ const CharacterPanel = ({
 									</div>
 								</div>
 							) : (
-								<BulkNpcForm
-									characters={characters}
-									setCharacters={setCharacters}
-									mapWidth={mapWidth}
-									mapHeight={mapHeight}
-									isWallAt={isWallAt}
-									initiativeMode={initiativeMode}
-									setInitiativeOrder={setInitiativeOrder}
-									setSelectedCharacter={setSelectedCharacter}
-									saveSnapshot={saveSnapshot}
-								/>
+								<BulkNpcForm />
 							)}
 						</DialogContent>
 					</Dialog>
