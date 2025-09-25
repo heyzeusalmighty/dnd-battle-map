@@ -1,265 +1,268 @@
-"use client";
+'use client';
 
-import { useSearchParams } from "next/navigation";
-import {
-	type MouseEvent,
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
-import ConnectedPeersButton from "../components/ConnectedPeersButton";
-import { useHostPeerSession } from "../hooks/rtc/useHostMap";
-import { getFromLocalStorage, saveToLocalStorage } from "../utils/localStorage";
-import CharacterPanel from "./components/CharacterPanel";
-import HelpDialog from "./components/HelpDialog";
-import InitiativePanel from "./components/InitiativePanel";
-import MapGrid from "./components/MapGrid";
-
-import ObjectPanel from "./components/ObjectPanel";
-import SaveMapCard from "./components/SaveMapCard";
-import UtilityPanel from "./components/UtilityPanel";
-import { MapProvider, useMapContext } from "./context/MapContext";
-import useHotkeys from "./hooks/useHotKeys";
-import type { AppSnapshot, Terrain } from "./types";
-import { getId } from "./utils/id";
-import { BUILTIN_TERRAIN } from "./utils/terrain";
+import { useSearchParams } from 'next/navigation';
+import { House } from 'lucide-react';
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import ConnectedPeersButton from '../components/ConnectedPeersButton';
+import { useHostPeerSession } from '../hooks/rtc/useHostMap';
+import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
+import CharacterPanel from './components/CharacterPanel';
+import HelpDialog from './components/HelpDialog';
+import InitiativePanel from './components/InitiativePanel';
+import MapGrid from './components/MapGrid';
+import ObjectPanel from './components/ObjectPanel';
+import SaveMapCard from './components/SaveMapCard';
+import UtilityPanel from './components/UtilityPanel';
+import { MapProvider, useMapContext } from './context/MapContext';
+import useHotkeys from './hooks/useHotKeys';
+import type { AppSnapshot, Terrain } from './types';
+import { getId } from './utils/id';
+import { BUILTIN_TERRAIN } from './utils/terrain';
+import LoadingMapDialog from './components/LoadingMapDialog';
+import { Button } from '../components/ui/button';
 
 const MapContainer = () => {
-	// Map configuration
-	const { state, actions, handlers } = useMapContext();
-	const {
-		mapWidth,
-		mapHeight,
-		gridScale,
-		characters,
-		terrain,
-		isDragging,
-		dragMode,
-		lastCell,
-		measurements,
-		selectedTool,
-		currentTurn,
-		round,
-		customObjects,
-		mode,
-	} = state;
+  // Map configuration
+  const { state, actions, handlers } = useMapContext();
+  const {
+    characters,
+    terrain,
+    isDragging,
+    dragMode,
+    lastCell,
+    selectedTool,
+    currentTurn,
+    customObjects,
+    mode,
+  } = state;
 
-	const {
-		setTerrain,
-		setIsDragging,
-		setDragMode,
-		setLastCell,
-		setCurrentTurn,
-		setShowHelp,
-		setMode,
-		setPaintTool,
-	} = actions;
+  const {
+    setTerrain,
+    setIsDragging,
+    setDragMode,
+    setLastCell,
+    setCurrentTurn,
+    setShowHelp,
+    setMode,
+    setPaintTool,
+  } = actions;
 
-	const {
-		handleNextTurn,
-		undo,
-		redo,
-		saveSnapshot,
-		takeSnapshot,
-		restoreSnapshot,
-	} = handlers;
+  const { handleNextTurn, undo, redo, saveSnapshot, takeSnapshot, restoreSnapshot } = handlers;
 
-	const searchParams = useSearchParams();
-	const mapName = searchParams.get("mapName") ?? "Shadow Over Orlando";
-	useHotkeys({
-		mode,
-		setMode,
-		setPaintTool,
-		undo,
-		redo,
-		handleNextTurn,
-		setCurrentTurn,
-		setShowHelp,
-	});
+  const searchParams = useSearchParams();
+  const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
+  useHotkeys({
+    mode,
+    setMode,
+    setPaintTool,
+    undo,
+    redo,
+    handleNextTurn,
+    setCurrentTurn,
+    setShowHelp,
+  });
 
-	const { peer, connections, broadcastData } = useHostPeerSession(mapName);
+  const { peer, connections, broadcastData } = useHostPeerSession(mapName);
 
-	const [mapIsLoaded, setMapIsLoaded] = useState(false);
+  const [mapIsLoaded, setMapIsLoaded] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(true);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-	const handleLoadMap = useCallback(() => {
-		const loadedMap = getFromLocalStorage<AppSnapshot>(mapName);
-		if (loadedMap) {
-			restoreSnapshot(loadedMap);
-		}
-	}, [mapName, restoreSnapshot]);
+  const handleLoadMap = useCallback(() => {
+    setShowLoadDialog(true);
+    const loadedMap = getFromLocalStorage<AppSnapshot>(mapName);
+    if (loadedMap) {
+      restoreSnapshot(loadedMap);
+    }
+  }, [mapName, restoreSnapshot]);
 
-	useEffect(() => {
-		if (!mapIsLoaded) {
-			handleLoadMap();
-			setMapIsLoaded(true);
-		}
-	}, [mapIsLoaded, handleLoadMap]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoadDialog(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [showLoadDialog]);
 
-	// ---- undo / redo snapshot
-	// snapshot helper
-	function commit(mutator: () => void) {
-		saveSnapshot();
-		mutator();
-	}
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSaveDialog(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [showSaveDialog]);
 
-	// broadcast snapshots on every state change
-	useEffect(() => {
-		const snapShot = takeSnapshot();
-		broadcastData({ type: "snapshot", snapShot });
-	}, [
-		characters,
-		terrain,
-		measurements,
-		mapWidth,
-		mapHeight,
-		gridScale,
-		round,
-		currentTurn,
-		selectedTool,
-		customObjects,
-	]);
+  useEffect(() => {
+    if (!mapIsLoaded) {
+      setShowLoadDialog(true);
+      handleLoadMap();
+      setMapIsLoaded(true);
+    }
+  }, [mapIsLoaded, handleLoadMap]);
 
-	// Helper functions
+  // ---- undo / redo snapshot
+  // snapshot helper
+  function commit(mutator: () => void) {
+    saveSnapshot();
+    mutator();
+  }
 
-	const isCustomObjectType = (t: string) =>
-		!BUILTIN_TERRAIN.has(t) && customObjects.some((o) => o.id === t);
+  // broadcast snapshots on every state change
+  useEffect(() => {
+    const snapShot = takeSnapshot();
+    broadcastData({ type: 'snapshot', snapShot });
+  }, [characters, terrain, currentTurn]);
 
-	// find the object meta by id ("chest", "maomao", …)
-	const getCustomObject = (typeId: string) =>
-		customObjects.find((o) => o.id === typeId);
+  // Helper functions
 
-	const hasTerrainAt = (
-		type: string,
-		x: number,
-		y: number,
-		terrain: Terrain[],
-	) => terrain.some((t) => t.type === type && t.x === x && t.y === y);
+  const isCustomObjectType = (t: string) =>
+    !BUILTIN_TERRAIN.has(t) && customObjects.some((o) => o.id === t);
 
-	// add exactly one terrain of this type at (x,y), replacing any existing terrain **of any type** at that cell
-	const addTerrainAt = (type: string, x: number, y: number) => {
-		setTerrain((prev) => {
-			// remove any terrain occupying this cell (if you want to replace only same-type, filter by type instead)
-			const withoutCell = prev.filter((t) => !(t.x === x && t.y === y));
-			return [...withoutCell, { id: getId(), type, x, y }];
-		});
-	};
+  // find the object meta by id ("chest", "maomao", …)
+  const getCustomObject = (typeId: string) => customObjects.find((o) => o.id === typeId);
 
-	const removeTerrainAt = (type: string, x: number, y: number) => {
-		setTerrain((prev) =>
-			prev.filter((t) => !(t.type === type && t.x === x && t.y === y)),
-		);
-	};
+  const hasTerrainAt = (type: string, x: number, y: number, terrain: Terrain[]) =>
+    terrain.some((t) => t.type === type && t.x === x && t.y === y);
 
-	// Left-down or Right-down on a cell
-	const paintSnap = useRef(false);
+  // add exactly one terrain of this type at (x,y), replacing any existing terrain **of any type** at that cell
+  const addTerrainAt = (type: string, x: number, y: number) => {
+    setTerrain((prev) => {
+      // remove any terrain occupying this cell (if you want to replace only same-type, filter by type instead)
+      const withoutCell = prev.filter((t) => !(t.x === x && t.y === y));
+      return [...withoutCell, { id: getId(), type, x, y }];
+    });
+  };
 
-	const handleCellMouseDown = (e: MouseEvent, x: number, y: number) => {
-		if (selectedTool === "select") return;
-		e.preventDefault();
-		e.stopPropagation();
+  const removeTerrainAt = (type: string, x: number, y: number) => {
+    setTerrain((prev) => prev.filter((t) => !(t.type === type && t.x === x && t.y === y)));
+  };
 
-		if (!paintSnap.current) {
-			saveSnapshot();
-			paintSnap.current = true;
-		}
+  // Left-down or Right-down on a cell
+  const paintSnap = useRef(false);
 
-		const tool = selectedTool;
+  const handleCellMouseDown = (e: MouseEvent, x: number, y: number) => {
+    if (selectedTool === 'select') return;
+    e.preventDefault();
+    e.stopPropagation();
 
-		// Decide mode once at drag start:
-		// - Right click => erase
-		// - Left click => toggle: if cell already has this tool => erase, else paint
-		const exists = hasTerrainAt(tool, x, y, terrain);
-		const mode: "paint" | "erase" =
-			e.button === 2 ? "erase" : exists ? "erase" : "paint";
+    if (!paintSnap.current) {
+      saveSnapshot();
+      paintSnap.current = true;
+    }
 
-		e.preventDefault();
-		e.stopPropagation();
-		setIsDragging(true);
-		setDragMode(mode);
-		setLastCell({ x, y });
+    const tool = selectedTool;
 
-		if (mode === "paint") addTerrainAt(tool, x, y);
-		else removeTerrainAt(tool, x, y);
-	};
+    // Decide mode once at drag start:
+    // - Right click => erase
+    // - Left click => toggle: if cell already has this tool => erase, else paint
+    const exists = hasTerrainAt(tool, x, y, terrain);
+    const mode: 'paint' | 'erase' = e.button === 2 ? 'erase' : exists ? 'erase' : 'paint';
 
-	// When dragging across cells with the mouse held down
-	const handleCellMouseEnter = (_e: MouseEvent, x: number, y: number) => {
-		if (!isDragging || !dragMode || selectedTool === "select") return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    setDragMode(mode);
+    setLastCell({ x, y });
 
-		if (lastCell && lastCell.x === x && lastCell.y === y) return; // skip repeats
+    if (mode === 'paint') addTerrainAt(tool, x, y);
+    else removeTerrainAt(tool, x, y);
+  };
 
-		const tool = selectedTool;
-		if (dragMode === "paint") {
-			if (!hasTerrainAt(tool, x, y, terrain)) addTerrainAt(tool, x, y);
-		} else {
-			if (hasTerrainAt(tool, x, y, terrain)) removeTerrainAt(tool, x, y);
-		}
+  // When dragging across cells with the mouse held down
+  const handleCellMouseEnter = (_e: MouseEvent, x: number, y: number) => {
+    if (!isDragging || !dragMode || selectedTool === 'select') return;
 
-		setLastCell({ x, y });
-	};
+    if (lastCell && lastCell.x === x && lastCell.y === y) return; // skip repeats
 
-	// Remember the last paint subtool the user picked
+    const tool = selectedTool;
+    if (dragMode === 'paint') {
+      if (!hasTerrainAt(tool, x, y, terrain)) addTerrainAt(tool, x, y);
+    } else {
+      if (hasTerrainAt(tool, x, y, terrain)) removeTerrainAt(tool, x, y);
+    }
 
-	const handleSaveMap = () => {
-		const snapShot = takeSnapshot();
-		saveToLocalStorage(mapName, snapShot);
-	};
+    setLastCell({ x, y });
+  };
 
-	return (
-		<div className="h-screen flex flex-col bg-background">
-			<header className="px-4 pt-3 pb-1">
-				<h1 className="text-lg font-semibold">{mapName}</h1>
-			</header>
+  // Remember the last paint subtool the user picked
 
-			<main className="flex-1 flex gap-4 p-4">
-				{/* Left Panel - Tools */}
-				<ConnectedPeersButton
-					connections={connections}
-					sendData={broadcastData}
-					peer={peer}
-					mapName={mapName}
-				/>
-				<div className="w-64 flex-shrink-0 space-y-4">
-					<ObjectPanel />
+  const handleSaveMap = () => {
+    setShowSaveDialog(true);
+    const snapShot = takeSnapshot();
+    saveToLocalStorage(mapName, snapShot);
+  };
 
-					<CharacterPanel />
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      <header className="px-4 pt-3 pb-1">
+        <h1 className="text-lg font-semibold flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2"
+            onClick={() => (window.location.href = '/')}
+          >
+            <House />
+          </Button>
+          {mapName}
+        </h1>
+      </header>
 
-					<UtilityPanel />
-				</div>
+      <main className="flex-1 flex gap-4 p-4">
+        {/* Left Panel - Tools */}
+        <ConnectedPeersButton
+          connections={connections}
+          sendData={broadcastData}
+          peer={peer}
+          mapName={mapName}
+        />
+        <div className="w-64 flex-shrink-0 space-y-4">
+          <ObjectPanel />
 
-				{/* Center - Map */}
-				<MapGrid
-					isCustomObjectType={isCustomObjectType}
-					getCustomObject={getCustomObject}
-					handleCellMouseDown={handleCellMouseDown}
-					handleCellMouseEnter={handleCellMouseEnter}
-					commit={commit}
-					paintSnap={paintSnap}
-				/>
+          <CharacterPanel />
 
-				{/* Right Panel - Initiative */}
+          <UtilityPanel />
+        </div>
 
-				<div className="w-64 flex-shrink-0 flex flex-col gap-4">
-					<InitiativePanel />
+        {/* Center - Map */}
+        <MapGrid
+          isCustomObjectType={isCustomObjectType}
+          getCustomObject={getCustomObject}
+          handleCellMouseDown={handleCellMouseDown}
+          handleCellMouseEnter={handleCellMouseEnter}
+          commit={commit}
+          paintSnap={paintSnap}
+        />
 
-					<SaveMapCard
-						handleSaveMap={handleSaveMap}
-						handleLoadMap={handleLoadMap}
-					/>
-				</div>
+        {/* Right Panel - Initiative */}
 
-				{/* Help button + dialog (replaces always-on instructions) */}
-				<HelpDialog />
-			</main>
-		</div>
-	);
+        <div className="w-64 flex-shrink-0 flex flex-col gap-4">
+          <InitiativePanel />
+
+          <SaveMapCard handleSaveMap={handleSaveMap} handleLoadMap={handleLoadMap} />
+        </div>
+
+        {/* Help button + dialog (replaces always-on instructions) */}
+        <HelpDialog />
+
+        <LoadingMapDialog
+          isOpen={showLoadDialog}
+          title="Loading Map..."
+          body="Please wait while the map is being loaded."
+        />
+
+        <LoadingMapDialog
+          isOpen={showSaveDialog}
+          title="Saving Map..."
+          body="Please wait while the map is being saved."
+        />
+      </main>
+    </div>
+  );
 };
 
 const MapWithContext = () => (
-	<MapProvider>
-		<MapContainer />
-	</MapProvider>
+  <MapProvider>
+    <MapContainer />
+  </MapProvider>
 );
 
 export default MapWithContext;

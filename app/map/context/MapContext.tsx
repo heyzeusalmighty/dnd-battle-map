@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
 
-// import { useSearchParams } from 'next/navigation';
-// import { demoCharacters, demoTerrain } from '../utils/demo';
 import type {
   Character,
   DistanceRule,
@@ -11,17 +9,10 @@ import type {
   InitiativeMode,
   RollPreset,
   CustomObj,
-  // RollScope,
 } from '../types';
 import { demoCharacters, demoTerrain } from '../utils/demo';
-// import { useHostPeerSession } from '../../hooks/rtc/useHostMap';
-// import Peer, { DataConnection } from 'peerjs';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
 import { GRID_SIZE } from '../utils/constants';
-
-// import { rollInitiativeOnce, capInit } from '../utils/dice';
-// import { getId } from '../utils/id';
-// import { BUILTIN_TERRAIN } from '../utils/terrain';
 
 import type { MapContextType } from './types';
 
@@ -178,8 +169,6 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
     });
     setRedoStack([]); // clear redo on any new action
-    console.log('Snapshot taken', snapShot.id, snapShot.terrain.length);
-    console.log('terrain', terrain);
   };
 
   const applySnapshot = (s: AppSnapshot) => {
