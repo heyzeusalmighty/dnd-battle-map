@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import Peer from 'peerjs';
 import { Button } from '../ui/button';
 import { ClipboardCopyIcon } from 'lucide-react';
+import LoadingMapDialog from '@/app/map/components/LoadingMapDialog';
 
 import styles from './index.module.css';
 
@@ -25,6 +27,17 @@ const ConnectedPeersButton = ({
   peer,
   mapName,
 }: ConnectedPeersButtonProps) => {
+  const [showClipboardMessage, setShowClipboardMessage] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (showClipboardMessage) {
+        setShowClipboardMessage(false);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [showClipboardMessage]);
+
   const handlePeerButtonClick = () => {
     sendData({ type: 'request-peers', payload: { pop: 'wow' } });
   };
@@ -34,7 +47,7 @@ const ConnectedPeersButton = ({
       try {
         const url = `${window.location.origin}/map-view?connectionId=${peer?.id}&mapName=${mapName}`;
         await navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
+        setShowClipboardMessage(true);
       } catch (err) {
         console.error('Failed to copy: ', err);
       }
@@ -79,6 +92,11 @@ const ConnectedPeersButton = ({
           </div>
         )}
       </div>
+      <LoadingMapDialog
+        isOpen={showClipboardMessage}
+        title="Copied Link..."
+        body="The connection link has been copied to your clipboard."
+      />
     </div>
   );
 };

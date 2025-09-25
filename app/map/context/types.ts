@@ -111,7 +111,7 @@ export interface MapContextType {
     undo: () => void;
     redo: () => void;
     saveSnapshot: () => void;
-    takeSnapshot: () => void;
+    takeSnapshot: () => AppSnapshot;
     restoreSnapshot: (s: AppSnapshot) => void;    
     clearMeasurements: () => void;
     handleCharacterClick: (charId: string) => void;

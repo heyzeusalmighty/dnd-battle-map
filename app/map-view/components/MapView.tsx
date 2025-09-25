@@ -26,9 +26,6 @@ const MapView = () => {
   // Listen for data if connected
   if (guestMap && guestMap.onData) {
     guestMap.onData((data: unknown) => {
-      // console.log('data from host:', data);
-      setMessageCount((c) => c + 1);
-
       if (
         data &&
         typeof data === 'object' &&
@@ -36,26 +33,30 @@ const MapView = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (data as any).type === 'snapshot'
       ) {
-        const dataObj = data as SnapshotUpdate;
-        const newId = dataObj.snapShot.id;
-        const oldId = mapState?.id;
+        setMessageCount((c) => c + 1);
+        try {
+          const dataObj = data as SnapshotUpdate;
+          const newId = dataObj?.snapShot?.id;
+          const oldId = mapState?.id;
 
-        if (!mapState) {
-          setMapState(dataObj.snapShot);
+          if (!mapState) {
+            setMapState(dataObj.snapShot);
 
-          return;
+            return;
+          }
+
+          if (oldId && oldId !== newId && oldId < newId) {
+            console.log(`Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`);
+            setMapState((data as SnapshotUpdate).snapShot);
+          }
+        } catch (e) {
+          console.error('Error parsing snapshot data:', e);
         }
-
-        if (oldId && oldId !== newId && oldId < newId) {
-          console.log(`Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`);
-          console.log(dataObj.snapShot.terrain);
-          setMapState((data as SnapshotUpdate).snapShot);
-        }
+      } else {
+        console.log('Received unknown data:', data);
       }
     });
   }
-
-  // console.log('mapState', mapState);
 
   return (
     <main className="flex-1 flex gap-4 p-4">
@@ -68,7 +69,6 @@ const MapView = () => {
         mapName={mapName}
       />
 
-      {/* <div className="w-64 flex-shrink-0 space-y-4"> */}
       <div style={{ width: '100%', height: '100%' }}>
         <div>
           <h3>Current Map State:</h3>
@@ -77,7 +77,6 @@ const MapView = () => {
           <ReadOnlyGrid
             mapWidth={mapState?.mapWidth || 0}
             mapHeight={mapState?.mapHeight || 0}
-            // measurementStart={null}
             handleCellClick={() => {}}
             handleCellMouseDown={() => {}}
             handleCellMouseEnter={() => {}}
