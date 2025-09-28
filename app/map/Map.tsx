@@ -47,7 +47,15 @@ const MapContainer = () => {
     setPaintTool,
   } = actions;
 
-  const { handleNextTurn, undo, redo, saveSnapshot, takeSnapshot, restoreSnapshot } = handlers;
+  const {
+    handleNextTurn,
+    undo,
+    redo,
+    saveSnapshot,
+    takeSnapshot,
+    restoreSnapshot,
+    handleRemoteCharacterMove,
+  } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
@@ -62,7 +70,10 @@ const MapContainer = () => {
     setShowHelp,
   });
 
-  const { peer, connections, broadcastData } = useHostPeerSession(mapName);
+  const { peer, connections, broadcastData } = useHostPeerSession({
+    mapName,
+    moveCharacterCallback: handleRemoteCharacterMove,
+  });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);

@@ -1,23 +1,27 @@
 'use client';
-import { useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 import { useGuestMap } from '../../hooks/rtc/useGuestMap';
 import ReadOnlyGrid from './ReadOnlyGrid';
-import { AppSnapshot, SnapshotUpdate } from '@/app/map/types';
+import { SnapshotUpdate } from '@/app/map/types';
 import ConnectionCard from './ConnectionCard';
-
 import '../../map/index.css';
+import { useUserMapContext, UserMapProvider } from '../context/UserMapContext';
+import ReadOnlyInitiativePanel from './ReadOnlyInitiativePanel';
+import useUserHotkeys from '../useUserHotKeys';
 
-const MapView = () => {
-  const [username, setUsername] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [messageCount, setMessageCount] = useState(0);
+const UserMapView = () => {
+  const { state, actions } = useUserMapContext();
 
-  const [mapState, setMapState] = useState<AppSnapshot | null>(null);
+  const { gameState, username, submitted, messageCount, selectedCharacterId } = state;
+  const { setGameState, setUsername, setSubmitted, setMessageCount, setSelectedCharacterId } =
+    actions;
+
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
   const hostId = searchParams.get('connectionId');
+
+  useUserHotkeys({ setSelectedCharacterId });
 
   // Only connect after username is submitted
   const ready = Boolean(submitted && hostId);
@@ -37,17 +41,17 @@ const MapView = () => {
         try {
           const dataObj = data as SnapshotUpdate;
           const newId = dataObj?.snapShot?.id;
-          const oldId = mapState?.id;
+          const oldId = gameState?.id;
 
-          if (!mapState) {
-            setMapState(dataObj.snapShot);
-
+          if (oldId === 0) {
+            // this is the initial state on connection
+            setGameState(dataObj.snapShot);
             return;
           }
 
           if (oldId && oldId !== newId && oldId < newId) {
             console.log(`Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`);
-            setMapState((data as SnapshotUpdate).snapShot);
+            setGameState((data as SnapshotUpdate).snapShot);
           }
         } catch (e) {
           console.error('Error parsing snapshot data:', e);
@@ -57,6 +61,8 @@ const MapView = () => {
       }
     });
   }
+
+  const selectedCharacter = gameState?.characters.find((c) => c.id === selectedCharacterId) || null;
 
   return (
     <main className="flex-1 flex gap-4 p-4">
@@ -75,28 +81,38 @@ const MapView = () => {
           <p>Messages received: {messageCount}</p>
 
           <ReadOnlyGrid
-            mapWidth={mapState?.mapWidth || 0}
-            mapHeight={mapState?.mapHeight || 0}
-            handleCellClick={() => {}}
             handleCellMouseDown={() => {}}
             handleCellMouseEnter={() => {}}
-            setHoveredCell={() => {}}
-            terrain={mapState?.terrain || []}
-            getCustomObject={() => ({ id: '', label: '', icon: '', color: '' })}
-            characters={mapState?.characters || []}
-            selectedCharacter={null}
-            handleCharacterClick={() => {}}
-            customObjects={mapState?.customObjects || []}
-            measurements={mapState?.measurements || []}
+            broadcastData={guestMap ? guestMap.send : () => {}}
           />
 
           <pre>
-            MAP: {mapState?.mapWidth}x{mapState?.mapHeight}
+            MAP: {gameState?.mapWidth}x{gameState?.mapHeight}
           </pre>
+          {selectedCharacter && (
+            <div className="mb-2 p-2 border rounded bg-gray-50">
+              <h4 className="font-bold">Selected Character:</h4>
+              <p>Name: {selectedCharacter.name}</p>
+              <p>Type: {selectedCharacter.isPlayer ? 'PC' : 'NPC'}</p>
+              <p>
+                Position: ({selectedCharacter.x}, {selectedCharacter.y})
+              </p>
+            </div>
+          )}
         </div>
+      </div>
+
+      <div className="w-64 flex-shrink-0 flex flex-col gap-4">
+        <ReadOnlyInitiativePanel />
       </div>
     </main>
   );
 };
 
-export default MapView;
+const MapWithContext = () => (
+  <UserMapProvider>
+    <UserMapView />
+  </UserMapProvider>
+);
+
+export default MapWithContext;

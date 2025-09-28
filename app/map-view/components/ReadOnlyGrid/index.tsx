@@ -1,76 +1,70 @@
 import { FC } from 'react';
 import Terrain_Layer from '@/app/components/Terrain_Layer';
 import Tokens_Layer from '@/app/components/Tokens_Layer';
-import { Character, CustomObj, Terrain } from '@/app/map/types';
 import { Card } from '@/app/components/ui/card';
 import { BUILTIN_TERRAIN } from '@/app/map/utils/terrain';
 import { GRID_SIZE } from '@/app/map/utils/constants';
 import Map_GridLines from '@/app/components/Map_GridLines';
 import Measurement_Overlay from '@/app/components/Measurement_Overlay';
-import { Measurement } from '@/app/map/types';
 import style from './style.module.css';
+import { useUserMapContext } from '../../context/UserMapContext';
+import Movement_Overlay from '@/app/components/Movement_Overlay';
 
 interface ReadOnlyGridProps {
-  mapWidth: number;
-  mapHeight: number;
-  handleCellClick: (x: number, y: number) => void;
   handleCellMouseDown: (e: React.MouseEvent, x: number, y: number) => void;
   handleCellMouseEnter: (e: React.MouseEvent, x: number, y: number) => void;
-  setHoveredCell: (cell: { x: number; y: number } | null) => void;
-  terrain: Terrain[];
-  getCustomObject: (type: string) => CustomObj;
-  characters: Character[];
-  selectedCharacter: string | null;
-  handleCharacterClick: (characterId: string) => void;
-  customObjects: CustomObj[];
-  measurements: Measurement[];
+  broadcastData: (data: unknown) => void;
 }
 
 const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
-  mapWidth,
-  mapHeight,
-  handleCellClick,
   handleCellMouseDown,
   handleCellMouseEnter,
-  setHoveredCell,
-  terrain,
-  getCustomObject,
-  characters,
-  selectedCharacter,
-  handleCharacterClick,
-  customObjects,
-  measurements,
+  broadcastData,
 }) => {
+  const { state, actions, handlers } = useUserMapContext();
+  const { mapWidth, mapHeight, terrain, measurements, customObjects, characters } = state.gameState;
+  const { selectedCharacterId, hoveredCell } = state;
+  const { setHoveredCell } = actions;
+  const { handleCellClick, handleCharacterClick } = handlers;
+
+  const selectedCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
+
+  const getCustomObject = (typeId: string) => customObjects.find((o) => o.id === typeId);
+
   // choose token classes based on PC/NPC and selection
   const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
     [
       'absolute z-10 flex items-center justify-center',
       isPlayer ? 'rounded-full' : 'rounded-md',
-
-      // Base (subtle) outline via ring; no borders at all
       'ring-1 ring-black/10 dark:ring-white/20',
       'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
-
-      // Selection emphasis
       isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
-
-      // Optional: small polish
       'shadow-sm transition-all duration-150',
-      // If you set fill inline via style={{ backgroundColor: c.color }},
-      // you can drop bg-background. Keep it only if you rely on a CSS var:
-      // "bg-background",
     ].join(' ');
 
   const isCustomObjectType = (t: string) =>
     !BUILTIN_TERRAIN.has(t) && customObjects.some((o) => o.id === t);
 
-  const handleTerrainRightClick = () => {};
+  const onCellClick = (x: number, y: number) => {
+    handleCellClick(x, y);
+    if (selectedCharacterId) {
+      broadcastData({
+        type: 'moveCharacter',
+        characterId: selectedCharacterId,
+        x,
+        y,
+      });
+    }
+  };
 
-  // bg-card text-card-foreground flex flex-col gap-6 rounded-xl border p-4 w-full h-full
+  const handleTerrainRightClick = () => {};
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const isDifficultAt = (x: number, y: number) => {
+    return false;
+  };
 
   return (
     <div className={style.gridContainer}>
-      {/* <Card className="p-4 w-full h-full">       */}
       <Card className={style.card}>
         <Map_GridLines width={mapWidth} height={mapHeight} size={GRID_SIZE} />
         <Measurement_Overlay
@@ -79,43 +73,44 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
           width={mapWidth}
           height={mapHeight}
         />
+
+        {selectedCharacter &&
+          hoveredCell &&
+          (() => {
+            if (!selectedCharacter || !hoveredCell) return null;
+            return (
+              <Movement_Overlay
+                start={{ x: selectedCharacter.x, y: selectedCharacter.y }}
+                end={hoveredCell}
+                cellPx={GRID_SIZE}
+                rule={'5e'}
+                gridScale={5}
+                isDifficultAt={isDifficultAt}
+                terrain={terrain}
+              />
+            );
+          })()}
+
         {Array.from({ length: mapHeight }).map((_, y) =>
           Array.from({ length: mapWidth }).map((_, x) => (
             <div
               key={`${x}-${y}`}
               className={style.gridCell}
-              // className={`absolute cursor-pointer hover:bg-accent/30 ${
-              //   measurementStart?.x === x && measurementStart?.y === y ? 'bg-orange-200' : ''
-              // }`}
               style={{
                 left: x * GRID_SIZE,
                 top: y * GRID_SIZE,
                 width: GRID_SIZE,
                 height: GRID_SIZE,
               }}
-              // Only let onClick handle MEASURE and SELECT moves.
-              // Terrain tools are handled by mouse down/drag (below).
               onClick={() => {
-                handleCellClick(x, y);
-                // if (selectedTool === 'measure' || selectedTool === 'select') {
-                //   handleCellClick(x, y);
-                // }
+                onCellClick(x, y);
               }}
-              // Start paint/erase (left = toggle paint/erase, right = erase)
               onMouseDown={(e) => handleCellMouseDown(e, x, y)}
-              // Continue paint/erase while dragging over cells
               onMouseEnter={(e) => {
                 setHoveredCell({ x, y });
                 handleCellMouseEnter(e, x, y);
               }}
               onMouseLeave={() => setHoveredCell(null)}
-              // Support single right-click erase without dragging
-              // onContextMenu={(e) => {
-              //   e.preventDefault(); // no browser/Figma menu
-              //   if (!isDragging && selectedTool !== 'select') {
-              //     handleCellMouseDown(Object.assign(e, { button: 2 }), x, y);
-              //   }
-              // }}
             />
           ))
         )}
@@ -128,12 +123,12 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
           canInteract={false}
           onTerrainRightClick={handleTerrainRightClick}
         />
-        {/* Characters */}
+
         <Tokens_Layer
-          characters={characters}
           cellPx={GRID_SIZE}
           tokenClasses={tokenClasses}
-          selectedCharacterId={selectedCharacter}
+          characters={characters}
+          selectedCharacterId={selectedCharacterId}
           onCharacterClick={handleCharacterClick}
         />
       </Card>
