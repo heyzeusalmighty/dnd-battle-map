@@ -55,13 +55,7 @@ export function useHostPeerSession({mapName, moveCharacterCallback}: {mapName: s
           switch (data.type) {
             case 'moveCharacter': {
               const { characterId, x, y } = data as MoveCharacterMessage;
-              moveCharacterCallback?.(characterId, x, y);
-              // setGameState((prev) => {
-              //   const updatedCharacters = prev.characters.map((c) =>
-              //     c.id === characterId ? { ...c, x, y } : c
-              //   );
-              //   return { ...prev, characters: updatedCharacters };
-              // });
+              moveCharacterCallback?.(characterId, x, y);              
               break; 
             }
             default:

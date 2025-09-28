@@ -73,9 +73,6 @@ const MapContainer = () => {
   const { peer, connections, broadcastData } = useHostPeerSession({
     mapName,
     moveCharacterCallback: handleRemoteCharacterMove,
-    // moveCharacterCallback: (characterId, x, y) => {
-    // Handle character movement
-    // },
   });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
