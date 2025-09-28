@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import Terrain_Layer from '@/app/components/Terrain_Layer';
 import Tokens_Layer from '@/app/components/Tokens_Layer';
-import { CustomObj } from '@/app/map/types';
 import { Card } from '@/app/components/ui/card';
 import { BUILTIN_TERRAIN } from '@/app/map/utils/terrain';
 import { GRID_SIZE } from '@/app/map/utils/constants';
@@ -14,14 +13,12 @@ import Movement_Overlay from '@/app/components/Movement_Overlay';
 interface ReadOnlyGridProps {
   handleCellMouseDown: (e: React.MouseEvent, x: number, y: number) => void;
   handleCellMouseEnter: (e: React.MouseEvent, x: number, y: number) => void;
-  getCustomObject: (type: string) => CustomObj;
   broadcastData: (data: unknown) => void;
 }
 
 const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   handleCellMouseDown,
   handleCellMouseEnter,
-  getCustomObject,
   broadcastData,
 }) => {
   const { state, actions, handlers } = useUserMapContext();
@@ -31,6 +28,8 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   const { handleCellClick, handleCharacterClick } = handlers;
 
   const selectedCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
+
+  const getCustomObject = (typeId: string) => customObjects.find((o) => o.id === typeId);
 
   // choose token classes based on PC/NPC and selection
   const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
@@ -65,8 +64,8 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   };
 
   return (
-    <Card className={style.card}>
-      <div className={style.gridContainer}>
+    <div className={style.gridContainer}>
+      <Card className={style.card}>
         <Map_GridLines width={mapWidth} height={mapHeight} size={GRID_SIZE} />
         <Measurement_Overlay
           measurements={measurements}
@@ -132,8 +131,8 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
           selectedCharacterId={selectedCharacterId}
           onCharacterClick={handleCharacterClick}
         />
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 };
 

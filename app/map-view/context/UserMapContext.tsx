@@ -84,7 +84,6 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
     const selectedChar = gameState.characters.find((c) => c.id === characterId);
 
     if (selectedChar?.isPlayer) {
-      console.log('This is a player character.');
       setSelectedCharacterId((prev) => (prev === characterId ? null : characterId));
     } else {
       setSelectedCharacterId(null);

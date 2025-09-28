@@ -83,7 +83,6 @@ const UserMapView = () => {
           <ReadOnlyGrid
             handleCellMouseDown={() => {}}
             handleCellMouseEnter={() => {}}
-            getCustomObject={() => ({ id: '', label: '', icon: '', color: '' })}
             broadcastData={guestMap ? guestMap.send : () => {}}
           />
 
