@@ -288,6 +288,16 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     // If you later add a manual initiative order, remember to also remove the id there.
   };
 
+  const handleRemoteCharacterMove = (charId: string, x: number, y: number) => {
+    // saveSnapshot();
+    console.log('handleRemoteCharacterMove', charId, x, y);
+    console.log(
+      'Before move:',
+      characters.find((c) => c.id === charId)
+    );
+    setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, x, y } : c)));
+  };
+
   // useEffects
   useEffect(() => {
     if (!isDragging) return;
@@ -473,6 +483,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       handleClearNPCs,
       handleClearPCs,
       handleDeleteCharacter,
+      handleRemoteCharacterMove,
     },
     mapScrollRef,
   };

@@ -4,7 +4,14 @@ import Peer, { DataConnection } from 'peerjs';
 import { getCookie, setCookie } from '@/app/utils/cookie';
 import { AppSnapshot, SnapshotUpdate } from '@/app/map/types';
 
-export function useHostPeerSession(mapName: string) {
+interface MoveCharacterMessage {
+  type: 'moveCharacter';
+  characterId: string;
+  x: number;
+  y: number;
+}
+
+export function useHostPeerSession({mapName, moveCharacterCallback}: {mapName: string, moveCharacterCallback?: (characterId: string, x: number, y: number) => void }) {
   const [peer, setPeer] = useState<Peer | null>(null);
   const [connections, setConnections] = useState<DataConnection[]>([]);
   const [peerId, setPeerId] = useState<string>('');
@@ -43,6 +50,25 @@ export function useHostPeerSession(mapName: string) {
 
       conn.on('data', (data) => {
         console.log(`Received from ${conn.peer}:`, data);
+
+        if (data && typeof data === 'object' && 'type' in data) {
+          switch (data.type) {
+            case 'moveCharacter': {
+              const { characterId, x, y } = data as MoveCharacterMessage;
+              moveCharacterCallback?.(characterId, x, y);
+              // setGameState((prev) => {
+              //   const updatedCharacters = prev.characters.map((c) =>
+              //     c.id === characterId ? { ...c, x, y } : c
+              //   );
+              //   return { ...prev, characters: updatedCharacters };
+              // });
+              break; 
+            }
+            default:
+              console.warn(`Unknown data type received from ${conn.peer}:`, data);
+          }
+        }
+
         // Handle incoming data per connection here
       });
 

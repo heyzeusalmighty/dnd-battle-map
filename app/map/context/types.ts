@@ -118,6 +118,7 @@ export interface MapContextType {
     handleClearNPCs: () => void;
     handleClearPCs: () => void;
     handleDeleteCharacter: (charId: string) => void;
+    handleRemoteCharacterMove: (charId: string, x: number, y: number) => void;
   }
 }
 

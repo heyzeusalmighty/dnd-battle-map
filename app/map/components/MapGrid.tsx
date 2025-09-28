@@ -483,6 +483,7 @@ const MapGrid: FC<MapGridProps> = ({
                     rule={distanceRule}
                     gridScale={gridScale}
                     isDifficultAt={isDifficultAt}
+                    terrain={terrain}
                   />
                 );
               })()}
