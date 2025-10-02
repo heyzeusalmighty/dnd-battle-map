@@ -544,6 +544,7 @@ const MapGrid: FC<MapGridProps> = ({
               tokenClasses={tokenClasses}
               selectedCharacterId={selectedCharacter}
               onCharacterClick={handleCharacterClick}
+              isDmView={true}
             />
           </div>
         </div>

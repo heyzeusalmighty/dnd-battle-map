@@ -1,672 +1,758 @@
-import { MoreVertical } from "lucide-react";
-import BulkNpcForm from "../../components/BulkNpcForm";
-import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
-import { Card } from "../../components/ui/card";
+import { useState } from 'react';
+import { MoreVertical } from 'lucide-react';
+import BulkNpcForm from '../../components/BulkNpcForm';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "../../components/ui/dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu";
-import { Input } from "../../components/ui/input";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu';
+import { Input } from '../../components/ui/input';
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../../components/ui/select";
-import { useMapContext } from "../context/MapContext";
-import type { Character } from "../types";
-import { getId } from "../utils/id";
-import { DEFAULT_PARTY } from "../utils/partyPresets";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { useMapContext } from '../context/MapContext';
+import type { Character, DamageEvent } from '../types';
+import { getId } from '../utils/id';
+import { DEFAULT_PARTY } from '../utils/partyPresets';
 
 const CharacterPanel = () => {
-	const { handlers, state, actions } = useMapContext();
-	const {
-		setCharacters,
-		setInitiativeOrder,
-		setCharTab,
-		setPresetToAdd,
-		setShowAddChar,
-		setAddMode,
-		setNewCharName,
-		setNewCharInit,
-		setNewCharDmg,
-		setCharQuery,
-		setCharFilter,
-		setDamageDelta,
-	} = actions;
-	const { handleDeleteCharacter, saveSnapshot, handleCharacterClick } =
-		handlers;
-	const {
-		selectedCharacter,
-		initiativeMode,
-		charTab,
-		presetToAdd,
-		showAddChar,
-		addMode,
-		newCharName,
-		newCharDmg,
-		newCharInit,
-		charQuery,
-		charFilter,
-		filteredCharacters,
-		damageDelta,
-	} = state;
+  const { handlers, state, actions } = useMapContext();
+  const {
+    setCharacters,
+    setInitiativeOrder,
+    setCharTab,
+    setPresetToAdd,
+    setShowAddChar,
+    setAddMode,
+    setNewCharName,
+    setNewCharMaxHp,
+    setNewCharInit,
+    setCharQuery,
+    setCharFilter,
+    setDamageLog,
+  } = actions;
+  const { handleDeleteCharacter, saveSnapshot, handleCharacterClick } = handlers;
+  const {
+    selectedCharacter,
+    initiativeMode,
+    charTab,
+    presetToAdd,
+    showAddChar,
+    addMode,
+    newCharName,
+    newCharMaxHp,
+    newCharInit,
+    charQuery,
+    charFilter,
+    filteredCharacters,
+    round,
+    characters,
+  } = state;
 
-	const addPartyFromPresets = () => {
-		const baseX = 1;
-		const baseY = 1;
+  const [editingHp, setEditingHp] = useState<Record<string, string>>({});
 
-		// Take one snapshot for the batch (optional but nice)
-		saveSnapshot?.();
+  const addPartyFromPresets = () => {
+    const baseX = 1;
+    const baseY = 1;
 
-		const newlyAddedIds: string[] = [];
+    // Take one snapshot for the batch (optional but nice)
+    saveSnapshot?.();
 
-		DEFAULT_PARTY.forEach((p, i) => {
-			const incoming: Character = {
-				id: getId(),
-				name: p.name,
-				x: baseX + i,
-				y: baseY,
-				hp: p.hp,
-				maxHp: p.hp,
-				initiative: p.initiative ?? 0,
-				initiativeMod: p.initiativeMod ?? 0,
-				isPlayer: true,
-				color: p.color ?? "#3B82F6",
-				ac: p.ac,
-			};
+    const newlyAddedIds: string[] = [];
 
-			const { added, id } = upsertPlayerByName(incoming);
-			if (added) newlyAddedIds.push(id);
-		});
+    DEFAULT_PARTY.forEach((p, i) => {
+      const incoming: Character = {
+        id: getId(),
+        name: p.name,
+        x: baseX + i,
+        y: baseY,
+        hp: p.hp,
+        maxHp: p.hp,
+        totalDamage: 0,
+        initiative: p.initiative ?? 0,
+        initiativeMod: p.initiativeMod ?? 0,
+        isPlayer: true,
+        color: p.color ?? '#3B82F6',
+        ac: p.ac,
+      };
 
-		// If you have a manual initiative list, append only truly-new entries
-		if (initiativeMode === "manual" && newlyAddedIds.length) {
-			setInitiativeOrder((prev) => [...prev, ...newlyAddedIds]);
-		}
-	};
+      const { added, id } = upsertPlayerByName(incoming);
+      if (added) newlyAddedIds.push(id);
+    });
 
-	const normName = (s: string) => s.trim().toLowerCase();
+    // If you have a manual initiative list, append only truly-new entries
+    if (initiativeMode === 'manual' && newlyAddedIds.length) {
+      setInitiativeOrder((prev) => [...prev, ...newlyAddedIds]);
+    }
+  };
 
-	/** Upsert a *player* by name; preserves id/x/y if updating.
-	 *  Returns { added, id } so callers can update initiativeOrder for new entries.
-	 */
-	const upsertPlayerByName = (
-		incoming: Character,
-	): { added: boolean; id: string } => {
-		const n = normName(incoming.name);
-		let added = false;
-		let keptId = incoming.id;
+  const normName = (s: string) => s.trim().toLowerCase();
 
-		setCharacters((prev) => {
-			const idx = prev.findIndex((c) => c.isPlayer && normName(c.name) === n);
-			if (idx !== -1) {
-				const cur = prev[idx];
+  /** Upsert a *player* by name; preserves id/x/y if updating.
+   *  Returns { added, id } so callers can update initiativeOrder for new entries.
+   */
+  const upsertPlayerByName = (incoming: Character): { added: boolean; id: string } => {
+    const n = normName(incoming.name);
+    let added = false;
+    let keptId = incoming.id;
 
-				// Build merged record (preserve id/pos; don’t clobber player-owned fields)
-				const next: Character = {
-					...cur,
-					color: incoming.color ?? cur.color,
-					ac: incoming.ac ?? cur.ac,
-					// only set initiativeMod if provided on incoming; otherwise keep current
-					initiativeMod: incoming.initiativeMod ?? cur.initiativeMod,
-					isPlayer: true,
-				};
+    setCharacters((prev) => {
+      const idx = prev.findIndex((c) => c.isPlayer && normName(c.name) === n);
+      if (idx !== -1) {
+        const cur = prev[idx];
 
-				// Optional: seed HP/MaxHP once if current is unset
-				if ((cur.maxHp ?? 0) === 0 && (incoming.maxHp ?? 0) > 0) {
-					next.maxHp = incoming.maxHp;
-					if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0)
-						next.hp = incoming.hp;
-				}
+        // Build merged record (preserve id/pos; don’t clobber player-owned fields)
+        const next: Character = {
+          ...cur,
+          color: incoming.color ?? cur.color,
+          ac: incoming.ac ?? cur.ac,
+          // only set initiativeMod if provided on incoming; otherwise keep current
+          initiativeMod: incoming.initiativeMod ?? cur.initiativeMod,
+          isPlayer: true,
+        };
 
-				if (
-					next.color === cur.color &&
-					next.ac === cur.ac &&
-					next.initiativeMod === cur.initiativeMod &&
-					next.maxHp === cur.maxHp &&
-					next.hp === cur.hp
-				) {
-					return prev; // no-op
-				}
+        // Optional: seed HP/MaxHP once if current is unset
+        if ((cur.maxHp ?? 0) === 0 && (incoming.maxHp ?? 0) > 0) {
+          next.maxHp = incoming.maxHp;
+          if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0) next.hp = incoming.hp;
+        }
 
-				const copy = [...prev];
-				copy[idx] = next;
-				keptId = cur.id;
-				return copy;
-			}
+        if (
+          next.color === cur.color &&
+          next.ac === cur.ac &&
+          next.initiativeMod === cur.initiativeMod &&
+          next.maxHp === cur.maxHp &&
+          next.hp === cur.hp
+        ) {
+          return prev; // no-op
+        }
 
-			// add new PC
-			added = true;
-			return [...prev, incoming];
-		});
+        const copy = [...prev];
+        copy[idx] = next;
+        keptId = cur.id;
+        return copy;
+      }
 
-		return { added, id: keptId };
-	};
+      // add new PC
+      added = true;
+      return [...prev, incoming];
+    });
 
-	const handleAddCharacter = () => {
-		// Name is the only required field
-		const name = newCharName.trim();
-		if (!name) return;
+    return { added, id: keptId };
+  };
 
-		// Parse numbers; default to 0 when blank or invalid
-		const dmg = Number.isFinite(parseInt(newCharDmg))
-			? Math.max(0, parseInt(newCharDmg))
-			: 0;
+  const handleAddCharacter = () => {
+    const name = newCharName.trim();
+    if (!name) return;
 
-		const mod = Number.isFinite(parseInt(newCharInit))
-			? parseInt(newCharInit, 10)
-			: 0;
+    const mod = Number.isFinite(parseInt(newCharInit)) ? parseInt(newCharInit, 10) : 0;
+    const maxHp = Number.isFinite(parseInt(newCharMaxHp)) ? Math.max(1, parseInt(newCharMaxHp)) : 1;
 
-		// If your Character requires hp/maxHp, keep them (hidden in UI)
-		const newChar: Character = {
-			id: getId(),
-			name,
-			x: 0,
-			y: 0,
-			hp: 0,
-			maxHp: 0,
-			initiativeMod: mod,
-			initiative: 0, // <-- rolled later
-			isPlayer: false, // NPC
-			color: "#EF4444",
-			damage: dmg,
-		};
+    // If your Character requires hp/maxHp, keep them (hidden in UI)
+    const newChar: Character = {
+      id: getId(),
+      name,
+      x: 0,
+      y: 0,
+      hp: maxHp,
+      maxHp: maxHp,
+      damage: 0,
+      totalDamage: 0,
+      initiative: 0,
+      initiativeMod: mod,
+      isPlayer: false, // NPC
+      color: '#EF4444',
+    };
 
-		// (Optional) // saveSnapshot(); if you wired undo/redo
-		saveSnapshot();
-		setCharacters((prev) => [...prev, newChar]);
+    // (Optional) // saveSnapshot(); if you wired undo/redo
+    saveSnapshot();
+    setCharacters((prev) => [...prev, newChar]);
 
-		// reset the form – leave fields blank again
-		setNewCharName("");
-		setNewCharDmg(""); // keep input empty so placeholder shows
-		setNewCharInit("");
-		setShowAddChar(false);
-	};
+    // reset the form – leave fields blank again
+    setNewCharName('');
+    setNewCharMaxHp(''); // ← Add this line
+    setNewCharInit('');
+    setShowAddChar(false);
+  };
 
-	const handleUpdateHp = (charId: string, newHp: number) => {
-		const v = Number.isFinite(newHp) ? Math.floor(newHp) : 0;
-		saveSnapshot();
-		setCharacters((prev) =>
-			prev.map((char) =>
-				char.id === charId
-					? { ...char, hp: Math.max(0, v) } // ← no upper cap
-					: char,
-			),
-		);
-	};
+  // Log damage/healing events
+  const logDamageEvent = (char: Character, oldHp: number, newHp: number) => {
+    const amount = oldHp - newHp; // positive = damage, negative = healing
 
-	// add individual party member
-	const addCharacterFromPreset = (presetName?: string) => {
-		const name = presetName ?? presetToAdd;
-		const p = DEFAULT_PARTY.find((pp) => pp.name === name);
-		if (!p) return;
+    if (amount === 0) return;
 
-		// choose a suggested slot; if upserting, existing position is preserved
-		const baseX = 1,
-			baseY = 1;
-		const incoming: Character = {
-			id: getId(),
-			name: p.name,
-			x: baseX,
-			y: baseY,
-			hp: p.hp,
-			maxHp: p.hp,
-			initiative: p.initiative ?? 0,
-			initiativeMod: p.initiativeMod ?? 0,
-			isPlayer: true,
-			color: p.color ?? "#3B82F6",
-			ac: p.ac,
-		};
+    const event: DamageEvent = {
+      id: getId(),
+      characterId: char.id,
+      characterName: char.name,
+      amount: amount,
+      timestamp: Date.now(),
+      round: state.round,
+      newHp: newHp,
+      newTotalDamage: char.maxHp - newHp,
+    };
+    setDamageLog((prev) => [...prev, event]);
+  };
 
-		const { added, id } = upsertPlayerByName(incoming);
-		if (initiativeMode === "manual" && added) {
-			setInitiativeOrder((prev) => [...prev, id]);
-		}
-	};
+  // handle damage for any character
+  const applyDamage = (charId: string, amount: number) => {
+    const damageAmount = Number.isFinite(amount) ? Math.floor(amount) : 0;
+    if (damageAmount <= 0) return;
 
-	// add damage to existing NPC damage score
-	const applyDamageDelta = (charId: string) => {
-		const raw = damageDelta[charId];
-		if (raw == null || raw.trim() === "") return;
-		const delta = parseInt(raw, 10);
-		if (Number.isNaN(delta)) return;
+    const char = characters.find((c) => c.id === charId);
+    if (!char) return;
 
-		saveSnapshot();
-		setCharacters((prev) =>
-			prev.map((c) =>
-				c.id === charId
-					? {
-							...c,
-							damage: Math.max(0, (c.damage ?? 0) + delta),
-						}
-					: c,
-			),
-		);
-		setDamageDelta((prev) => ({ ...prev, [charId]: "" }));
-	};
-	return (
-		<Card className="p-4">
-			<div className="flex items-center justify-between mb-3">
-				<h3 className="text-base font-semibold">Characters</h3>
-				<div className="inline-flex rounded-md overflow-hidden border">
-					<Button
-						size="sm"
-						variant={charTab === "add" ? "default" : "ghost"}
-						className="h-7 px-3 rounded-none"
-						onClick={() => setCharTab("add")}
-					>
-						Add
-					</Button>
-					<Button
-						size="sm"
-						variant={charTab === "manage" ? "default" : "ghost"}
-						className="h-7 px-3 rounded-none"
-						onClick={() => setCharTab("manage")}
-					>
-						Manage
-					</Button>
-				</div>
-			</div>
+    const oldHp = char.hp;
+    const newHp = Math.max(0, oldHp - damageAmount);
 
-			{charTab === "add" ? (
-				// --- Add tab (your existing controls) ---
-				<div className="space-y-3">
-					{/* Preset + Add */}
-					<div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-						<div>
-							<div className="text-sm mb-1">Add:</div>
-							<Select value={presetToAdd} onValueChange={setPresetToAdd}>
-								<SelectTrigger className="h-8">
-									<SelectValue placeholder="Choose a preset" />
-								</SelectTrigger>
-								<SelectContent>
-									{DEFAULT_PARTY.map((p) => (
-										<SelectItem key={p.name} value={p.name}>
-											{p.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+    // Check if this damage will kill the character
+    const justDied = newHp === 0 && oldHp > 0;
 
-						<Button className="h-8" onClick={() => addCharacterFromPreset()}>
-							Add
-						</Button>
-					</div>
+    saveSnapshot();
 
-					{/* Add whole party */}
-					<Button
-						className="w-full"
-						variant="outline"
-						onClick={addPartyFromPresets}
-					>
-						Add Party ({DEFAULT_PARTY.length} presets)
-					</Button>
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
 
-					{/* Open Custom NPC dialog */}
-					<Dialog open={showAddChar} onOpenChange={setShowAddChar}>
-						<DialogTrigger asChild>
-							<Button className="w-full" variant="outline">
-								Add Custom NPC
-							</Button>
-						</DialogTrigger>
+        const calculatedDamage = Math.max(0, c.maxHp - newHp);
 
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Add Custom NPC</DialogTitle>
-							</DialogHeader>
+        return {
+          ...c,
+          hp: newHp,
+          totalDamage: calculatedDamage,
+          isDead: newHp === 0, // ← Add this line
+        };
+      })
+    );
 
-							{/* Mode toggle */}
-							<div className="mb-3 inline-flex w-fit self-start rounded-md border overflow-hidden">
-								<button
-									type="button"
-									className={`px-3 py-1 text-sm flex-none ${
-										addMode === "single"
-											? "bg-black text-white"
-											: "bg-transparent"
-									}`}
-									onClick={() => setAddMode("single")}
-								>
-									Single
-								</button>
-								<button
-									type="button"
-									className={`px-3 py-1 text-sm flex-none ${
-										addMode === "bulk"
-											? "bg-black text-white"
-											: "bg-transparent"
-									}`}
-									onClick={() => setAddMode("bulk")}
-								>
-									Bulk
-								</button>
-							</div>
+    // Log damage and death
+    logDamageEvent(char, oldHp, newHp);
 
-							{addMode === "single" ? (
-								<div className="space-y-3">
-									<div>
-										<label
-											className="text-sm font-medium"
-											htmlFor="newCharName"
-										>
-											Name
-										</label>
-										<Input
-											name="newCharName"
-											value={newCharName}
-											onChange={(e) => setNewCharName(e.target.value)}
-											placeholder="e.g., Zombie"
-										/>
-									</div>
+    if (justDied) {
+      console.log(`${char.name} hit da flo'`);
+    }
+  };
 
-									<div className="grid grid-cols-2 gap-3">
-										<div>
-											<label
-												className="text-sm font-medium"
-												htmlFor="newCharInit"
-											>
-												Initiative mod
-											</label>
-											<Input
-												name="newCharInit"
-												value={newCharInit}
-												onChange={(e) => setNewCharInit(e.target.value)}
-												placeholder="e.g., 2"
-												inputMode="numeric"
-											/>
-										</div>
-										<div>
-											<label
-												className="text-sm font-medium"
-												htmlFor="newCharDmg"
-											>
-												Starting damage (optional)
-											</label>
-											<Input
-												name="newCharDmg"
-												value={newCharDmg}
-												onChange={(e) => setNewCharDmg(e.target.value)}
-												placeholder="e.g., 0"
-												inputMode="numeric"
-											/>
-										</div>
-									</div>
+  // handle healing for any character
+  const applyHealing = (charId: string, amount: number) => {
+    const healAmount = Number.isFinite(amount) ? Math.floor(amount) : 0;
+    if (healAmount <= 0) return;
 
-									<div className="flex justify-end gap-2 pt-2">
-										<Button
-											variant="outline"
-											onClick={() => setShowAddChar(false)}
-										>
-											Cancel
-										</Button>
-										<Button
-											onClick={() => {
-												// you already have this function:
-												// builds { id, name, x:0, y:0, hp:0, maxHp:0, initiativeMod, initiative:0, isPlayer:false, color:"#EF4444", damage }
-												handleAddCharacter();
-												setShowAddChar(false);
-											}}
-										>
-											Add
-										</Button>
-									</div>
-								</div>
-							) : (
-								<BulkNpcForm />
-							)}
-						</DialogContent>
-					</Dialog>
-				</div>
-			) : (
-				// --- Manage tab ---
-				<div className="space-y-3">
-					{/* Search + filter (stacked to save width) */}
-					<div className="flex flex-col gap-2">
-						<Input
-							placeholder="Search by name…"
-							value={charQuery}
-							onChange={(e) => setCharQuery(e.target.value)}
-							className="h-8 w-full"
-						/>
-						<div className="inline-flex rounded-md overflow-hidden border self-start">
-							<Button
-								size="sm"
-								variant={charFilter === "all" ? "default" : "ghost"}
-								className="h-8 px-2 rounded-none"
-								onClick={() => setCharFilter("all")}
-							>
-								All
-							</Button>
-							<Button
-								size="sm"
-								variant={charFilter === "pc" ? "default" : "ghost"}
-								className="h-8 px-2 rounded-none"
-								onClick={() => setCharFilter("pc")}
-							>
-								PC
-							</Button>
-							<Button
-								size="sm"
-								variant={charFilter === "npc" ? "default" : "ghost"}
-								className="h-8 px-2 rounded-none"
-								onClick={() => setCharFilter("npc")}
-							>
-								NPC
-							</Button>
-						</div>
-					</div>
+    const char = characters.find((c) => c.id === charId);
+    if (!char) return;
 
-					{/* List */}
-					<div className="rounded border divide-y max-h-72 overflow-y-auto overflow-x-hidden">
-						{filteredCharacters.length === 0 ? (
-							<div className="p-3 text-sm text-muted-foreground">
-								No matches.
-							</div>
-						) : (
-							filteredCharacters.map((c) => {
-								const isSelected = selectedCharacter === c.id;
-								return (
-									// biome-ignore lint/a11y/useAriaPropsSupportedByRole: <explanation>
-									// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-									// biome-ignore lint/a11y/useFocusableInteractive: <explanation>
-									// biome-ignore lint/a11y/useSemanticElements: <explanation>
-									<div
-										key={c.id}
-										role="button"
-										aria-selected={isSelected}
-										onClick={() => handleCharacterClick(c.id)} // row = select
-										className={[
-											"group px-3 py-2 grid items-center gap-2 min-w-0",
-											isSelected ? "bg-primary/5" : "",
-										].join(" ")}
-										style={{
-											gridTemplateColumns: "1fr auto",
-										}} // name/controls | menu
-									>
-										{/* left column */}
-										<div className="min-w-0">
-											{/* header: full name (wrap) + pills underneath */}
-											<div className="min-w-0">
-												<div className="text-sm font-semibold leading-tight break-words whitespace-normal">
-													{c.name}
-												</div>
+    const oldHp = char.hp;
+    const newHp = oldHp + healAmount; // Can exceed maxHp
 
-												<div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
-													{/* tiny color dot to tie to token */}
-													<span
-														className="inline-block w-2 h-2 rounded-full mr-1"
-														style={{
-															backgroundColor: c.color,
-														}}
-														aria-hidden
-													/>
-													<Badge variant={c.isPlayer ? "default" : "secondary"}>
-														{c.isPlayer ? "PC" : "NPC"}
-													</Badge>
+    // Check if this healing revives the character
+    const wasRevived = char.isDead && newHp > 0;
 
-													{c.isPlayer ? (
-														<Badge variant="outline">
-															HP {c.hp}/{c.maxHp}
-															{c.hp > c.maxHp && (
-																<span className="text-green-600">
-																	{" "}
-																	(+{c.hp - c.maxHp})
-																</span>
-															)}
-														</Badge>
-													) : (
-														<Badge variant="outline">DMG {c.damage ?? 0}</Badge>
-													)}
+    saveSnapshot();
 
-													{/* optional disambiguator for names ending in a number, e.g., "Zombie 3" */}
-													{/\s(\d+)$/.test(c.name) && (
-														<Badge variant="secondary">
-															#{c.name.match(/\s(\d+)$/)![1]}
-														</Badge>
-													)}
-												</div>
-											</div>
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
 
-											{/* line 2: inline editor (hidden until hover or selected) */}
-											<div
-												className={`mt-1 ${
-													isSelected ? "flex" : "hidden group-hover:flex"
-												} items-center gap-1`}
-											>
-												{c.isPlayer ? (
-													<>
-														<Button
-															size="icon"
-															variant="ghost"
-															className="h-7 w-7"
-															onClick={(e) => {
-																e.stopPropagation();
-																saveSnapshot?.();
-																handleUpdateHp(c.id, Math.max(0, c.hp - 1));
-															}}
-															aria-label="HP -1"
-														>
-															–
-														</Button>
-														<Input
-															type="text"
-															inputMode="numeric"
-															className="h-7 w-16 text-center text-xs"
-															value={String(c.hp)}
-															onClick={(e) => e.stopPropagation()}
-															onChange={(e) =>
-																handleUpdateHp(
-																	c.id,
-																	parseInt(e.target.value, 10) || 0,
-																)
-															}
-															onFocus={(e) => e.currentTarget.select()}
-														/>
-														<span className="text-xs text-muted-foreground whitespace-nowrap">
-															/ {c.maxHp}
-														</span>
-														<Button
-															size="icon"
-															variant="ghost"
-															className="h-7 w-7"
-															onClick={(e) => {
-																e.stopPropagation();
-																saveSnapshot?.();
-																handleUpdateHp(
-																	c.id,
-																	Math.min(c.maxHp, c.hp + 1),
-																);
-															}}
-															aria-label="HP +1"
-														>
-															+
-														</Button>
-													</>
-												) : (
-													<>
-														<span className="text-xs text-muted-foreground whitespace-nowrap">
-															Δ
-														</span>
-														<Input
-															type="text"
-															inputMode="numeric"
-															pattern="-?[0-9]*"
-															placeholder="+/-"
-															className="h-7 w-16 text-center text-xs"
-															value={damageDelta[c.id] ?? ""}
-															onClick={(e) => e.stopPropagation()}
-															onChange={(e) =>
-																setDamageDelta((prev) => ({
-																	...prev,
-																	[c.id]: e.target.value,
-																}))
-															}
-															onKeyDown={(e) => {
-																if (e.key === "Enter") {
-																	e.stopPropagation();
-																	saveSnapshot?.();
-																	applyDamageDelta(c.id);
-																}
-															}}
-															onBlur={() => {
-																saveSnapshot?.();
-																applyDamageDelta(c.id);
-															}}
-															title="Enter a delta (e.g. -3, +5)"
-														/>
-													</>
-												)}
-											</div>
-										</div>
+        const calculatedDamage = Math.max(0, c.maxHp - newHp);
 
-										{/* right column: more menu (delete only) */}
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
-													size="sm"
-													variant="ghost"
-													className="h-7 w-7 p-0 opacity-60 group-hover:opacity-100"
-													onClick={(e) => e.stopPropagation()}
-													aria-label="More actions"
-												>
-													<MoreVertical className="w-4 h-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end" className="w-36">
-												<DropdownMenuItem
-													onClick={(e) => {
-														e.stopPropagation();
-														if (window.confirm(`Delete ${c.name}?`)) {
-															saveSnapshot?.();
-															handleDeleteCharacter(c.id);
-														}
-													}}
-												>
-													Delete
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</div>
-								);
-							})
-						)}
-					</div>
-				</div>
-			)}
-		</Card>
-	);
+        return {
+          ...c,
+          hp: newHp,
+          totalDamage: calculatedDamage,
+          isDead: newHp === 0, // ← Add this (will be false if revived)
+        };
+      })
+    );
+
+    logDamageEvent(char, oldHp, newHp);
+
+    if (wasRevived) {
+      console.log(`${char.name} has been revived!`);
+    }
+  };
+
+  // add individual party member
+  const addCharacterFromPreset = (presetName?: string) => {
+    const name = presetName ?? presetToAdd;
+    const p = DEFAULT_PARTY.find((pp) => pp.name === name);
+    if (!p) return;
+
+    // choose a suggested slot; if upserting, existing position is preserved
+    const baseX = 1,
+      baseY = 1;
+    const incoming: Character = {
+      id: getId(),
+      name: p.name,
+      x: baseX,
+      y: baseY,
+      hp: p.hp,
+      maxHp: p.hp,
+      totalDamage: 0,
+      initiative: p.initiative ?? 0,
+      initiativeMod: p.initiativeMod ?? 0,
+      isPlayer: true,
+      color: p.color ?? '#3B82F6',
+      ac: p.ac,
+    };
+
+    const { added, id } = upsertPlayerByName(incoming);
+    if (initiativeMode === 'manual' && added) {
+      setInitiativeOrder((prev) => [...prev, id]);
+    }
+  };
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-semibold">Characters</h3>
+        <div className="inline-flex rounded-md overflow-hidden border">
+          <Button
+            size="sm"
+            variant={charTab === 'add' ? 'default' : 'ghost'}
+            className="h-7 px-3 rounded-none"
+            onClick={() => setCharTab('add')}
+          >
+            Add
+          </Button>
+          <Button
+            size="sm"
+            variant={charTab === 'manage' ? 'default' : 'ghost'}
+            className="h-7 px-3 rounded-none"
+            onClick={() => setCharTab('manage')}
+          >
+            Manage
+          </Button>
+        </div>
+      </div>
+
+      {charTab === 'add' ? (
+        // --- Add tab (your existing controls) ---
+        <div className="space-y-3">
+          {/* Preset + Add */}
+          <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+            <div>
+              <div className="text-sm mb-1">Add:</div>
+              <Select value={presetToAdd} onValueChange={setPresetToAdd}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Choose a preset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEFAULT_PARTY.map((p) => (
+                    <SelectItem key={p.name} value={p.name}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button className="h-8" onClick={() => addCharacterFromPreset()}>
+              Add
+            </Button>
+          </div>
+
+          {/* Add whole party */}
+          <Button className="w-full" variant="outline" onClick={addPartyFromPresets}>
+            Add Party ({DEFAULT_PARTY.length} presets)
+          </Button>
+
+          {/* Open Custom NPC dialog */}
+          <Dialog open={showAddChar} onOpenChange={setShowAddChar}>
+            <DialogTrigger asChild>
+              <Button className="w-full" variant="outline">
+                Add Custom NPC
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Custom NPC</DialogTitle>
+              </DialogHeader>
+
+              {/* Mode toggle */}
+              <div className="mb-3 inline-flex w-fit self-start rounded-md border overflow-hidden">
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-sm flex-none ${
+                    addMode === 'single' ? 'bg-black text-white' : 'bg-transparent'
+                  }`}
+                  onClick={() => setAddMode('single')}
+                >
+                  Single
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-sm flex-none ${
+                    addMode === 'bulk' ? 'bg-black text-white' : 'bg-transparent'
+                  }`}
+                  onClick={() => setAddMode('bulk')}
+                >
+                  Bulk
+                </button>
+              </div>
+
+              {addMode === 'single' ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium" htmlFor="newCharName">
+                      Name
+                    </label>
+                    <Input
+                      name="newCharName"
+                      value={newCharName}
+                      onChange={(e) => setNewCharName(e.target.value)}
+                      placeholder="e.g., Zombie"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium" htmlFor="newCharInit">
+                        Initiative mod
+                      </label>
+                      <Input
+                        name="newCharInit"
+                        value={newCharInit}
+                        onChange={(e) => setNewCharInit(e.target.value)}
+                        placeholder="e.g., 2"
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium" htmlFor="newCharMaxHp">
+                        Max HP
+                      </label>
+                      <Input
+                        name="newCharMaxHp"
+                        value={newCharMaxHp}
+                        onChange={(e) => setNewCharMaxHp(e.target.value)}
+                        placeholder="e.g., 22 for zombie"
+                        inputMode="numeric"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={() => setShowAddChar(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        // you already have this function:
+                        // builds { id, name, x:0, y:0, hp:0, maxHp:0, initiativeMod, initiative:0, isPlayer:false, color:"#EF4444", damage }
+                        handleAddCharacter();
+                        setShowAddChar(false);
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <BulkNpcForm />
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      ) : (
+        // --- Manage tab ---
+        <div className="space-y-3">
+          {/* Search + filter (stacked to save width) */}
+          <div className="flex flex-col gap-2">
+            <Input
+              placeholder="Search by name…"
+              value={charQuery}
+              onChange={(e) => setCharQuery(e.target.value)}
+              className="h-8 w-full"
+            />
+            <div className="inline-flex rounded-md overflow-hidden border self-start">
+              <Button
+                size="sm"
+                variant={charFilter === 'all' ? 'default' : 'ghost'}
+                className="h-8 px-2 rounded-none"
+                onClick={() => setCharFilter('all')}
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={charFilter === 'pc' ? 'default' : 'ghost'}
+                className="h-8 px-2 rounded-none"
+                onClick={() => setCharFilter('pc')}
+              >
+                PC
+              </Button>
+              <Button
+                size="sm"
+                variant={charFilter === 'npc' ? 'default' : 'ghost'}
+                className="h-8 px-2 rounded-none"
+                onClick={() => setCharFilter('npc')}
+              >
+                NPC
+              </Button>
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="rounded border divide-y max-h-72 overflow-y-auto overflow-x-hidden">
+            {filteredCharacters.length === 0 ? (
+              <div className="p-3 text-sm text-muted-foreground">No matches.</div>
+            ) : (
+              filteredCharacters.map((c) => {
+                const isSelected = selectedCharacter === c.id;
+                return (
+                  // biome-ignore lint/a11y/useAriaPropsSupportedByRole: <explanation>
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+                  // biome-ignore lint/a11y/useFocusableInteractive: <explanation>
+                  // biome-ignore lint/a11y/useSemanticElements: <explanation>
+                  <div
+                    key={c.id}
+                    role="button"
+                    aria-selected={isSelected}
+                    onClick={() => handleCharacterClick(c.id)} // row = select
+                    className={[
+                      'group px-3 py-2 grid items-center gap-2 min-w-0',
+                      isSelected ? 'bg-primary/5' : '',
+                    ].join(' ')}
+                    style={{
+                      gridTemplateColumns: '1fr auto',
+                    }} // name/controls | menu
+                  >
+                    {/* left column */}
+                    <div className="min-w-0">
+                      {/* header: full name (wrap) + pills underneath */}
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold leading-tight break-words whitespace-normal">
+                          {c.name}
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+                          {/* tiny color dot to tie to token */}
+                          <span
+                            className="inline-block w-2 h-2 rounded-full mr-1"
+                            style={{
+                              backgroundColor: c.color,
+                            }}
+                            aria-hidden
+                          />
+
+                          {/* PC/NPC Badge */}
+                          <Badge variant={c.isPlayer ? 'default' : 'secondary'}>
+                            {c.isPlayer ? 'PC' : 'NPC'}
+                          </Badge>
+
+                          {/* HP Badge - shown for both PCs and NPCs */}
+                          <Badge variant="outline">
+                            HP {c.hp}/{c.maxHp}
+                            {/* Show overheal indicator for PCs only */}
+                            {c.isPlayer && c.hp > c.maxHp && (
+                              <span className="text-green-600"> (+{c.hp - c.maxHp})</span>
+                            )}
+                          </Badge>
+                        </div>{' '}
+                      </div>
+
+                      {/* line 2: inline editor (hidden until hover or selected) */}
+                      <div
+                        className={`mt-1 ${
+                          isSelected ? 'flex' : 'hidden group-hover:flex'
+                        } items-center gap-1`}
+                      >
+                        {c.isPlayer ? (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveSnapshot?.();
+                                applyDamage(c.id, 1);
+                              }}
+                              aria-label="HP -1"
+                            >
+                              –
+                            </Button>
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              className="h-7 w-16 text-center text-xs"
+                              value={editingHp[c.id] ?? String(c.hp)}
+                              onClick={(e) => e.stopPropagation()}
+                              onFocus={(e) => {
+                                e.currentTarget.select();
+                                e.currentTarget.dataset.originalHp = String(c.hp);
+                              }}
+                              onChange={(e) => {
+                                setEditingHp((prev) => ({ ...prev, [c.id]: e.target.value }));
+                              }}
+                              onBlur={(e) => {
+                                const newValue = parseInt(e.target.value, 10);
+                                const originalHp = parseInt(
+                                  e.currentTarget.dataset.originalHp || '0',
+                                  10
+                                );
+
+                                setEditingHp((prev) => {
+                                  const copy = { ...prev };
+                                  delete copy[c.id];
+                                  return copy;
+                                });
+
+                                if (!Number.isFinite(newValue) || newValue === originalHp) return;
+
+                                if (newValue < originalHp) {
+                                  const damageAmount = originalHp - newValue;
+                                  applyDamage(c.id, damageAmount);
+                                } else if (newValue > originalHp) {
+                                  const healingAmount = newValue - originalHp;
+                                  applyHealing(c.id, healingAmount);
+                                }
+                              }}
+                            />{' '}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              / {c.maxHp}
+                              {c.hp > c.maxHp && (
+                                <span className="text-green-600 ml-1">(+{c.hp - c.maxHp})</span>
+                              )}
+                            </span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveSnapshot?.();
+                                applyHealing(c.id, 1);
+                              }}
+                              aria-label="HP +1"
+                            >
+                              +
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveSnapshot?.();
+                                applyDamage(c.id, 1);
+                              }}
+                              aria-label="HP -1"
+                            >
+                              –
+                            </Button>
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              className="h-7 w-16 text-center text-xs"
+                              value={editingHp[c.id] ?? String(c.hp)}
+                              onClick={(e) => e.stopPropagation()}
+                              onFocus={(e) => {
+                                e.currentTarget.select();
+                                e.currentTarget.dataset.originalHp = String(c.hp);
+                              }}
+                              onChange={(e) => {
+                                setEditingHp((prev) => ({ ...prev, [c.id]: e.target.value }));
+                              }}
+                              onBlur={(e) => {
+                                const newValue = parseInt(e.target.value, 10);
+                                const originalHp = parseInt(
+                                  e.currentTarget.dataset.originalHp || '0',
+                                  10
+                                );
+
+                                setEditingHp((prev) => {
+                                  const copy = { ...prev };
+                                  delete copy[c.id];
+                                  return copy;
+                                });
+
+                                if (!Number.isFinite(newValue) || newValue === originalHp) return;
+
+                                if (newValue < originalHp) {
+                                  const damageAmount = originalHp - newValue;
+                                  applyDamage(c.id, damageAmount);
+                                } else if (newValue > originalHp) {
+                                  const healingAmount = newValue - originalHp;
+                                  applyHealing(c.id, healingAmount);
+                                }
+                              }}
+                            />{' '}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              / {c.maxHp}
+                            </span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveSnapshot?.();
+                                applyHealing(c.id, 1);
+                              }}
+                              aria-label="HP +1"
+                            >
+                              +
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* right column: more menu (delete only) */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 opacity-60 group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="More actions"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-36">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Delete ${c.name}?`)) {
+                              saveSnapshot?.();
+                              handleDeleteCharacter(c.id);
+                            }
+                          }}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
 };
 
 export default CharacterPanel;

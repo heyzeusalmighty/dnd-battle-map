@@ -9,6 +9,7 @@ import '../../map/index.css';
 import { useUserMapContext, UserMapProvider } from '../context/UserMapContext';
 import ReadOnlyInitiativePanel from './ReadOnlyInitiativePanel';
 import useUserHotkeys from '../useUserHotKeys';
+import { CombatLog } from '../../map/components/CombatLog';
 
 const UserMapView = () => {
   const { state, actions } = useUserMapContext();
@@ -104,6 +105,7 @@ const UserMapView = () => {
 
       <div className="w-64 flex-shrink-0 flex flex-col gap-4">
         <ReadOnlyInitiativePanel />
+        <CombatLog damageLog={gameState?.damageLog || []} />
       </div>
     </main>
   );

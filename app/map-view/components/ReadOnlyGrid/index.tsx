@@ -130,6 +130,7 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
           characters={characters}
           selectedCharacterId={selectedCharacterId}
           onCharacterClick={handleCharacterClick}
+          isDmView={false}
         />
       </Card>
     </div>

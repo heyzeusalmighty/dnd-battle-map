@@ -14,6 +14,7 @@ import type {
   Terrain,
   AppSnapshot,
   RollPreset,
+  DamageEvent,
   // RollScope,
 } from '../types';
 
@@ -43,12 +44,11 @@ export interface MapContextType {
     // lastPaintTool: 'wall' | 'difficult' | 'door';
     showMovePreview: boolean;
     newCharName: string;
-    newCharDmg: string;
+    newCharMaxHp: string;
     newCharInit: string;
     showMapSettings: boolean;
     showAddChar: boolean;
     addMode: 'single' | 'bulk';
-    damageDelta: Record<string, string>;
     presetToAdd: string;
     undoStack: AppSnapshot[];
     redoStack: AppSnapshot[];
@@ -64,6 +64,7 @@ export interface MapContextType {
     showHelp: boolean;
     mode: 'select' | 'measure' | 'paint';
     filteredCharacters: Character[];
+    damageLog: DamageEvent[];
   };
   actions: {    
     setMapWidth: Dispatch<SetStateAction<number>>;
@@ -86,12 +87,11 @@ export interface MapContextType {
     setCharFilter: Dispatch<SetStateAction<'all' | 'pc' | 'npc'>>;    
     setShowMovePreview: Dispatch<SetStateAction<boolean>>;
     setNewCharName: Dispatch<SetStateAction<string>>;
-    setNewCharDmg: Dispatch<SetStateAction<string>>;
+    setNewCharMaxHp: Dispatch<SetStateAction<string>>;
     setNewCharInit: Dispatch<SetStateAction<string>>;
     setShowMapSettings: Dispatch<SetStateAction<boolean>>;
     setShowAddChar: Dispatch<SetStateAction<boolean>>;
     setAddMode: Dispatch<SetStateAction<'single' | 'bulk'>>;
-    setDamageDelta: Dispatch<SetStateAction<Record<string, string>>>;
     setPresetToAdd: Dispatch<SetStateAction<string>>;    
     setInitiativeMode: Dispatch<SetStateAction<'auto' | 'manual'>>;
     setRollPreset: Dispatch<SetStateAction<RollPreset>>;    
@@ -104,7 +104,8 @@ export interface MapContextType {
     setNewObjIcon: Dispatch<SetStateAction<string>>;
     setShowHelp: Dispatch<SetStateAction<boolean>>;
     setMode: (mode: 'select' | 'measure' | 'paint') => void;
-    setPaintTool: (tool: 'wall' | 'difficult' | 'door') => void;    
+    setPaintTool: (tool: 'wall' | 'difficult' | 'door') => void;
+    setDamageLog: Dispatch<SetStateAction<DamageEvent[]>>;
   };
   handlers: {
     handleNextTurn: () => void;

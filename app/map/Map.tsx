@@ -20,6 +20,7 @@ import { getId } from './utils/id';
 import { BUILTIN_TERRAIN } from './utils/terrain';
 import LoadingMapDialog from './components/LoadingMapDialog';
 import { Button } from '../components/ui/button';
+import { createPlayerSnapshot } from './utils/playerSnapshot';
 
 const MapContainer = () => {
   // Map configuration
@@ -118,8 +119,9 @@ const MapContainer = () => {
 
   // broadcast snapshots on every state change
   useEffect(() => {
-    const snapShot = takeSnapshot();
-    broadcastData({ type: 'snapshot', snapShot });
+    const fullSnapshot = takeSnapshot();
+    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
+    broadcastData({ type: 'snapshot', snapShot: playerSnapshot });
   }, [characters, terrain, currentTurn]);
 
   // Helper functions
