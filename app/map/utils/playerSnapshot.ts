@@ -1,4 +1,4 @@
-import type { AppSnapshot, Character } from '../types';
+import type { AppSnapshot } from '../types';
 
 /**
  * Creates a player-safe version of the game state.
@@ -14,9 +14,8 @@ export function createPlayerSnapshot(fullSnapshot: AppSnapshot): AppSnapshot {
       }
       
       // NPCs: create a filtered version without HP info
-      const { hp, maxHp, ...rest } = char;
       return {
-        ...rest,
+        ...char,
         hp: 0,
         maxHp: 0,
       };

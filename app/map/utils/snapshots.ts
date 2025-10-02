@@ -11,7 +11,7 @@ export type Snapshot = {
   measurements: Measurement[];
   initiativeOrder: string[];
   initiativeMode: InitiativeMode;
-  amageLog: DamageEvent[];
+  damageLog: DamageEvent[];
 };
 
 // ---- internal deep clone helpers (no refs shared with React state) ----

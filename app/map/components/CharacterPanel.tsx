@@ -60,7 +60,6 @@ const CharacterPanel = () => {
     charQuery,
     charFilter,
     filteredCharacters,
-    round,
     characters,
   } = state;
 

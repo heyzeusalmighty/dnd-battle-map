@@ -17,6 +17,7 @@ export function demoCharacters(): Character[] {
     y: 2,
     hp: 7,
     maxHp: mae?.hp ?? 31,
+    totalDamage: 0,
     initiative: 1,
     // ✅ pull the default bonus from presets
     initiativeMod: mae?.initiativeMod ?? 0,
@@ -34,6 +35,7 @@ export function demoCharacters(): Character[] {
     y: 6,
     hp: 22,
     maxHp: 22,
+    totalDamage: 0,
     initiative: 20,
     isPlayer: false,
     npcType: 'standard',
