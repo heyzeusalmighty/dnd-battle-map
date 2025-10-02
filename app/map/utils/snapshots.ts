@@ -1,5 +1,5 @@
 // snapshots.ts
-import type { Character, Terrain, CustomObj, Measurement } from "../types";
+import type { Character, Terrain, CustomObj, Measurement, DamageEvent } from "../types";
 
 // If you use a stricter union, feel free to replace `string` with it.
 export type InitiativeMode = string; // e.g., "manual" | "auto"
@@ -11,6 +11,7 @@ export type Snapshot = {
   measurements: Measurement[];
   initiativeOrder: string[];
   initiativeMode: InitiativeMode;
+  damageLog: DamageEvent[];
 };
 
 // ---- internal deep clone helpers (no refs shared with React state) ----
@@ -30,6 +31,7 @@ export function takeSnapshot(model: {
   measurements: Measurement[];
   initiativeOrder: string[];
   initiativeMode: InitiativeMode;
+  damageLog: DamageEvent[];
 }): Snapshot {
   return {
     characters: cloneCharacters(model.characters),
@@ -38,6 +40,7 @@ export function takeSnapshot(model: {
     measurements: cloneMeasurements(model.measurements),
     initiativeOrder: [...model.initiativeOrder],
     initiativeMode: model.initiativeMode,
+    damageLog: [...model.damageLog],
   };
 }
 
@@ -53,6 +56,7 @@ export function applySnapshot(snap: Snapshot): Snapshot {
     measurements: cloneMeasurements(snap.measurements),
     initiativeOrder: [...snap.initiativeOrder],
     initiativeMode: snap.initiativeMode,
+    damageLog: [...snap.damageLog],
   };
 }
 

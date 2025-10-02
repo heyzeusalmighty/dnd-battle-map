@@ -48,7 +48,7 @@ const ReadOnlyInitiativePanel = () => {
                   HP: {char.hp}/{char.maxHp}
                 </span>
               ) : (
-                <span>DMG: {char.damage}</span>
+                <span>DMG: {char.totalDamage}</span>
               )}
               <Badge variant={char.isPlayer ? 'default' : 'secondary'}>
                 {char.isPlayer ? 'PC' : 'NPC'}

@@ -9,6 +9,7 @@ import type {
   InitiativeMode,
   RollPreset,
   CustomObj,
+  DamageEvent,
 } from '../types';
 import { demoCharacters, demoTerrain } from '../utils/demo';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
@@ -81,12 +82,12 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   const [lastPaintTool, setLastPaintTool] = useState<'wall' | 'difficult' | 'door'>('wall');
   const [showMovePreview, setShowMovePreview] = useState(true);
   const [newCharName, setNewCharName] = useState('');
-  const [newCharDmg, setNewCharDmg] = useState('');
+  const [newCharMaxHp, setNewCharMaxHp] = useState('');
   const [newCharInit, setNewCharInit] = useState('');
   const [showMapSettings, setShowMapSettings] = useState(false);
+  const [damageLog, setDamageLog] = useState<DamageEvent[]>([]);
   const [showAddChar, setShowAddChar] = useState(false);
   const [addMode, setAddMode] = useState<'single' | 'bulk'>('single');
-  const [damageDelta, setDamageDelta] = useState<Record<string, string>>({});
   const [presetToAdd, setPresetToAdd] = useState<string>(DEFAULT_PARTY[0]?.name ?? '');
   const [undoStack, setUndoStack] = useState<AppSnapshot[]>([]);
   const [redoStack, setRedoStack] = useState<AppSnapshot[]>([]);
@@ -125,9 +126,23 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
             .map((id) => characters.find((c) => c.id === id))
             .filter((c): c is Character => !!c);
 
-    const nextTurn = (currentTurn + 1) % Math.max(1, list.length);
+    // filter out dead characters from initiative
+    const aliveChars = list.filter((c) => !c.isDead);
+
+    if (aliveChars.length === 0) {
+      return;
+    }
+
+    // find current character in the alive list
+    const currentChar = aliveChars[currentTurn];
+    const currentIndex = currentChar ? aliveChars.findIndex((c) => c.id === currentChar.id) : -1;
+
+    const nextTurn = (currentIndex + 1) % aliveChars.length;
     setCurrentTurn(nextTurn);
-    if (nextTurn === 0) setRound((prev) => prev + 1);
+
+    if (nextTurn === 0) {
+      setRound((prev) => prev + 1);
+    }
   };
 
   // Derive the high-level mode from your existing selectedTool
@@ -159,6 +174,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     currentTurn,
     selectedTool: selectedTool ?? 'select',
     customObjects: JSON.parse(JSON.stringify(customObjects)),
+    damageLog: JSON.parse(JSON.stringify(damageLog)),
     id: Date.now(), // simple unique ID for debugging
   });
 
@@ -181,6 +197,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     setRound(s.round);
     setCurrentTurn(s.currentTurn);
     setSelectedTool(s.selectedTool);
+    setDamageLog(s.damageLog || []);
   };
 
   const undo = () => {
@@ -218,6 +235,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     setRound(s.round);
     setCurrentTurn(s.currentTurn);
     setInitiativeMode('auto');
+    setDamageLog(s.damageLog || []);
   };
 
   function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
@@ -401,12 +419,11 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       lastPaintTool,
       showMovePreview,
       newCharName,
-      newCharDmg,
+      newCharMaxHp,
       newCharInit,
       showMapSettings,
       showAddChar,
       addMode,
-      damageDelta,
       presetToAdd,
       undoStack,
       redoStack,
@@ -422,6 +439,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       showHelp,
       mode,
       filteredCharacters,
+      damageLog,
     },
     actions: {
       setMapWidth,
@@ -445,12 +463,11 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       setLastPaintTool,
       setShowMovePreview,
       setNewCharName,
-      setNewCharDmg,
+      setNewCharMaxHp,
       setNewCharInit,
       setShowMapSettings,
       setShowAddChar,
       setAddMode,
-      setDamageDelta,
       setPresetToAdd,
       setInitiativeMode,
       setRollPreset,
@@ -464,6 +481,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       setShowHelp,
       setMode,
       setPaintTool,
+      setDamageLog,
     },
     handlers: {
       handleNextTurn,

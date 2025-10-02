@@ -47,6 +47,7 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
     gridScale: 1,
     round: 1,
     selectedTool: 'terrain',
+    damageLog: [],
   });
   const [username, setUsername] = useState('');
   const [submitted, setSubmitted] = useState(false);
