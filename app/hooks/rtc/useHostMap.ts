@@ -120,7 +120,7 @@ export function useHostPeerSession({mapName, moveCharacterCallback}: {mapName: s
       const snap = data as SnapshotUpdate;
       setGameState(snap.snapShot);
       console.log('message count', messageCount);
-      console.log('ref count', connectionsRef.current.length);
+      // console.log('ref count', connectionsRef.current.length);
     }
 
     connectionsRef.current.forEach((conn) => {
