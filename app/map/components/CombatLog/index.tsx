@@ -37,9 +37,12 @@ export function CombatLog({ damageLog, maxEvents = 10 }: CombatLogProps) {
               className={`${styles.combatLogEvent} ${index === 0 ? styles.mostRecent : ''}`}
             >
               <span className={styles.eventCharacter}>{event.characterName}</span>
-              <span className={styles.eventText}> hit for </span>
-              <span className={styles.eventDamage}>{event.amount}</span>
-              <span className={styles.eventText}> damage</span>
+              <span className={styles.eventText}>
+                {' '}
+                {event.amount > 0 ? ' hit for ' : ' healed for '}{' '}
+              </span>
+              <span className={styles.eventDamage}>{Math.abs(event.amount)}</span>
+              <span className={styles.eventText}> {event.amount > 0 ? ' damage' : ' HP'}</span>
 
               {event.round !== undefined && (
                 <span className={styles.eventRound}> (Round {event.round})</span>

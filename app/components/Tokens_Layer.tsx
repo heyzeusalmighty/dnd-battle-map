@@ -14,6 +14,13 @@ type Props = {
   isDmView?: boolean;
 };
 
+const characterInitials = (name: string) => {
+  const parts = name.trim().split(' ');
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+};
+
 export default function Tokens_Layer({
   characters,
   cellPx,
@@ -106,7 +113,7 @@ export default function Tokens_Layer({
             aria-label={char.name}
             role="button"
           >
-            <span className="text-xs text-white font-medium">{char.name.charAt(0)}</span>
+            <span className="text-xs text-white font-medium">{characterInitials(char.name)}</span>
 
             {char.isDead && (
               <div className="absolute inset-0 flex items-center justify-center">

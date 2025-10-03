@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MoreVertical } from 'lucide-react';
 import BulkNpcForm from '../../components/BulkNpcForm';
 import { Badge } from '../../components/ui/badge';
@@ -64,6 +64,9 @@ const CharacterPanel = () => {
   } = state;
 
   const [editingHp, setEditingHp] = useState<Record<string, string>>({});
+
+  const damageEventQueue = useRef<DamageEvent[]>([]);
+  const damageEventTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const addPartyFromPresets = () => {
     const baseX = 1;
@@ -189,12 +192,11 @@ const CharacterPanel = () => {
     setShowAddChar(false);
   };
 
-  // Log damage/healing events
+  // Debounced damage event batching
   const logDamageEvent = (char: Character, oldHp: number, newHp: number) => {
-    const amount = oldHp - newHp; // positive = damage, negative = healing
+    const amount = oldHp - newHp; // positive for damage, negative for healing
 
     if (amount === 0) return;
-
     const event: DamageEvent = {
       id: getId(),
       characterId: char.id,
@@ -205,7 +207,26 @@ const CharacterPanel = () => {
       newHp: newHp,
       newTotalDamage: char.maxHp - newHp,
     };
-    setDamageLog((prev) => [...prev, event]);
+    damageEventQueue.current.push(event);
+    if (damageEventTimeout.current) {
+      clearTimeout(damageEventTimeout.current);
+    }
+    damageEventTimeout.current = setTimeout(() => {
+      if (damageEventQueue.current.length > 0) {
+        // Combine all events into a single log message
+        const combined = damageEventQueue.current;
+        const totalAmount = combined.reduce((sum, e) => sum + e.amount, 0);
+
+        const lastEvent = combined[combined.length - 1];
+        if (lastEvent) {
+          lastEvent.amount = totalAmount;
+        }
+
+        setDamageLog((prev) => [...prev, ...(lastEvent ? [lastEvent] : [])]);
+
+        damageEventQueue.current = [];
+      }
+    }, 2000);
   };
 
   // handle damage for any character
