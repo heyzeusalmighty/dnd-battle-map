@@ -1,5 +1,5 @@
 // movement.ts
-import type { DistanceRule } from "../types";
+import type { DistanceRule } from '../types';
 
 /** Greedy 8-dir raster: take diagonals first until aligned, then straight. */
 function rasterize(
@@ -35,15 +35,15 @@ function makeBaseCostFn(rule: DistanceRule, gridScale: number) {
   let diagCount = 0; // for the alternating diagonal in "5105"
   return (isDiagonal: boolean): number => {
     switch (rule) {
-      case "5e":
+      case '5e':
         // Every step is one square
         return gridScale;
-      case "5105":
+      case '5105':
         if (!isDiagonal) return gridScale;
         diagCount += 1;
         // 1st diag = 1 square, 2nd diag = 2 squares, then repeat
         return (diagCount % 2 === 1 ? 1 : 2) * gridScale;
-      case "euclidean":
+      case 'euclidean':
       default:
         // Orth = 1 square, diag = sqrt(2) squares
         return (isDiagonal ? Math.SQRT2 : 1) * gridScale;

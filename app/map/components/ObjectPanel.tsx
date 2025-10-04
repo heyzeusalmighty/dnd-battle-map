@@ -1,16 +1,21 @@
-import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
-import { slugify } from '../utils/id';
-
 import { useMapContext } from '../context/MapContext';
+import { slugify } from '../utils/id';
 
 const ObjectPanel = () => {
   const { state, actions } = useMapContext();
 
-  const { newObjLabel, newObjColor, newObjIcon, customObjects, selectedTool } = state;
-  const { setSelectedTool, setNewObjLabel, setNewObjColor, setNewObjIcon, setCustomObjects } =
-    actions;
+  const { newObjLabel, newObjColor, newObjIcon, customObjects, selectedTool } =
+    state;
+  const {
+    setSelectedTool,
+    setNewObjLabel,
+    setNewObjColor,
+    setNewObjIcon,
+    setCustomObjects,
+  } = actions;
 
   const handleAddCustomObject = () => {
     const label = newObjLabel.trim();
@@ -98,7 +103,6 @@ const ObjectPanel = () => {
             <div
               className="h-9 w-12 rounded-md border shadow-inner"
               style={{ backgroundColor: newObjColor }}
-              aria-label="Pick color"
             />
 
             {/* Invisible native color input stretched over the swatch */}
@@ -108,12 +112,13 @@ const ObjectPanel = () => {
               onChange={(e) => setNewObjColor(e.target.value)}
               className="absolute inset-0 h-9 w-12 opacity-0 cursor-pointer"
               title="Color"
+              aria-label="Pick color"
             />
           </div>
+          <Button onClick={handleAddCustomObject} className="mt-2 w-full">
+            Add Object
+          </Button>
         </div>
-        <Button onClick={handleAddCustomObject} className="mt-2 w-full">
-          Add Object
-        </Button>
       </div>
     </Card>
   );

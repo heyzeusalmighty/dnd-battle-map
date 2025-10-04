@@ -7,7 +7,12 @@ import {
   Ruler,
   Settings,
 } from 'lucide-react';
-import { type FC, type MouseEvent, type MutableRefObject, useMemo } from 'react';
+import {
+  type FC,
+  type MouseEvent,
+  type MutableRefObject,
+  useMemo,
+} from 'react';
 import Map_GridLines from '@/app/components/Map_GridLines';
 import Measurement_Overlay from '@/app/components/Measurement_Overlay';
 import Movement_Overlay from '@/app/components/Movement_Overlay';
@@ -107,7 +112,12 @@ const MapGrid: FC<MapGridProps> = ({
       if (!measurementStart) {
         setMeasurementStart({ x, y });
       } else {
-        const distance = calculateDistance(measurementStart.x, measurementStart.y, x, y);
+        const distance = calculateDistance(
+          measurementStart.x,
+          measurementStart.y,
+          x,
+          y
+        );
         const newMeasurement: Measurement = {
           id: getId(),
           startX: measurementStart.x,
@@ -160,7 +170,11 @@ const MapGrid: FC<MapGridProps> = ({
       'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
 
       // Selection emphasis
-      isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
+      isSelected
+        ? isPlayer
+          ? 'ring-2 ring-blue-500/70'
+          : 'ring-2 ring-red-600/70'
+        : '',
 
       // Optional: small polish
       'shadow-sm transition-all duration-150',
@@ -178,10 +192,12 @@ const MapGrid: FC<MapGridProps> = ({
     return s;
   }, [terrain]);
 
-  const isDifficultAt = (x: number, y: number) => difficultKeys.has(`${x},${y}`);
+  const isDifficultAt = (x: number, y: number) =>
+    difficultKeys.has(`${x},${y}`);
 
   // find the currently selected character once
-  const getSelectedChar = () => characters.find((c) => c.id === selectedCharacter) || null;
+  const getSelectedChar = () =>
+    characters.find((c) => c.id === selectedCharacter) || null;
 
   return (
     <div className="flex-1 min-w-0 overflow-hidden">
@@ -192,11 +208,14 @@ const MapGrid: FC<MapGridProps> = ({
           </span>
           {selectedCharacter && (
             <Badge variant="outline">
-              {characters.find((c) => c.id === selectedCharacter)?.name} selected - click to move
+              {characters.find((c) => c.id === selectedCharacter)?.name}{' '}
+              selected - click to move
             </Badge>
           )}
           {measurementStart && (
-            <Badge variant="outline">Click another cell to measure distance</Badge>
+            <Badge variant="outline">
+              Click another cell to measure distance
+            </Badge>
           )}
         </div>
 
@@ -281,7 +300,12 @@ const MapGrid: FC<MapGridProps> = ({
                           type="number"
                           value={mapWidth}
                           onChange={(e) =>
-                            setMapWidth(Math.max(10, Math.min(50, parseInt(e.target.value) || 25)))
+                            setMapWidth(
+                              Math.max(
+                                10,
+                                Math.min(50, parseInt(e.target.value) || 25)
+                              )
+                            )
                           }
                         />
                       </div>
@@ -291,7 +315,12 @@ const MapGrid: FC<MapGridProps> = ({
                           type="number"
                           value={mapHeight}
                           onChange={(e) =>
-                            setMapHeight(Math.max(10, Math.min(50, parseInt(e.target.value) || 20)))
+                            setMapHeight(
+                              Math.max(
+                                10,
+                                Math.min(50, parseInt(e.target.value) || 20)
+                              )
+                            )
                           }
                         />
                       </div>
@@ -303,16 +332,21 @@ const MapGrid: FC<MapGridProps> = ({
                         value={String(gridScale)}
                         onValueChange={(v) => {
                           const next = parseInt(v, 10);
-                          if (!Number.isFinite(next) || next === gridScale) return;
+                          if (!Number.isFinite(next) || next === gridScale)
+                            return;
                           saveSnapshot();
                           setGridScale(next);
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={`${gridScale} feet per square`} />
+                          <SelectValue
+                            placeholder={`${gridScale} feet per square`}
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="5">5 feet (Standard D&D)</SelectItem>
+                          <SelectItem value="5">
+                            5 feet (Standard D&D)
+                          </SelectItem>
                           <SelectItem value="10">10 feet</SelectItem>
                           <SelectItem value="1">1 foot</SelectItem>
                         </SelectContent>
@@ -332,13 +366,21 @@ const MapGrid: FC<MapGridProps> = ({
                         <SelectValue placeholder={distanceRule} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="5e">5e (each square = 5 ft)</SelectItem>
-                        <SelectItem value="5105">5-10-5 (every 2nd diagonal 10 ft)</SelectItem>
-                        <SelectItem value="euclidean">Euclidean (true distance)</SelectItem>
+                        <SelectItem value="5e">
+                          5e (each square = 5 ft)
+                        </SelectItem>
+                        <SelectItem value="5105">
+                          5-10-5 (every 2nd diagonal 10 ft)
+                        </SelectItem>
+                        <SelectItem value="euclidean">
+                          Euclidean (true distance)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
 
-                    <Button onClick={() => setShowMapSettings(false)}>Done</Button>
+                    <Button onClick={() => setShowMapSettings(false)}>
+                      Done
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -422,7 +464,11 @@ const MapGrid: FC<MapGridProps> = ({
           {/* Stage: sized exactly to the grid in pixels.
       Everything that positions absolutely should be inside this. */}
           <div className="relative" style={{ width: stageW, height: stageH }}>
-            <Map_GridLines width={mapWidth} height={mapHeight} size={GRID_SIZE} />
+            <Map_GridLines
+              width={mapWidth}
+              height={mapHeight}
+              size={GRID_SIZE}
+            />
             <Measurement_Overlay
               measurements={measurements}
               gridSize={GRID_SIZE}
@@ -448,8 +494,14 @@ const MapGrid: FC<MapGridProps> = ({
                     strokeDasharray="3,3"
                   />
                   <text
-                    x={((measurementStart.x + hoveredCell.x) * GRID_SIZE) / 2 + GRID_SIZE / 2}
-                    y={((measurementStart.y + hoveredCell.y) * GRID_SIZE) / 2 + GRID_SIZE / 2}
+                    x={
+                      ((measurementStart.x + hoveredCell.x) * GRID_SIZE) / 2 +
+                      GRID_SIZE / 2
+                    }
+                    y={
+                      ((measurementStart.y + hoveredCell.y) * GRID_SIZE) / 2 +
+                      GRID_SIZE / 2
+                    }
                     fill="#FF6B35"
                     fontSize="12"
                     textAnchor="middle"
@@ -494,7 +546,9 @@ const MapGrid: FC<MapGridProps> = ({
                 <div
                   key={`${x}-${y}`}
                   className={`absolute cursor-pointer hover:bg-accent/30 ${
-                    measurementStart?.x === x && measurementStart?.y === y ? 'bg-orange-200' : ''
+                    measurementStart?.x === x && measurementStart?.y === y
+                      ? 'bg-orange-200'
+                      : ''
                   }`}
                   style={{
                     left: x * GRID_SIZE,
@@ -505,7 +559,10 @@ const MapGrid: FC<MapGridProps> = ({
                   // Only let onClick handle MEASURE and SELECT moves.
                   // Terrain tools are handled by mouse down/drag (below).
                   onClick={() => {
-                    if (selectedTool === 'measure' || selectedTool === 'select') {
+                    if (
+                      selectedTool === 'measure' ||
+                      selectedTool === 'select'
+                    ) {
                       handleCellClick(x, y);
                     }
                   }}
@@ -521,7 +578,11 @@ const MapGrid: FC<MapGridProps> = ({
                   onContextMenu={(e) => {
                     e.preventDefault(); // no browser/Figma menu
                     if (!isDragging && selectedTool !== 'select') {
-                      handleCellMouseDown(Object.assign(e, { button: 2 }), x, y);
+                      handleCellMouseDown(
+                        Object.assign(e, { button: 2 }),
+                        x,
+                        y
+                      );
                     }
                   }}
                 />

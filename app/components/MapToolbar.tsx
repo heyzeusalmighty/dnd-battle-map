@@ -3,8 +3,20 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { Separator } from './ui/separator';
 import {
   MousePointer,
@@ -74,7 +86,11 @@ const TOKEN_SIZES = [
 ] as const;
 
 const NPC_TYPES = [
-  { id: 'minion', label: 'Minion', description: 'Weak enemies, often in groups' },
+  {
+    id: 'minion',
+    label: 'Minion',
+    description: 'Weak enemies, often in groups',
+  },
   { id: 'elite', label: 'Elite', description: 'Stronger than regular enemies' },
   { id: 'boss', label: 'Boss', description: 'Major encounter enemies' },
   { id: 'ally', label: 'Ally', description: 'Friendly NPCs' },
@@ -95,9 +111,9 @@ export function MapToolbar({
   const [showSettings, setShowSettings] = React.useState(false);
   const [newTokenName, setNewTokenName] = React.useState('');
   const [newTokenColor, setNewTokenColor] = React.useState(TOKEN_COLORS[0]);
-  const [newTokenSize, setNewTokenSize] = React.useState<'small' | 'medium' | 'large' | 'huge'>(
-    'medium'
-  );
+  const [newTokenSize, setNewTokenSize] = React.useState<
+    'small' | 'medium' | 'large' | 'huge'
+  >('medium');
   const [newTokenHp, setNewTokenHp] = React.useState('');
   const [newTokenIsPlayer, setNewTokenIsPlayer] = React.useState(false);
   const [newTokenNpcType, setNewTokenNpcType] = React.useState<
@@ -126,9 +142,15 @@ export function MapToolbar({
   };
 
   const basicTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'basic');
-  const terrainTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'terrain');
-  const objectTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'objects');
-  const measurementTools = TERRAIN_TOOLS.filter((tool) => tool.category === 'tools');
+  const terrainTools = TERRAIN_TOOLS.filter(
+    (tool) => tool.category === 'terrain'
+  );
+  const objectTools = TERRAIN_TOOLS.filter(
+    (tool) => tool.category === 'objects'
+  );
+  const measurementTools = TERRAIN_TOOLS.filter(
+    (tool) => tool.category === 'tools'
+  );
 
   return (
     <Card className="p-4">
@@ -253,7 +275,10 @@ export function MapToolbar({
         <div>
           <div className="flex items-center justify-between mb-2">
             <h4>Characters & NPCs</h4>
-            <Button size="sm" onClick={() => setShowTokenCreator(!showTokenCreator)}>
+            <Button
+              size="sm"
+              onClick={() => setShowTokenCreator(!showTokenCreator)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add Character
             </Button>
@@ -289,11 +314,13 @@ export function MapToolbar({
 
               {!newTokenIsPlayer && (
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">NPC Type</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">
+                    NPC Type
+                  </label>
                   <Select
-                    onValueChange={(value: 'minion' | 'elite' | 'boss' | 'ally') =>
-                      setNewTokenNpcType(value)
-                    }
+                    onValueChange={(
+                      value: 'minion' | 'elite' | 'boss' | 'ally'
+                    ) => setNewTokenNpcType(value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select NPC type (optional)" />
@@ -303,7 +330,9 @@ export function MapToolbar({
                         <SelectItem key={type.id} value={type.id}>
                           <div>
                             <div className="font-medium">{type.label}</div>
-                            <div className="text-xs text-muted-foreground">{type.description}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {type.description}
+                            </div>
                           </div>
                         </SelectItem>
                       ))}
@@ -313,7 +342,9 @@ export function MapToolbar({
               )}
 
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Size</label>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Size
+                </label>
                 <div className="flex gap-2">
                   {TOKEN_SIZES.map((size) => (
                     <Button
@@ -329,13 +360,17 @@ export function MapToolbar({
               </div>
 
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Color</label>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Color
+                </label>
                 <div className="grid grid-cols-8 gap-1">
                   {TOKEN_COLORS.map((color) => (
                     <button
                       key={color}
                       className={`w-6 h-6 rounded-full border-2 ${
-                        newTokenColor === color ? 'border-primary' : 'border-border'
+                        newTokenColor === color
+                          ? 'border-primary'
+                          : 'border-border'
                       }`}
                       style={{ backgroundColor: color }}
                       onClick={() => setNewTokenColor(color)}
@@ -348,7 +383,11 @@ export function MapToolbar({
                 <Button size="sm" onClick={handleCreateToken}>
                   Create Character
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowTokenCreator(false)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowTokenCreator(false)}
+                >
                   Cancel
                 </Button>
               </div>
@@ -378,7 +417,11 @@ export function MapToolbar({
                     <label className="text-sm font-medium mb-2 block">
                       Grid Scale (feet per square)
                     </label>
-                    <Select onValueChange={(value) => onGridScaleChange(parseInt(value))}>
+                    <Select
+                      onValueChange={(value) =>
+                        onGridScaleChange(parseInt(value))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder={`${gridScale} feet`} />
                       </SelectTrigger>
@@ -390,10 +433,18 @@ export function MapToolbar({
                     </Select>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={onClearTerrain} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={onClearTerrain}
+                      className="flex-1"
+                    >
                       Clear Terrain
                     </Button>
-                    <Button variant="outline" onClick={onClearMeasurements} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={onClearMeasurements}
+                      className="flex-1"
+                    >
                       Clear Measurements
                     </Button>
                   </div>
@@ -401,7 +452,9 @@ export function MapToolbar({
               </DialogContent>
             </Dialog>
           </div>
-          <div className="text-xs text-muted-foreground">Current scale: {gridScale} ft/square</div>
+          <div className="text-xs text-muted-foreground">
+            Current scale: {gridScale} ft/square
+          </div>
         </div>
 
         {/* Enhanced Legend */}
@@ -430,7 +483,9 @@ export function MapToolbar({
               <span>Pit</span>
             </div>
 
-            <div className="font-medium text-muted-foreground mt-2">Objects</div>
+            <div className="font-medium text-muted-foreground mt-2">
+              Objects
+            </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-[#8B4513] rounded flex items-center justify-center text-white text-xs">
                 D
@@ -450,7 +505,9 @@ export function MapToolbar({
               <span>Trap</span>
             </div>
 
-            <div className="font-medium text-muted-foreground mt-2">Characters</div>
+            <div className="font-medium text-muted-foreground mt-2">
+              Characters
+            </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-blue-500 rounded-full bg-blue-400"></div>
               <span>Player Character</span>
@@ -460,7 +517,9 @@ export function MapToolbar({
               <span>Enemy/NPC</span>
             </div>
 
-            <div className="font-medium text-muted-foreground mt-2">NPC Types</div>
+            <div className="font-medium text-muted-foreground mt-2">
+              NPC Types
+            </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-orange-400 rounded-full bg-red-400 relative">
                 <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-orange-400 rounded-full text-white text-xs flex items-center justify-center">
@@ -488,7 +547,9 @@ export function MapToolbar({
               <span>Ally</span>
             </div>
 
-            <div className="font-medium text-muted-foreground mt-2">Measurements</div>
+            <div className="font-medium text-muted-foreground mt-2">
+              Measurements
+            </div>
             <div className="flex items-center gap-2">
               <div
                 className="w-4 h-1 bg-orange-500"

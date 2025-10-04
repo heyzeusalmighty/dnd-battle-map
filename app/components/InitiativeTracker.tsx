@@ -3,9 +3,23 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { ChevronUp, ChevronDown, Trash2, Plus, Heart, Shield, Sword } from 'lucide-react';
+import {
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  Plus,
+  Heart,
+  Shield,
+  Sword,
+} from 'lucide-react';
 
 export interface InitiativeEntry {
   id: string;
@@ -208,7 +222,9 @@ export function InitiativeTracker({
   }, [selectedEntryId, healAmount, handleHeal]);
 
   const currentEntry =
-    sortedEntries && sortedEntries[currentTurn] ? sortedEntries[currentTurn] : null;
+    sortedEntries && sortedEntries[currentTurn]
+      ? sortedEntries[currentTurn]
+      : null;
 
   return (
     <Card className="p-4 h-full flex flex-col">
@@ -218,10 +234,18 @@ export function InitiativeTracker({
           <div className="text-sm text-muted-foreground">Round {round}</div>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" onClick={onPreviousTurn} disabled={entries.length === 0}>
+          <Button
+            size="sm"
+            onClick={onPreviousTurn}
+            disabled={entries.length === 0}
+          >
             <ChevronUp className="w-4 h-4" />
           </Button>
-          <Button size="sm" onClick={handleNextTurnWithRound} disabled={entries.length === 0}>
+          <Button
+            size="sm"
+            onClick={handleNextTurnWithRound}
+            disabled={entries.length === 0}
+          >
             <ChevronDown className="w-4 h-4" />
           </Button>
         </div>
@@ -240,7 +264,8 @@ export function InitiativeTracker({
                     color: NPC_TYPE_COLORS[currentEntry.npcType],
                   }}
                 >
-                  {currentEntry.npcType.charAt(0).toUpperCase() + currentEntry.npcType.slice(1)}
+                  {currentEntry.npcType.charAt(0).toUpperCase() +
+                    currentEntry.npcType.slice(1)}
                 </Badge>
               )}
             </div>
@@ -254,7 +279,9 @@ export function InitiativeTracker({
           <div
             key={entry.id}
             className={`p-3 border rounded-lg ${
-              index === currentTurn ? 'border-primary bg-primary/5' : 'border-border'
+              index === currentTurn
+                ? 'border-primary bg-primary/5'
+                : 'border-border'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
@@ -271,12 +298,17 @@ export function InitiativeTracker({
                       color: NPC_TYPE_COLORS[entry.npcType],
                     }}
                   >
-                    {entry.npcType.charAt(0).toUpperCase() + entry.npcType.slice(1)}
+                    {entry.npcType.charAt(0).toUpperCase() +
+                      entry.npcType.slice(1)}
                   </Badge>
                 )}
                 {entry.hp <= 0 && <Badge variant="destructive">KO</Badge>}
               </div>
-              <Button size="sm" variant="ghost" onClick={() => onRemoveEntry(entry.id)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRemoveEntry(entry.id)}
+              >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
@@ -287,7 +319,9 @@ export function InitiativeTracker({
                 <Input
                   type="number"
                   value={entry.initiative}
-                  onChange={(e) => onUpdateInitiative(entry.id, parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    onUpdateInitiative(entry.id, parseInt(e.target.value) || 0)
+                  }
                   className="h-8"
                 />
               </div>
@@ -296,7 +330,12 @@ export function InitiativeTracker({
                 <Input
                   type="number"
                   value={entry.hp}
-                  onChange={(e) => onUpdateHp(entry.id, Math.max(0, parseInt(e.target.value) || 0))}
+                  onChange={(e) =>
+                    onUpdateHp(
+                      entry.id,
+                      Math.max(0, parseInt(e.target.value) || 0)
+                    )
+                  }
                   className="h-8"
                 />
               </div>
@@ -317,7 +356,10 @@ export function InitiativeTracker({
                   type="number"
                   value={entry.tempHp || 0}
                   onChange={(e) =>
-                    onUpdateTempHp(entry.id, Math.max(0, parseInt(e.target.value) || 0))
+                    onUpdateTempHp(
+                      entry.id,
+                      Math.max(0, parseInt(e.target.value) || 0)
+                    )
                   }
                   className="h-8"
                 />
@@ -375,7 +417,10 @@ export function InitiativeTracker({
               <span>
                 {entry.hp}/{entry.maxHp}
                 {entry.hp > entry.maxHp && (
-                  <span className="text-green-600"> (+{entry.hp - entry.maxHp})</span>
+                  <span className="text-green-600">
+                    {' '}
+                    (+{entry.hp - entry.maxHp})
+                  </span>
                 )}
                 {entry.tempHp && entry.tempHp > 0 && (
                   <span className="text-blue-500"> (+{entry.tempHp})</span>
@@ -401,13 +446,20 @@ export function InitiativeTracker({
               )}
 
               <div className="flex gap-1">
-                <Select value={selectedCondition} onValueChange={setSelectedCondition}>
+                <Select
+                  value={selectedCondition}
+                  onValueChange={setSelectedCondition}
+                >
                   <SelectTrigger className="h-6 text-xs">
                     <SelectValue placeholder="Add condition" />
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_CONDITIONS.map((condition) => (
-                      <SelectItem key={condition} value={condition} className="text-xs">
+                      <SelectItem
+                        key={condition}
+                        value={condition}
+                        className="text-xs"
+                      >
                         {condition}
                       </SelectItem>
                     ))}
@@ -479,9 +531,9 @@ export function InitiativeTracker({
             </div>
             <Select
               value={newCharacterType}
-              onValueChange={(value: 'player' | 'minion' | 'elite' | 'boss' | 'ally') =>
-                setNewCharacterType(value)
-              }
+              onValueChange={(
+                value: 'player' | 'minion' | 'elite' | 'boss' | 'ally'
+              ) => setNewCharacterType(value)}
             >
               <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Character Type" />
@@ -520,7 +572,11 @@ export function InitiativeTracker({
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={confirmDamage} className="flex-1" disabled={!damageAmount}>
+              <Button
+                onClick={confirmDamage}
+                className="flex-1"
+                disabled={!damageAmount}
+              >
                 Apply Damage
               </Button>
               <Button
@@ -553,10 +609,18 @@ export function InitiativeTracker({
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={confirmHeal} className="flex-1" disabled={!healAmount}>
+              <Button
+                onClick={confirmHeal}
+                className="flex-1"
+                disabled={!healAmount}
+              >
                 Apply Healing
               </Button>
-              <Button variant="outline" onClick={() => setShowHealDialog(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => setShowHealDialog(false)}
+                className="flex-1"
+              >
                 Cancel
               </Button>
             </div>

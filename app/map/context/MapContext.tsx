@@ -1,19 +1,20 @@
-import { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import type {
-  Character,
-  DistanceRule,
-  Measurement,
-  Terrain,
   AppSnapshot,
-  InitiativeMode,
-  RollPreset,
+  Character,
   CustomObj,
   DamageEvent,
+  DistanceRule,
+  InitiativeMode,
+  Measurement,
+  RollPreset,
+  Terrain,
 } from '../types';
+import { GRID_SIZE } from '../utils/constants';
 import { demoCharacters, demoTerrain } from '../utils/demo';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
-import { GRID_SIZE } from '../utils/constants';
 
 import type { MapContextType } from './types';
 
@@ -48,6 +49,12 @@ const INITIAL_OBJECTS: CustomObj[] = [
     icon: '🗄️',
     color: '#C19A6B',
   },
+  {
+    id: 'weapon',
+    label: 'Weapon',
+    icon: '🗡️',
+    color: '#708090',
+  },
 ];
 
 export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
@@ -55,7 +62,9 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   const [mapHeight, setMapHeight] = useState(20);
   const [gridScale, setGridScale] = useState(5);
   const [distanceRule, setDistanceRule] = useState<DistanceRule>('5e');
-  const [characters, setCharacters] = useState<Character[]>(() => demoCharacters());
+  const [characters, setCharacters] = useState<Character[]>(() =>
+    demoCharacters()
+  );
   const [terrain, setTerrain] = useState<Terrain[]>(() => demoTerrain());
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'paint' | 'erase' | null>(null);
@@ -75,11 +84,15 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     x: number;
     y: number;
   } | null>(null);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(
+    null
+  );
   const [charTab, setCharTab] = useState<'add' | 'manage'>('add');
   const [charQuery, setCharQuery] = useState('');
   const [charFilter, setCharFilter] = useState<'all' | 'pc' | 'npc'>('all');
-  const [lastPaintTool, setLastPaintTool] = useState<'wall' | 'difficult' | 'door'>('wall');
+  const [lastPaintTool, setLastPaintTool] = useState<
+    'wall' | 'difficult' | 'door'
+  >('wall');
   const [showMovePreview, setShowMovePreview] = useState(true);
   const [newCharName, setNewCharName] = useState('');
   const [newCharMaxHp, setNewCharMaxHp] = useState('');
@@ -88,7 +101,9 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   const [damageLog, setDamageLog] = useState<DamageEvent[]>([]);
   const [showAddChar, setShowAddChar] = useState(false);
   const [addMode, setAddMode] = useState<'single' | 'bulk'>('single');
-  const [presetToAdd, setPresetToAdd] = useState<string>(DEFAULT_PARTY[0]?.name ?? '');
+  const [presetToAdd, setPresetToAdd] = useState<string>(
+    DEFAULT_PARTY[0]?.name ?? ''
+  );
   const [undoStack, setUndoStack] = useState<AppSnapshot[]>([]);
   const [redoStack, setRedoStack] = useState<AppSnapshot[]>([]);
   const [initiativeMode, setInitiativeMode] = useState<InitiativeMode>('auto');
@@ -101,7 +116,8 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   const [initiativeOrder, setInitiativeOrder] = useState<string[]>(() =>
     characters.map((c) => c.id)
   );
-  const [customObjects, setCustomObjects] = useState<CustomObj[]>(INITIAL_OBJECTS);
+  const [customObjects, setCustomObjects] =
+    useState<CustomObj[]>(INITIAL_OBJECTS);
   const [newObjLabel, setNewObjLabel] = useState('');
   const [newObjColor, setNewObjColor] = useState('#8B4513');
   const [newObjIcon, setNewObjIcon] = useState('');
@@ -135,7 +151,9 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
 
     // find current character in the alive list
     const currentChar = aliveChars[currentTurn];
-    const currentIndex = currentChar ? aliveChars.findIndex((c) => c.id === currentChar.id) : -1;
+    const currentIndex = currentChar
+      ? aliveChars.findIndex((c) => c.id === currentChar.id)
+      : -1;
 
     const nextTurn = (currentIndex + 1) % aliveChars.length;
     setCurrentTurn(nextTurn);
@@ -147,7 +165,11 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
 
   // Derive the high-level mode from your existing selectedTool
   const mode: 'select' | 'measure' | 'paint' =
-    selectedTool === 'select' ? 'select' : selectedTool === 'measure' ? 'measure' : 'paint';
+    selectedTool === 'select'
+      ? 'select'
+      : selectedTool === 'measure'
+        ? 'measure'
+        : 'paint';
 
   const filteredCharacters = characters.filter((c) => {
     if (charFilter === 'pc' && !c.isPlayer) return false;
@@ -182,7 +204,9 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     const snapShot = takeSnapshot();
     setUndoStack((prev) => {
       const next = [...prev, snapShot];
-      return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+      return next.length > MAX_HISTORY
+        ? next.slice(next.length - MAX_HISTORY)
+        : next;
     });
     setRedoStack([]); // clear redo on any new action
   };
@@ -238,7 +262,11 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     setDamageLog(s.damageLog || []);
   };
 
-  function scrollCellIntoCenter(x: number, y: number, behavior: ScrollBehavior = 'smooth') {
+  function scrollCellIntoCenter(
+    x: number,
+    y: number,
+    behavior: ScrollBehavior = 'smooth'
+  ) {
     const el = mapScrollRef.current;
     if (!el) return;
     const cellSize = GRID_SIZE; // your existing constant
@@ -307,7 +335,9 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   };
 
   const handleRemoteCharacterMove = (charId: string, x: number, y: number) => {
-    setCharacters((prev) => prev.map((c) => (c.id === charId ? { ...c, x, y } : c)));
+    setCharacters((prev) =>
+      prev.map((c) => (c.id === charId ? { ...c, x, y } : c))
+    );
   };
 
   // useEffects
@@ -323,7 +353,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
 
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
-  }, [isDragging, setIsDragging, setDragMode, setLastCell]);
+  }, [isDragging]);
 
   // drop removed characters from init order, append new characters at end, preserve manual reordering
   useEffect(() => {
@@ -369,7 +399,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
         behavior: 'smooth',
       });
     }
-  }, [selectedCharacter]);
+  }, [selectedCharacter, characters.find]);
 
   // cancel measurement
   useEffect(() => {

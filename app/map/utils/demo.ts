@@ -5,7 +5,8 @@ import { DEFAULT_PARTY } from './partyPresets';
 const sid = (k: string) => `seed:${k}`;
 
 // tiny helper
-const presetByName = (name: string) => DEFAULT_PARTY.find((p) => p.name === name);
+const presetByName = (name: string) =>
+  DEFAULT_PARTY.find((p) => p.name === name);
 
 export function demoCharacters(): Character[] {
   const mae = presetByName('Maelin');

@@ -90,7 +90,12 @@ export default function Movement_Overlay({
               stroke="#EF4444"
               strokeWidth={2}
             />
-            <circle cx={cx(clip.blockedAt.x)} cy={cy(clip.blockedAt.y)} r={6} fill="#EF4444" />
+            <circle
+              cx={cx(clip.blockedAt.x)}
+              cy={cy(clip.blockedAt.y)}
+              r={6}
+              fill="#EF4444"
+            />
             <line
               x1={cx(clip.blockedAt.x) - 8}
               y1={cy(clip.blockedAt.y)}

@@ -1,5 +1,11 @@
 // snapshots.ts
-import type { Character, Terrain, CustomObj, Measurement, DamageEvent } from "../types";
+import type {
+  Character,
+  Terrain,
+  CustomObj,
+  Measurement,
+  DamageEvent,
+} from '../types';
 
 // If you use a stricter union, feel free to replace `string` with it.
 export type InitiativeMode = string; // e.g., "manual" | "auto"

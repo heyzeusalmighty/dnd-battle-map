@@ -1,6 +1,6 @@
 // components/Measurement_Overlay.tsx
-import React from "react";
-import type { Measurement } from "../map/types";
+import React from 'react';
+import type { Measurement } from '../map/types';
 
 export default function Measurement_Overlay({
   measurements,
@@ -43,7 +43,7 @@ export default function Measurement_Overlay({
               fill="#111827"
               fontSize="12"
               textAnchor="middle"
-              style={{ paintOrder: "stroke", stroke: "white", strokeWidth: 3 }}
+              style={{ paintOrder: 'stroke', stroke: 'white', strokeWidth: 3 }}
             >
               {m.distance}ft
             </text>

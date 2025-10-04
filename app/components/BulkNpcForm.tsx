@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useMapContext } from '../map/context/MapContext';
 import type { Character } from '../map/types';
-import { findOpenSpawnSlots, nextNpcIndex, pickNpcShade } from '../map/utils/bulk';
+import {
+  findOpenSpawnSlots,
+  nextNpcIndex,
+  pickNpcShade,
+} from '../map/utils/bulk';
 import { capInit, d20 } from '../map/utils/dice';
 import { getId } from '../map/utils/id';
 import { isWallAt } from '../map/utils/terrain';
@@ -49,7 +53,14 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
 
     const startIndex = nextNpcIndex(name, characters);
     const batchShade = pickNpcShade(name, characters);
-    const spawns = findOpenSpawnSlots(count, baseX, baseY, mapWidth, mapHeight, isBlocked);
+    const spawns = findOpenSpawnSlots(
+      count,
+      baseX,
+      baseY,
+      mapWidth,
+      mapHeight,
+      isBlocked
+    );
 
     // Build the new characters once
     const toAdd: Character[] = Array.from({ length: count }, (_, i) => {
@@ -126,7 +137,9 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
             type="number"
             min={1}
             value={count}
-            onChange={(e) => setCount(Math.max(1, parseInt(e.target.value || '1', 10)))}
+            onChange={(e) =>
+              setCount(Math.max(1, parseInt(e.target.value || '1', 10)))
+            }
           />
         </div>
         <div>
@@ -135,7 +148,9 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
             type="number"
             min={1}
             value={maxHp}
-            onChange={(e) => setMaxHp(Math.max(1, parseInt(e.target.value || '1', 10)))}
+            onChange={(e) =>
+              setMaxHp(Math.max(1, parseInt(e.target.value || '1', 10)))
+            }
             placeholder="e.g., 22"
           />
         </div>
@@ -160,7 +175,10 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
         </label>
       </div>
 
-      <Button className="w-full bg-black text-white hover:bg-black/80" onClick={onCreate}>
+      <Button
+        className="w-full bg-black text-white hover:bg-black/80"
+        onClick={onCreate}
+      >
         Create {count}
       </Button>
     </div>

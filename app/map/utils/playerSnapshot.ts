@@ -12,7 +12,7 @@ export function createPlayerSnapshot(fullSnapshot: AppSnapshot): AppSnapshot {
       if (char.isPlayer) {
         return char;
       }
-      
+
       // NPCs: create a filtered version without HP info
       return {
         ...char,

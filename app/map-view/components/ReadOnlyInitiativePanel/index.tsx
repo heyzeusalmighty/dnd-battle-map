@@ -7,7 +7,9 @@ const ReadOnlyInitiativePanel = () => {
   const { gameState, selectedCharacterId } = state;
   const { characters, currentTurn, round } = gameState;
 
-  const sortedCharacters = [...characters].sort((a, b) => b.initiative - a.initiative);
+  const sortedCharacters = [...characters].sort(
+    (a, b) => b.initiative - a.initiative
+  );
 
   return (
     <div className={styles.gridContainer}>

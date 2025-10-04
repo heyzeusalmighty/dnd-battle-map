@@ -11,11 +11,19 @@ interface MoveCharacterMessage {
   y: number;
 }
 
-export function useHostPeerSession({mapName, moveCharacterCallback}: {mapName: string, moveCharacterCallback?: (characterId: string, x: number, y: number) => void }) {
+export function useHostPeerSession({
+  mapName,
+  moveCharacterCallback,
+}: {
+  mapName: string;
+  moveCharacterCallback?: (characterId: string, x: number, y: number) => void;
+}) {
   const [peer, setPeer] = useState<Peer | null>(null);
   const [connections, setConnections] = useState<DataConnection[]>([]);
   const [peerId, setPeerId] = useState<string>('');
-  const [gameState, setGameState] = useState<AppSnapshot | undefined>(undefined);
+  const [gameState, setGameState] = useState<AppSnapshot | undefined>(
+    undefined
+  );
   const connectionsRef = useRef<DataConnection[]>([]);
   const [messageCount, setMessageCount] = useState(0);
 
@@ -55,11 +63,14 @@ export function useHostPeerSession({mapName, moveCharacterCallback}: {mapName: s
           switch (data.type) {
             case 'moveCharacter': {
               const { characterId, x, y } = data as MoveCharacterMessage;
-              moveCharacterCallback?.(characterId, x, y);              
-              break; 
+              moveCharacterCallback?.(characterId, x, y);
+              break;
             }
             default:
-              console.warn(`Unknown data type received from ${conn.peer}:`, data);
+              console.warn(
+                `Unknown data type received from ${conn.peer}:`,
+                data
+              );
           }
         }
 
