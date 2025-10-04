@@ -56,20 +56,20 @@ export interface Character {
   resistances?: string[];
   notes?: string;
   isDead?: boolean;
-  }
+}
 
-  export interface DamageEvent {
-    id: string;
-    characterId: string;
-    characterName: string;
-    amount: number;        // positive = damage taken, negative = healed
-    timestamp: number;     // Date.now()
-    round: number;         // current combat round
-    newHp: number;         // HP after this event
-    newTotalDamage: number; // total damage after this event
-  }
+export interface DamageEvent {
+  id: string;
+  characterId: string;
+  characterName: string;
+  amount: number; // positive = damage taken, negative = healed
+  timestamp: number; // Date.now()
+  round: number; // current combat round
+  newHp: number; // HP after this event
+  newTotalDamage: number; // total damage after this event
+}
 
-  // (Optional) Tool names, for later if you want stronger typing.
+// (Optional) Tool names, for later if you want stronger typing.
 // Using this union now is optional—keep your `string` state if you prefer.
 // export type Tool = "select" | "measure" | "wall" | "door" | "water" | "furniture" | "custom";
 

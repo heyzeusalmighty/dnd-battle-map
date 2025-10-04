@@ -12,7 +12,9 @@ const SaveMapCard = ({ handleSaveMap, handleLoadMap }: SaveMapCardProps) => {
   return (
     <Card>
       <div className={style.content}>
-        <div className={style.message}>Saves map locally in browser (not shared)</div>
+        <div className={style.message}>
+          Saves map locally in browser (not shared)
+        </div>
 
         <div className={style.buttonGroup}>
           <Button onClick={handleSaveMap}>Save Map</Button>

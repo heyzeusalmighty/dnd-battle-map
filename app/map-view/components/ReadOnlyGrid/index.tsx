@@ -22,14 +22,23 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   broadcastData,
 }) => {
   const { state, actions, handlers } = useUserMapContext();
-  const { mapWidth, mapHeight, terrain, measurements, customObjects, characters } = state.gameState;
+  const {
+    mapWidth,
+    mapHeight,
+    terrain,
+    measurements,
+    customObjects,
+    characters,
+  } = state.gameState;
   const { selectedCharacterId, hoveredCell } = state;
   const { setHoveredCell } = actions;
   const { handleCellClick, handleCharacterClick } = handlers;
 
-  const selectedCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
+  const selectedCharacter =
+    characters.find((c) => c.id === selectedCharacterId) || null;
 
-  const getCustomObject = (typeId: string) => customObjects.find((o) => o.id === typeId);
+  const getCustomObject = (typeId: string) =>
+    customObjects.find((o) => o.id === typeId);
 
   // choose token classes based on PC/NPC and selection
   const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
@@ -38,7 +47,11 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
       isPlayer ? 'rounded-full' : 'rounded-md',
       'ring-1 ring-black/10 dark:ring-white/20',
       'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
-      isSelected ? (isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70') : '',
+      isSelected
+        ? isPlayer
+          ? 'ring-2 ring-blue-500/70'
+          : 'ring-2 ring-red-600/70'
+        : '',
       'shadow-sm transition-all duration-150',
     ].join(' ');
 

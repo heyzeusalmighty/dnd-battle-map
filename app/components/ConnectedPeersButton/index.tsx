@@ -66,7 +66,11 @@ const ConnectedPeersButton = ({
 
   return (
     <div className="absolute top-4 right-4 z-20 flex gap-2 items-center">
-      <Button onClick={copyToClipboard} title="Copy Link to Clipboard" variant="outline">
+      <Button
+        onClick={copyToClipboard}
+        title="Copy Link to Clipboard"
+        variant="outline"
+      >
         <ClipboardCopyIcon />
       </Button>
       <div className={styles.statusWrapper}>

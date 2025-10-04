@@ -52,8 +52,13 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
   const [username, setUsername] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
-  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>();
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(
+    null
+  );
+  const [hoveredCell, setHoveredCell] = useState<{
+    x: number;
+    y: number;
+  } | null>();
 
   const handleCellClick = (x: number, y: number) => {
     if (selectedCharacterId) {
@@ -70,7 +75,9 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
     const selectedChar = gameState.characters.find((c) => c.id === characterId);
 
     if (selectedChar?.isPlayer) {
-      setSelectedCharacterId((prev) => (prev === characterId ? null : characterId));
+      setSelectedCharacterId((prev) =>
+        prev === characterId ? null : characterId
+      );
     } else {
       setSelectedCharacterId(null);
     }

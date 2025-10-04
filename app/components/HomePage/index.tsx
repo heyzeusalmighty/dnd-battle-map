@@ -42,7 +42,9 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
       <div className={styles.glassCard}>
         <h2 className={styles.subtitle}>Load a Saved Map</h2>
         {Object.keys(storedMaps).length === 0 ? (
-          <p className={styles.noMapsMessage}>No saved maps found in local storage.</p>
+          <p className={styles.noMapsMessage}>
+            No saved maps found in local storage.
+          </p>
         ) : (
           <div className={styles.mapLinksContainer}>
             {Object.keys(storedMaps).map((key) => (

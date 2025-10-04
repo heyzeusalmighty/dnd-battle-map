@@ -55,7 +55,8 @@ const ConnectionCard = ({
               Username: <b>{username}</b>
             </p>
             <p>
-              Connection status: <b>{guestMap?.connected ? 'Connected' : 'Connecting...'}</b>
+              Connection status:{' '}
+              <b>{guestMap?.connected ? 'Connected' : 'Connecting...'}</b>
             </p>
           </div>
         )}

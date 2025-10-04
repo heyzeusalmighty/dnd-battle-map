@@ -46,7 +46,8 @@ const CharacterPanel = () => {
     setCharFilter,
     setDamageLog,
   } = actions;
-  const { handleDeleteCharacter, saveSnapshot, handleCharacterClick } = handlers;
+  const { handleDeleteCharacter, saveSnapshot, handleCharacterClick } =
+    handlers;
   const {
     selectedCharacter,
     initiativeMode,
@@ -108,7 +109,9 @@ const CharacterPanel = () => {
   /** Upsert a *player* by name; preserves id/x/y if updating.
    *  Returns { added, id } so callers can update initiativeOrder for new entries.
    */
-  const upsertPlayerByName = (incoming: Character): { added: boolean; id: string } => {
+  const upsertPlayerByName = (
+    incoming: Character
+  ): { added: boolean; id: string } => {
     const n = normName(incoming.name);
     let added = false;
     let keptId = incoming.id;
@@ -131,7 +134,8 @@ const CharacterPanel = () => {
         // Optional: seed HP/MaxHP once if current is unset
         if ((cur.maxHp ?? 0) === 0 && (incoming.maxHp ?? 0) > 0) {
           next.maxHp = incoming.maxHp;
-          if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0) next.hp = incoming.hp;
+          if ((cur.hp ?? 0) === 0 && (incoming.hp ?? 0) > 0)
+            next.hp = incoming.hp;
         }
 
         if (
@@ -162,8 +166,12 @@ const CharacterPanel = () => {
     const name = newCharName.trim();
     if (!name) return;
 
-    const mod = Number.isFinite(parseInt(newCharInit)) ? parseInt(newCharInit, 10) : 0;
-    const maxHp = Number.isFinite(parseInt(newCharMaxHp)) ? Math.max(1, parseInt(newCharMaxHp)) : 1;
+    const mod = Number.isFinite(parseInt(newCharInit))
+      ? parseInt(newCharInit, 10)
+      : 0;
+    const maxHp = Number.isFinite(parseInt(newCharMaxHp))
+      ? Math.max(1, parseInt(newCharMaxHp))
+      : 1;
 
     // If your Character requires hp/maxHp, keep them (hidden in UI)
     const newChar: Character = {
@@ -387,7 +395,11 @@ const CharacterPanel = () => {
           </div>
 
           {/* Add whole party */}
-          <Button className="w-full" variant="outline" onClick={addPartyFromPresets}>
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={addPartyFromPresets}
+          >
             Add Party ({DEFAULT_PARTY.length} presets)
           </Button>
 
@@ -409,7 +421,9 @@ const CharacterPanel = () => {
                 <button
                   type="button"
                   className={`px-3 py-1 text-sm flex-none ${
-                    addMode === 'single' ? 'bg-black text-white' : 'bg-transparent'
+                    addMode === 'single'
+                      ? 'bg-black text-white'
+                      : 'bg-transparent'
                   }`}
                   onClick={() => setAddMode('single')}
                 >
@@ -418,7 +432,9 @@ const CharacterPanel = () => {
                 <button
                   type="button"
                   className={`px-3 py-1 text-sm flex-none ${
-                    addMode === 'bulk' ? 'bg-black text-white' : 'bg-transparent'
+                    addMode === 'bulk'
+                      ? 'bg-black text-white'
+                      : 'bg-transparent'
                   }`}
                   onClick={() => setAddMode('bulk')}
                 >
@@ -429,7 +445,10 @@ const CharacterPanel = () => {
               {addMode === 'single' ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium" htmlFor="newCharName">
+                    <label
+                      className="text-sm font-medium"
+                      htmlFor="newCharName"
+                    >
                       Name
                     </label>
                     <Input
@@ -442,7 +461,10 @@ const CharacterPanel = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium" htmlFor="newCharInit">
+                      <label
+                        className="text-sm font-medium"
+                        htmlFor="newCharInit"
+                      >
                         Initiative mod
                       </label>
                       <Input
@@ -454,7 +476,10 @@ const CharacterPanel = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium" htmlFor="newCharMaxHp">
+                      <label
+                        className="text-sm font-medium"
+                        htmlFor="newCharMaxHp"
+                      >
                         Max HP
                       </label>
                       <Input
@@ -468,7 +493,10 @@ const CharacterPanel = () => {
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button variant="outline" onClick={() => setShowAddChar(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddChar(false)}
+                    >
                       Cancel
                     </Button>
                     <Button
@@ -531,7 +559,9 @@ const CharacterPanel = () => {
           {/* List */}
           <div className="rounded border divide-y max-h-72 overflow-y-auto overflow-x-hidden">
             {filteredCharacters.length === 0 ? (
-              <div className="p-3 text-sm text-muted-foreground">No matches.</div>
+              <div className="p-3 text-sm text-muted-foreground">
+                No matches.
+              </div>
             ) : (
               filteredCharacters.map((c) => {
                 const isSelected = selectedCharacter === c.id;
@@ -580,7 +610,10 @@ const CharacterPanel = () => {
                             HP {c.hp}/{c.maxHp}
                             {/* Show overheal indicator for PCs only */}
                             {c.isPlayer && c.hp > c.maxHp && (
-                              <span className="text-green-600"> (+{c.hp - c.maxHp})</span>
+                              <span className="text-green-600">
+                                {' '}
+                                (+{c.hp - c.maxHp})
+                              </span>
                             )}
                           </Badge>
                         </div>{' '}
@@ -615,10 +648,15 @@ const CharacterPanel = () => {
                               onClick={(e) => e.stopPropagation()}
                               onFocus={(e) => {
                                 e.currentTarget.select();
-                                e.currentTarget.dataset.originalHp = String(c.hp);
+                                e.currentTarget.dataset.originalHp = String(
+                                  c.hp
+                                );
                               }}
                               onChange={(e) => {
-                                setEditingHp((prev) => ({ ...prev, [c.id]: e.target.value }));
+                                setEditingHp((prev) => ({
+                                  ...prev,
+                                  [c.id]: e.target.value,
+                                }));
                               }}
                               onBlur={(e) => {
                                 const newValue = parseInt(e.target.value, 10);
@@ -633,7 +671,11 @@ const CharacterPanel = () => {
                                   return copy;
                                 });
 
-                                if (!Number.isFinite(newValue) || newValue === originalHp) return;
+                                if (
+                                  !Number.isFinite(newValue) ||
+                                  newValue === originalHp
+                                )
+                                  return;
 
                                 if (newValue < originalHp) {
                                   const damageAmount = originalHp - newValue;
@@ -647,7 +689,9 @@ const CharacterPanel = () => {
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
                               / {c.maxHp}
                               {c.hp > c.maxHp && (
-                                <span className="text-green-600 ml-1">(+{c.hp - c.maxHp})</span>
+                                <span className="text-green-600 ml-1">
+                                  (+{c.hp - c.maxHp})
+                                </span>
                               )}
                             </span>
                             <Button
@@ -687,10 +731,15 @@ const CharacterPanel = () => {
                               onClick={(e) => e.stopPropagation()}
                               onFocus={(e) => {
                                 e.currentTarget.select();
-                                e.currentTarget.dataset.originalHp = String(c.hp);
+                                e.currentTarget.dataset.originalHp = String(
+                                  c.hp
+                                );
                               }}
                               onChange={(e) => {
-                                setEditingHp((prev) => ({ ...prev, [c.id]: e.target.value }));
+                                setEditingHp((prev) => ({
+                                  ...prev,
+                                  [c.id]: e.target.value,
+                                }));
                               }}
                               onBlur={(e) => {
                                 const newValue = parseInt(e.target.value, 10);
@@ -705,7 +754,11 @@ const CharacterPanel = () => {
                                   return copy;
                                 });
 
-                                if (!Number.isFinite(newValue) || newValue === originalHp) return;
+                                if (
+                                  !Number.isFinite(newValue) ||
+                                  newValue === originalHp
+                                )
+                                  return;
 
                                 if (newValue < originalHp) {
                                   const damageAmount = originalHp - newValue;

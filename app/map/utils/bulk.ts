@@ -1,14 +1,14 @@
 // src/bulk.ts
-import type { Character } from "../types";
-import { clamp } from "../../components/ui/utils";
+import type { Character } from '../types';
+import { clamp } from '../../components/ui/utils';
 
-const GRAY = ["#9CA3AF", "#6B7280", "#4B5563", "#374151"]; // neutral
-const REDS = ["#FECACA", "#FCA5A5", "#F87171", "#EF4444"]; // light → dark
+const GRAY = ['#9CA3AF', '#6B7280', '#4B5563', '#374151']; // neutral
+const REDS = ['#FECACA', '#FCA5A5', '#F87171', '#EF4444']; // light → dark
 
 // --- Name indexing ----------------------------------------------------------
 /** Get the next 1-based index for `${baseName} N` among existing NPCs. */
 export function nextNpcIndex(baseName: string, existing: Character[]): number {
-  const re = new RegExp(`^${escapeRegExp(baseName)}\\s+(\\d+)$`, "i");
+  const re = new RegExp(`^${escapeRegExp(baseName)}\\s+(\\d+)$`, 'i');
   let maxSeen = 0;
   for (const c of existing) {
     if (c.isPlayer) continue;
@@ -21,7 +21,7 @@ export function nextNpcIndex(baseName: string, existing: Character[]): number {
   return maxSeen + 1;
 }
 function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // --- Grayscale shade picking -----------------------------------------------
@@ -34,13 +34,13 @@ export function pickNpcShade(
   existing: Character[],
   palette: string[] = REDS // <-- default to reds now
 ): string {
-  const initial = baseName.trim().charAt(0).toUpperCase() || "?";
+  const initial = baseName.trim().charAt(0).toUpperCase() || '?';
 
   // Shades already used by OTHER types sharing this initial
   const used = new Set<string>();
   for (const c of existing) {
     if (c.isPlayer) continue;
-    const ci = c.name.trim().charAt(0).toUpperCase() || "?";
+    const ci = c.name.trim().charAt(0).toUpperCase() || '?';
     if (ci !== initial) continue;
     if (c.color) used.add(c.color);
   }

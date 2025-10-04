@@ -2,7 +2,13 @@
 
 import { House } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import { Button } from '../components/ui/button';
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
@@ -133,10 +139,15 @@ const MapContainer = () => {
     !BUILTIN_TERRAIN.has(t) && customObjects.some((o) => o.id === t);
 
   // find the object meta by id ("chest", "maomao", …)
-  const getCustomObject = (typeId: string) => customObjects.find((o) => o.id === typeId);
+  const getCustomObject = (typeId: string) =>
+    customObjects.find((o) => o.id === typeId);
 
-  const hasTerrainAt = (type: string, x: number, y: number, terrain: Terrain[]) =>
-    terrain.some((t) => t.type === type && t.x === x && t.y === y);
+  const hasTerrainAt = (
+    type: string,
+    x: number,
+    y: number,
+    terrain: Terrain[]
+  ) => terrain.some((t) => t.type === type && t.x === x && t.y === y);
 
   // add exactly one terrain of this type at (x,y), replacing any existing terrain **of any type** at that cell
   const addTerrainAt = (type: string, x: number, y: number) => {
@@ -148,7 +159,9 @@ const MapContainer = () => {
   };
 
   const removeTerrainAt = (type: string, x: number, y: number) => {
-    setTerrain((prev) => prev.filter((t) => !(t.type === type && t.x === x && t.y === y)));
+    setTerrain((prev) =>
+      prev.filter((t) => !(t.type === type && t.x === x && t.y === y))
+    );
   };
 
   // Left-down or Right-down on a cell
@@ -170,7 +183,8 @@ const MapContainer = () => {
     // - Right click => erase
     // - Left click => toggle: if cell already has this tool => erase, else paint
     const exists = hasTerrainAt(tool, x, y, terrain);
-    const mode: 'paint' | 'erase' = e.button === 2 ? 'erase' : exists ? 'erase' : 'paint';
+    const mode: 'paint' | 'erase' =
+      e.button === 2 ? 'erase' : exists ? 'erase' : 'paint';
 
     e.preventDefault();
     e.stopPropagation();
@@ -214,7 +228,12 @@ const MapContainer = () => {
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
         <h1 className="text-lg font-semibold flex items-center">
-          <Button variant="ghost" size="icon" className="mr-2" onClick={handleHomeNavigation}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2"
+            onClick={handleHomeNavigation}
+          >
             <House />
           </Button>
           {mapName}
@@ -252,7 +271,10 @@ const MapContainer = () => {
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">
           <InitiativePanel />
 
-          <SaveMapCard handleSaveMap={handleSaveMap} handleLoadMap={handleLoadMap} />
+          <SaveMapCard
+            handleSaveMap={handleSaveMap}
+            handleLoadMap={handleLoadMap}
+          />
         </div>
 
         {/* Help button + dialog (replaces always-on instructions) */}

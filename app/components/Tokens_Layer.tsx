@@ -35,11 +35,13 @@ export default function Tokens_Layer({
   // Scroll the selected token into view (links tracker → map)
   useEffect(() => {
     if (!selectedCharacterId) return;
-    document.querySelector<HTMLElement>(`[data-token="${selectedCharacterId}"]`)?.scrollIntoView({
-      block: 'center',
-      inline: 'center',
-      behavior: 'smooth',
-    });
+    document
+      .querySelector<HTMLElement>(`[data-token="${selectedCharacterId}"]`)
+      ?.scrollIntoView({
+        block: 'center',
+        inline: 'center',
+        behavior: 'smooth',
+      });
   }, [selectedCharacterId]);
 
   // Plain tooltip content
@@ -113,11 +115,16 @@ export default function Tokens_Layer({
             aria-label={char.name}
             role="button"
           >
-            <span className="text-xs text-white font-medium">{characterInitials(char.name)}</span>
+            <span className="text-xs text-white font-medium">
+              {characterInitials(char.name)}
+            </span>
 
             {char.isDead && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl" style={{ textShadow: '0 0 3px black' }}>
+                <span
+                  className="text-2xl"
+                  style={{ textShadow: '0 0 3px black' }}
+                >
                   💀
                 </span>
               </div>

@@ -2,7 +2,11 @@
 import React from 'react';
 import type { Terrain, CustomObj } from '../map/types';
 
-import { getTerrainColor, textColorOn, getObjectLetter } from '@/app/map/utils/terrain';
+import {
+  getTerrainColor,
+  textColorOn,
+  getObjectLetter,
+} from '@/app/map/utils/terrain';
 
 type Props = {
   tiles: Terrain[];

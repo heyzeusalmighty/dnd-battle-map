@@ -14,9 +14,15 @@ import { CombatLog } from '../../map/components/CombatLog';
 const UserMapView = () => {
   const { state, actions } = useUserMapContext();
 
-  const { gameState, username, submitted, messageCount, selectedCharacterId } = state;
-  const { setGameState, setUsername, setSubmitted, setMessageCount, setSelectedCharacterId } =
-    actions;
+  const { gameState, username, submitted, messageCount, selectedCharacterId } =
+    state;
+  const {
+    setGameState,
+    setUsername,
+    setSubmitted,
+    setMessageCount,
+    setSelectedCharacterId,
+  } = actions;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
@@ -51,7 +57,9 @@ const UserMapView = () => {
           }
 
           if (oldId && oldId !== newId && oldId < newId) {
-            console.log(`Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`);
+            console.log(
+              `Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`
+            );
             setGameState((data as SnapshotUpdate).snapShot);
           }
         } catch (e) {
@@ -63,7 +71,8 @@ const UserMapView = () => {
     });
   }
 
-  const selectedCharacter = gameState?.characters.find((c) => c.id === selectedCharacterId) || null;
+  const selectedCharacter =
+    gameState?.characters.find((c) => c.id === selectedCharacterId) || null;
 
   return (
     <main className="flex-1 flex gap-4 p-4">

@@ -1,8 +1,4 @@
-import  {  
-  Dispatch,
-  SetStateAction,
-  RefObject,
-} from 'react';
+import { Dispatch, SetStateAction, RefObject } from 'react';
 // import { useSearchParams } from 'next/navigation';
 // import Peer, { DataConnection } from 'peerjs';
 
@@ -18,10 +14,9 @@ import type {
   // RollScope,
 } from '../types';
 
-
 export interface MapContextType {
   mapScrollRef: RefObject<HTMLDivElement | null>;
-  state: {    
+  state: {
     mapWidth: number;
     mapHeight: number;
     gridScale: number;
@@ -66,7 +61,7 @@ export interface MapContextType {
     filteredCharacters: Character[];
     damageLog: DamageEvent[];
   };
-  actions: {    
+  actions: {
     setMapWidth: Dispatch<SetStateAction<number>>;
     setMapHeight: Dispatch<SetStateAction<number>>;
     setGridScale: Dispatch<SetStateAction<number>>;
@@ -77,14 +72,16 @@ export interface MapContextType {
     setDragMode: Dispatch<SetStateAction<'paint' | 'erase' | null>>;
     setLastCell: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
     setMeasurements: Dispatch<SetStateAction<Measurement[]>>;
-    setCurrentTurn: Dispatch<SetStateAction<number>>;    
+    setCurrentTurn: Dispatch<SetStateAction<number>>;
     setSelectedTool: Dispatch<SetStateAction<string>>;
-    setMeasurementStart: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
+    setMeasurementStart: Dispatch<
+      SetStateAction<{ x: number; y: number } | null>
+    >;
     setHoveredCell: Dispatch<SetStateAction<{ x: number; y: number } | null>>;
     setSelectedCharacter: Dispatch<SetStateAction<string | null>>;
     setCharTab: Dispatch<SetStateAction<'add' | 'manage'>>;
     setCharQuery: Dispatch<SetStateAction<string>>;
-    setCharFilter: Dispatch<SetStateAction<'all' | 'pc' | 'npc'>>;    
+    setCharFilter: Dispatch<SetStateAction<'all' | 'pc' | 'npc'>>;
     setShowMovePreview: Dispatch<SetStateAction<boolean>>;
     setNewCharName: Dispatch<SetStateAction<string>>;
     setNewCharMaxHp: Dispatch<SetStateAction<string>>;
@@ -92,9 +89,9 @@ export interface MapContextType {
     setShowMapSettings: Dispatch<SetStateAction<boolean>>;
     setShowAddChar: Dispatch<SetStateAction<boolean>>;
     setAddMode: Dispatch<SetStateAction<'single' | 'bulk'>>;
-    setPresetToAdd: Dispatch<SetStateAction<string>>;    
+    setPresetToAdd: Dispatch<SetStateAction<string>>;
     setInitiativeMode: Dispatch<SetStateAction<'auto' | 'manual'>>;
-    setRollPreset: Dispatch<SetStateAction<RollPreset>>;    
+    setRollPreset: Dispatch<SetStateAction<RollPreset>>;
     setEditInitId: Dispatch<SetStateAction<string | null>>;
     setEditInitVal: Dispatch<SetStateAction<string>>;
     setInitiativeOrder: Dispatch<SetStateAction<string[]>>;
@@ -113,14 +110,14 @@ export interface MapContextType {
     redo: () => void;
     saveSnapshot: () => void;
     takeSnapshot: () => AppSnapshot;
-    restoreSnapshot: (s: AppSnapshot) => void;    
+    restoreSnapshot: (s: AppSnapshot) => void;
     clearMeasurements: () => void;
     handleCharacterClick: (charId: string) => void;
     handleClearNPCs: () => void;
     handleClearPCs: () => void;
     handleDeleteCharacter: (charId: string) => void;
     handleRemoteCharacterMove: (charId: string, x: number, y: number) => void;
-  }
+  };
 }
 
 export type Tool = 'move' | 'measure' | 'terrain' | 'character' | 'edit';

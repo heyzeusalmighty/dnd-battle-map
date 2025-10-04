@@ -78,7 +78,9 @@ const InitiativePanel = () => {
     saveSnapshot();
     setCharacters((prev) =>
       prev.map((ch) =>
-        ch.id === editInitId ? { ...ch, initiative: n, lastInitRoll: undefined } : ch
+        ch.id === editInitId
+          ? { ...ch, initiative: n, lastInitRoll: undefined }
+          : ch
       )
     );
     setEditInitId(null);
@@ -205,7 +207,9 @@ const InitiativePanel = () => {
               size="sm"
               className="h-8 flex-1 justify-center"
               title="Roll initiative (uses last preset)"
-              onClick={() => rollInitiativeForScope(rollPreset.scope, rollPreset)}
+              onClick={() =>
+                rollInitiativeForScope(rollPreset.scope, rollPreset)
+              }
             >
               <Dice5 className="w-4 h-4 mr-1" />
               Roll
@@ -283,7 +287,9 @@ const InitiativePanel = () => {
                   All (adv)
                 </DropdownMenuItem>
 
-                <DropdownMenuLabel className="mt-1">With disadvantage</DropdownMenuLabel>
+                <DropdownMenuLabel className="mt-1">
+                  With disadvantage
+                </DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={() =>
                     setAndRoll({
@@ -356,7 +362,9 @@ const InitiativePanel = () => {
                         title={
                           char.lastInitRoll
                             ? `d20: ${char.lastInitRoll.die}${
-                                char.lastInitRoll.flags ? ` (${char.lastInitRoll.flags})` : ''
+                                char.lastInitRoll.flags
+                                  ? ` (${char.lastInitRoll.flags})`
+                                  : ''
                               } + mod: ${char.lastInitRoll.mod} = ${
                                 char.lastInitRoll.total
                               } → capped: ${char.lastInitRoll.capped}`
@@ -381,7 +389,9 @@ const InitiativePanel = () => {
                       inputMode="numeric" // ← mobile numeric keypad
                       pattern="[0-9]*"
                       value={editInitVal}
-                      onChange={(e) => setEditInitVal(e.target.value.replace(/[^\d]/g, ''))}
+                      onChange={(e) =>
+                        setEditInitVal(e.target.value.replace(/[^\d]/g, ''))
+                      }
                       className="h-6 w-14 px-2 text-xs rounded-md border bg-muted focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => {
