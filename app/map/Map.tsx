@@ -1,14 +1,16 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { House } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
+import { Button } from '../components/ui/button';
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import CharacterPanel from './components/CharacterPanel';
 import HelpDialog from './components/HelpDialog';
 import InitiativePanel from './components/InitiativePanel';
+import LoadingMapDialog from './components/LoadingMapDialog';
 import MapGrid from './components/MapGrid';
 import ObjectPanel from './components/ObjectPanel';
 import SaveMapCard from './components/SaveMapCard';
@@ -17,10 +19,8 @@ import { MapProvider, useMapContext } from './context/MapContext';
 import useHotkeys from './hooks/useHotKeys';
 import type { AppSnapshot, Terrain } from './types';
 import { getId } from './utils/id';
-import { BUILTIN_TERRAIN } from './utils/terrain';
-import LoadingMapDialog from './components/LoadingMapDialog';
-import { Button } from '../components/ui/button';
 import { createPlayerSnapshot } from './utils/playerSnapshot';
+import { BUILTIN_TERRAIN } from './utils/terrain';
 
 const MapContainer = () => {
   // Map configuration
@@ -88,6 +88,7 @@ const MapContainer = () => {
     }
   }, [mapName, restoreSnapshot]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: this should only fire off when showLoadDialog changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLoadDialog(false);
@@ -95,6 +96,7 @@ const MapContainer = () => {
     return () => clearTimeout(timer);
   }, [showLoadDialog]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: this should only fire off when showSaveDialog changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSaveDialog(false);
@@ -118,6 +120,7 @@ const MapContainer = () => {
   }
 
   // broadcast snapshots on every state change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: I only want to broadcast when these specific things change
   useEffect(() => {
     const fullSnapshot = takeSnapshot();
     const playerSnapshot = createPlayerSnapshot(fullSnapshot);
@@ -203,16 +206,15 @@ const MapContainer = () => {
     saveToLocalStorage(mapName, snapShot);
   };
 
+  const handleHomeNavigation = () => {
+    window.location.href = '/';
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
         <h1 className="text-lg font-semibold flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mr-2"
-            onClick={() => (window.location.href = '/')}
-          >
+          <Button variant="ghost" size="icon" className="mr-2" onClick={handleHomeNavigation}>
             <House />
           </Button>
           {mapName}
