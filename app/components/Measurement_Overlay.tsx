@@ -1,5 +1,3 @@
-// components/Measurement_Overlay.tsx
-import React from 'react';
 import type { Measurement } from '../map/types';
 
 export default function Measurement_Overlay({

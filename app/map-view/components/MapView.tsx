@@ -1,15 +1,15 @@
 'use client';
 
+import type { SnapshotUpdate } from '@/app/map/types';
 import { useSearchParams } from 'next/navigation';
 import { useGuestMap } from '../../hooks/rtc/useGuestMap';
-import ReadOnlyGrid from './ReadOnlyGrid';
-import type { SnapshotUpdate } from '@/app/map/types';
-import ConnectionCard from './ConnectionCard';
-import '../../map/index.css';
-import { useUserMapContext, UserMapProvider } from '../context/UserMapContext';
-import ReadOnlyInitiativePanel from './ReadOnlyInitiativePanel';
-import useUserHotkeys from '../useUserHotKeys';
 import { CombatLog } from '../../map/components/CombatLog';
+import '../../map/index.css';
+import { UserMapProvider, useUserMapContext } from '../context/UserMapContext';
+import useUserHotkeys from '../useUserHotKeys';
+import ConnectionCard from './ConnectionCard';
+import ReadOnlyGrid from './ReadOnlyGrid';
+import ReadOnlyInitiativePanel from './ReadOnlyInitiativePanel';
 
 const UserMapView = () => {
   const { state, actions } = useUserMapContext();
@@ -35,13 +35,13 @@ const UserMapView = () => {
   const guestMap = useGuestMap({ hostId, username, start: ready });
 
   // Listen for data if connected
-  if (guestMap && guestMap.onData) {
+  if (guestMap?.onData) {
     guestMap.onData((data: unknown) => {
       if (
         data &&
         typeof data === 'object' &&
         'type' in data &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: any any any
         (data as any).type === 'snapshot'
       ) {
         setMessageCount((c) => c + 1);

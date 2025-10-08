@@ -141,7 +141,7 @@ export function useHostPeerSession({
   // Send data to a specific peer
   const sendDataToPeer = (peerId: string, data: unknown) => {
     const conn = connectionsRef.current.find((c) => c.peer === peerId);
-    if (conn && conn.open) {
+    if (conn?.open) {
       conn.send(data);
     }
   };
