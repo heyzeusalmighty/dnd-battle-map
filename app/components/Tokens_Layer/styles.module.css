@@ -10,7 +10,6 @@
   }
 }
 
-
 .selectedPlayer {
   border: 2px solid goldenrod;
   animation: pulse-gold 1s infinite;

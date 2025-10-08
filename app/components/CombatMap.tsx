@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { Card } from './ui/card';
+import type React from 'react';
+import { useCallback, useState } from 'react';
 import { Badge } from './ui/badge';
+import { Card } from './ui/card';
 
 export interface Token {
   id: string;

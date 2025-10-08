@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 interface UseHotkeysProps {
   mode: 'select' | 'measure' | 'paint';
@@ -24,7 +24,7 @@ const useHotkeys = (props: UseHotkeysProps) => {
   } = props;
 
   // hotkey guard
-  const isTypingTarget = (t: EventTarget | null) => {
+  const isTypingTarget = useCallback((t: EventTarget | null) => {
     if (!(t instanceof HTMLElement)) return false;
     const tag = t.tagName.toLowerCase();
     return (
@@ -33,8 +33,8 @@ const useHotkeys = (props: UseHotkeysProps) => {
       tag === 'select' ||
       t.isContentEditable
     );
-  };
-
+  }, [])
+  
   // hotkey enablers
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -114,7 +114,7 @@ const useHotkeys = (props: UseHotkeysProps) => {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool]);
+  }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool, isTypingTarget, setShowHelp]);
 };
 
 export default useHotkeys;

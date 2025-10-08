@@ -1,5 +1,5 @@
+import Peer, { type DataConnection } from 'peerjs';
 import { useEffect, useRef, useState } from 'react';
-import Peer, { DataConnection } from 'peerjs';
 
 export function useGuestMap({
   hostId,
@@ -48,7 +48,7 @@ export function useGuestMap({
       setConnected(false);
       setConnection(null);
     };
-  }, [hostId, start]);
+  }, [hostId, start, username]);
 
   // Send data to host
   const send = (data: unknown) => {

@@ -1,5 +1,5 @@
 // components/Terrain_Layer.tsx
-import React from 'react';
+import type React from 'react';
 import type { Terrain, CustomObj } from '../map/types';
 
 import {

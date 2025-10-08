@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 interface UserHotkeysProps {
   setSelectedCharacterId: (id: string | null) => void;
@@ -8,7 +8,7 @@ const useUserHotkeys = (props: UserHotkeysProps) => {
   const { setSelectedCharacterId } = props;
 
   // hotkey guard
-  const isTypingTarget = (t: EventTarget | null) => {
+  const isTypingTarget = useCallback((t: EventTarget | null) => {
     if (!(t instanceof HTMLElement)) return false;
     const tag = t.tagName.toLowerCase();
     return (
@@ -17,7 +17,7 @@ const useUserHotkeys = (props: UserHotkeysProps) => {
       tag === 'select' ||
       t.isContentEditable
     );
-  };
+  }, []);
 
   // hotkey enablers
   useEffect(() => {
@@ -36,7 +36,7 @@ const useUserHotkeys = (props: UserHotkeysProps) => {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [setSelectedCharacterId]);
+  }, [setSelectedCharacterId, isTypingTarget]);
 };
 
 export default useUserHotkeys;

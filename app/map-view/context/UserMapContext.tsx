@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 import type { AppSnapshot } from '../../map/types';
 import { demoCharacters, demoTerrain } from '../../map/utils/demo';

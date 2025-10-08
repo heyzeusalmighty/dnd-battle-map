@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { DamageEvent } from '../../types';
+import { useEffect, useRef } from 'react';
+import type { DamageEvent } from '../../types';
 import styles from './style.module.css';
 
 interface CombatLogProps {
@@ -13,7 +13,7 @@ export function CombatLog({ damageLog, maxEvents = 10 }: CombatLogProps) {
   useEffect(() => {
     // scroll to top for reverse-order updates
     logTopRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [damageLog]);
+  }, []);
 
   // 10 most recent
   const recentEvents = damageLog.slice(-maxEvents).reverse();

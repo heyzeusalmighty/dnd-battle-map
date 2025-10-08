@@ -1,8 +1,18 @@
-import { useState, useCallback, useMemo } from 'react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import {
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  Plus,
+  Shield,
+  Sword,
+  Trash2,
+} from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Input } from './ui/input';
 import {
   Select,
   SelectContent,
@@ -10,16 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import {
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-  Plus,
-  Heart,
-  Shield,
-  Sword,
-} from 'lucide-react';
 
 export interface InitiativeEntry {
   id: string;
@@ -114,13 +114,13 @@ export function InitiativeTracker({
 
   const handleAddCharacter = useCallback(() => {
     if (newCharacterName && newCharacterInit && newCharacterHp) {
-      const hp = parseInt(newCharacterHp) || 1;
+      const hp = parseInt(newCharacterHp, 10) || 1;
       onAddEntry({
         name: newCharacterName,
-        initiative: parseInt(newCharacterInit) || 10,
+        initiative: parseInt(newCharacterInit, 10) || 10,
         hp,
         maxHp: hp,
-        ac: parseInt(newCharacterAc) || 10,
+        ac: parseInt(newCharacterAc, 10) || 10,
         isPlayer: newCharacterType === 'player',
         npcType: newCharacterType === 'player' ? undefined : newCharacterType,
         conditions: [],
@@ -199,7 +199,7 @@ export function InitiativeTracker({
 
   const confirmDamage = useCallback(() => {
     if (selectedEntryId && damageAmount) {
-      const damage = parseInt(damageAmount);
+      const damage = parseInt(damageAmount, 10);
       if (damage > 0) {
         handleDamage(selectedEntryId, damage);
       }
@@ -211,7 +211,7 @@ export function InitiativeTracker({
 
   const confirmHeal = useCallback(() => {
     if (selectedEntryId && healAmount) {
-      const healing = parseInt(healAmount);
+      const healing = parseInt(healAmount, 10);
       if (healing > 0) {
         handleHeal(selectedEntryId, healing);
       }
@@ -221,10 +221,9 @@ export function InitiativeTracker({
     setHealAmount('');
   }, [selectedEntryId, healAmount, handleHeal]);
 
-  const currentEntry =
-    sortedEntries && sortedEntries[currentTurn]
-      ? sortedEntries[currentTurn]
-      : null;
+  const currentEntry = sortedEntries?.[currentTurn]
+    ? sortedEntries[currentTurn]
+    : null;
 
   return (
     <Card className="p-4 h-full flex flex-col">
@@ -320,7 +319,10 @@ export function InitiativeTracker({
                   type="number"
                   value={entry.initiative}
                   onChange={(e) =>
-                    onUpdateInitiative(entry.id, parseInt(e.target.value) || 0)
+                    onUpdateInitiative(
+                      entry.id,
+                      parseInt(e.target.value, 10) || 0
+                    )
                   }
                   className="h-8"
                 />
@@ -333,7 +335,7 @@ export function InitiativeTracker({
                   onChange={(e) =>
                     onUpdateHp(
                       entry.id,
-                      Math.max(0, parseInt(e.target.value) || 0)
+                      Math.max(0, parseInt(e.target.value, 10) || 0)
                     )
                   }
                   className="h-8"
@@ -358,7 +360,7 @@ export function InitiativeTracker({
                   onChange={(e) =>
                     onUpdateTempHp(
                       entry.id,
-                      Math.max(0, parseInt(e.target.value) || 0)
+                      Math.max(0, parseInt(e.target.value, 10) || 0)
                     )
                   }
                   className="h-8"

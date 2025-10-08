@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
-import Peer, { DataConnection } from 'peerjs';
-
+import type { AppSnapshot, SnapshotUpdate } from '@/app/map/types';
 import { getCookie, setCookie } from '@/app/utils/cookie';
-import { AppSnapshot, SnapshotUpdate } from '@/app/map/types';
+import Peer, { type DataConnection } from 'peerjs';
+import { useEffect, useRef, useState } from 'react';
 
 interface MoveCharacterMessage {
   type: 'moveCharacter';
@@ -117,7 +116,7 @@ export function useHostPeerSession({
       setConnections([]);
       connectionsRef.current = [];
     };
-  }, [peerId]);
+  }, [peerId, gameState, moveCharacterCallback]);
 
   // Broadcast data to all connected peers
   const broadcastData = (data: unknown) => {

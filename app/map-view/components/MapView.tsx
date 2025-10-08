@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useGuestMap } from '../../hooks/rtc/useGuestMap';
 import ReadOnlyGrid from './ReadOnlyGrid';
-import { SnapshotUpdate } from '@/app/map/types';
+import type { SnapshotUpdate } from '@/app/map/types';
 import ConnectionCard from './ConnectionCard';
 import '../../map/index.css';
 import { useUserMapContext, UserMapProvider } from '../context/UserMapContext';

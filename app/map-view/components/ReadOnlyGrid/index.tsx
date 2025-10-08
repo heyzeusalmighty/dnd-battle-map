@@ -56,7 +56,7 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   };
 
   const handleTerrainRightClick = () => {};
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: later
   const isDifficultAt = (x: number, y: number) => {
     return false;
   };
@@ -91,13 +91,8 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
 
         {Array.from({ length: mapHeight }).map((_, y) =>
           Array.from({ length: mapWidth }).map((_, x) => (
-            // biome-ignore lint/a11y/noStaticElementInteractions: later
-            // biome-ignore lint/a11y/useKeyWithClickEvents: later
             <div
-              key={`${x}-${
-                // biome-ignore lint/suspicious/noArrayIndexKey: later
-                y
-              }`}
+              key={`${x}-${y}`}
               className={style.gridCell}
               style={{
                 left: x * GRID_SIZE,

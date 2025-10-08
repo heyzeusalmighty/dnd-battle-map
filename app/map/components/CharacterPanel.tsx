@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
 import { MoreVertical } from 'lucide-react';
+import { useRef, useState } from 'react';
 import BulkNpcForm from '../../components/BulkNpcForm';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -166,11 +166,11 @@ const CharacterPanel = () => {
     const name = newCharName.trim();
     if (!name) return;
 
-    const mod = Number.isFinite(parseInt(newCharInit))
+    const mod = Number.isFinite(parseInt(newCharInit, 10))
       ? parseInt(newCharInit, 10)
       : 0;
-    const maxHp = Number.isFinite(parseInt(newCharMaxHp))
-      ? Math.max(1, parseInt(newCharMaxHp))
+    const maxHp = Number.isFinite(parseInt(newCharMaxHp, 10))
+      ? Math.max(1, parseInt(newCharMaxHp, 10))
       : 1;
 
     // If your Character requires hp/maxHp, keep them (hidden in UI)
@@ -566,10 +566,6 @@ const CharacterPanel = () => {
               filteredCharacters.map((c) => {
                 const isSelected = selectedCharacter === c.id;
                 return (
-                  // biome-ignore lint/a11y/useAriaPropsSupportedByRole: <explanation>
-                  // biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-                  // biome-ignore lint/a11y/useFocusableInteractive: <explanation>
-                  // biome-ignore lint/a11y/useSemanticElements: <explanation>
                   <div
                     key={c.id}
                     role="button"
