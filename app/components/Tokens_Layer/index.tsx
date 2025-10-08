@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import type { Character } from '../map/types';
+import { clsx } from 'clsx';
+import { useEffect } from 'react';
+import type { Character } from '../../map/types';
+import styles from './styles.module.css';
 
 export type TokenClassesFn = (isPlayer: boolean, isSelected: boolean) => string;
 
 type Props = {
   characters: Character[];
   cellPx: number; // = GRID_SIZE
-  tokenClasses: TokenClassesFn;
   selectedCharacterId?: string | null;
   onCharacterClick: (id: string) => void;
   isDmView?: boolean;
@@ -24,13 +25,30 @@ const characterInitials = (name: string) => {
 export default function Tokens_Layer({
   characters,
   cellPx,
-  tokenClasses,
   selectedCharacterId,
   onCharacterClick,
   isDmView = false,
 }: Props) {
   const pad = 3;
   const inner = cellPx - pad * 2;
+
+  const tokenClasses = (isPlayer: boolean) =>
+    [
+      'absolute z-10 flex items-center justify-center',
+      isPlayer ? 'rounded-full' : 'rounded-md',
+
+      // Base (subtle) outline via ring; no borders at all
+      'ring-1 ring-black/10 dark:ring-white/20',
+      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
+
+      isPlayer ? 'ring-2 ring-blue-500/70' : 'ring-2 ring-red-600/70',
+
+      // Optional: small polish
+      'shadow-sm transition-all duration-150',
+      // If you set fill inline via style={{ backgroundColor: c.color }},
+      // you can drop bg-background. Keep it only if you rely on a CSS var:
+      // "bg-background",
+    ].join(' ');
 
   // Scroll the selected token into view (links tracker → map)
   useEffect(() => {
@@ -98,11 +116,17 @@ export default function Tokens_Layer({
         const selected = selectedCharacterId === char.id;
 
         return (
+          // biome-ignore lint/a11y/useFocusableInteractive: focus on a11y later
+          // biome-ignore lint/a11y/useSemanticElements: focus on a11y later
+          // biome-ignore lint/a11y/useKeyWithClickEvents: focus on a11y later
           <div
             key={char.id}
             data-token={char.id} // <— link handle
             title={tooltip(char)} // <— quick hover tooltip
-            className={tokenClasses(char.isPlayer, selected)}
+            className={clsx(
+              tokenClasses(char.isPlayer),
+              selected ? styles.selectedPlayer : ''
+            )}
             style={{
               left,
               top,

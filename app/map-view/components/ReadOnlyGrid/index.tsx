@@ -1,14 +1,14 @@
-import { FC } from 'react';
+import Map_GridLines from '@/app/components/Map_GridLines';
+import Measurement_Overlay from '@/app/components/Measurement_Overlay';
+import Movement_Overlay from '@/app/components/Movement_Overlay';
 import Terrain_Layer from '@/app/components/Terrain_Layer';
 import Tokens_Layer from '@/app/components/Tokens_Layer';
 import { Card } from '@/app/components/ui/card';
-import { BUILTIN_TERRAIN } from '@/app/map/utils/terrain';
 import { GRID_SIZE } from '@/app/map/utils/constants';
-import Map_GridLines from '@/app/components/Map_GridLines';
-import Measurement_Overlay from '@/app/components/Measurement_Overlay';
-import style from './style.module.css';
+import { BUILTIN_TERRAIN } from '@/app/map/utils/terrain';
+import type { FC } from 'react';
 import { useUserMapContext } from '../../context/UserMapContext';
-import Movement_Overlay from '@/app/components/Movement_Overlay';
+import style from './style.module.css';
 
 interface ReadOnlyGridProps {
   handleCellMouseDown: (e: React.MouseEvent, x: number, y: number) => void;
@@ -39,21 +39,6 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
 
   const getCustomObject = (typeId: string) =>
     customObjects.find((o) => o.id === typeId);
-
-  // choose token classes based on PC/NPC and selection
-  const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
-    [
-      'absolute z-10 flex items-center justify-center',
-      isPlayer ? 'rounded-full' : 'rounded-md',
-      'ring-1 ring-black/10 dark:ring-white/20',
-      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
-      isSelected
-        ? isPlayer
-          ? 'ring-2 ring-blue-500/70'
-          : 'ring-2 ring-red-600/70'
-        : '',
-      'shadow-sm transition-all duration-150',
-    ].join(' ');
 
   const isCustomObjectType = (t: string) =>
     !BUILTIN_TERRAIN.has(t) && customObjects.some((o) => o.id === t);
@@ -106,8 +91,13 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
 
         {Array.from({ length: mapHeight }).map((_, y) =>
           Array.from({ length: mapWidth }).map((_, x) => (
+            // biome-ignore lint/a11y/noStaticElementInteractions: later
+            // biome-ignore lint/a11y/useKeyWithClickEvents: later
             <div
-              key={`${x}-${y}`}
+              key={`${x}-${
+                // biome-ignore lint/suspicious/noArrayIndexKey: later
+                y
+              }`}
               className={style.gridCell}
               style={{
                 left: x * GRID_SIZE,
@@ -139,7 +129,6 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
 
         <Tokens_Layer
           cellPx={GRID_SIZE}
-          tokenClasses={tokenClasses}
           characters={characters}
           selectedCharacterId={selectedCharacterId}
           onCharacterClick={handleCharacterClick}

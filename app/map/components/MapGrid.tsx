@@ -1,18 +1,3 @@
-import {
-  BrickWall,
-  DoorOpen,
-  Mountain,
-  MousePointer,
-  Paintbrush,
-  Ruler,
-  Settings,
-} from 'lucide-react';
-import {
-  type FC,
-  type MouseEvent,
-  type MutableRefObject,
-  useMemo,
-} from 'react';
 import Map_GridLines from '@/app/components/Map_GridLines';
 import Measurement_Overlay from '@/app/components/Measurement_Overlay';
 import Movement_Overlay from '@/app/components/Movement_Overlay';
@@ -39,6 +24,21 @@ import {
 import type { CustomObj, DistanceRule, Measurement } from '@/app/map/types';
 import { GRID_SIZE } from '@/app/map/utils/constants';
 import { measureFeet } from '@/app/map/utils/distance';
+import {
+  BrickWall,
+  DoorOpen,
+  Mountain,
+  MousePointer,
+  Paintbrush,
+  Ruler,
+  Settings,
+} from 'lucide-react';
+import {
+  type FC,
+  type MouseEvent,
+  type MutableRefObject,
+  useMemo,
+} from 'react';
 import { useMapContext } from '../context/MapContext';
 import { getId } from '../utils/id';
 
@@ -160,28 +160,6 @@ const MapGrid: FC<MapGridProps> = ({
   };
 
   // choose token classes based on PC/NPC and selection
-  const tokenClasses = (isPlayer: boolean, isSelected: boolean) =>
-    [
-      'absolute z-10 flex items-center justify-center',
-      isPlayer ? 'rounded-full' : 'rounded-md',
-
-      // Base (subtle) outline via ring; no borders at all
-      'ring-1 ring-black/10 dark:ring-white/20',
-      'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
-
-      // Selection emphasis
-      isSelected
-        ? isPlayer
-          ? 'ring-2 ring-blue-500/70'
-          : 'ring-2 ring-red-600/70'
-        : '',
-
-      // Optional: small polish
-      'shadow-sm transition-all duration-150',
-      // If you set fill inline via style={{ backgroundColor: c.color }},
-      // you can drop bg-background. Keep it only if you rely on a CSS var:
-      // "bg-background",
-    ].join(' ');
 
   // O(1) lookups for terrain difficulty
   const difficultKeys = useMemo(() => {
@@ -303,7 +281,7 @@ const MapGrid: FC<MapGridProps> = ({
                             setMapWidth(
                               Math.max(
                                 10,
-                                Math.min(50, parseInt(e.target.value) || 25)
+                                Math.min(50, parseInt(e.target.value, 10) || 25)
                               )
                             )
                           }
@@ -318,7 +296,7 @@ const MapGrid: FC<MapGridProps> = ({
                             setMapHeight(
                               Math.max(
                                 10,
-                                Math.min(50, parseInt(e.target.value) || 20)
+                                Math.min(50, parseInt(e.target.value, 10) || 20)
                               )
                             )
                           }
@@ -602,7 +580,6 @@ const MapGrid: FC<MapGridProps> = ({
             <Tokens_Layer
               characters={characters}
               cellPx={GRID_SIZE}
-              tokenClasses={tokenClasses}
               selectedCharacterId={selectedCharacter}
               onCharacterClick={handleCharacterClick}
               isDmView={true}
