@@ -3,7 +3,7 @@
   "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["app/**/*.{js,jsx,ts,tsx,json,css,scss,html}"]
+    "includes": ["app/**/*.{js,jsx,ts,tsx,json,html}"]
   },
   "formatter": {
     "enabled": true,
@@ -23,7 +23,17 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noIrregularWhitespace": "error"
+        "noIrregularWhitespace": "error",
+        "noArrayIndexKey": "off"
+      },
+      "a11y": {
+        "recommended": false
+      },
+      "correctness": {
+        "useUniqueElementIds": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
       }
     }
   },

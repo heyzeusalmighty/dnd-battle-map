@@ -1,6 +1,3 @@
-// components/Map_GridLines.tsx
-import React from 'react';
-
 export default function Map_GridLines({
   width,
   height,

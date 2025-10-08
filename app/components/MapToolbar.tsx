@@ -1,8 +1,21 @@
+import {
+  AlertTriangle,
+  Armchair,
+  Circle,
+  DoorOpen,
+  Mountain,
+  MousePointer,
+  Plus,
+  Ruler,
+  Settings,
+  Square,
+  Trash2,
+  Waves,
+} from 'lucide-react';
 import React from 'react';
-import { Card } from './ui/card';
+import type { MeasurementLine, Token } from './CombatMap';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-
+import { Card } from './ui/card';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
+import { Input } from './ui/input';
 import {
   Select,
   SelectContent,
@@ -18,21 +32,6 @@ import {
   SelectValue,
 } from './ui/select';
 import { Separator } from './ui/separator';
-import {
-  MousePointer,
-  Square,
-  Mountain,
-  Waves,
-  Circle,
-  Plus,
-  DoorOpen,
-  Armchair,
-  AlertTriangle,
-  Ruler,
-  Settings,
-  Trash2,
-} from 'lucide-react';
-import type { Token, MeasurementLine } from './CombatMap';
 
 interface MapToolbarProps {
   selectedTool: string;
@@ -122,7 +121,7 @@ export function MapToolbar({
 
   const handleCreateToken = () => {
     if (newTokenName && newTokenHp) {
-      const hp = parseInt(newTokenHp);
+      const hp = parseInt(newTokenHp, 10);
       onAddToken({
         name: newTokenName,
         x: 0,
@@ -419,7 +418,7 @@ export function MapToolbar({
                     </label>
                     <Select
                       onValueChange={(value) =>
-                        onGridScaleChange(parseInt(value))
+                        onGridScaleChange(parseInt(value, 10))
                       }
                     >
                       <SelectTrigger>

@@ -116,9 +116,6 @@ export default function Tokens_Layer({
         const selected = selectedCharacterId === char.id;
 
         return (
-          // biome-ignore lint/a11y/useFocusableInteractive: focus on a11y later
-          // biome-ignore lint/a11y/useSemanticElements: focus on a11y later
-          // biome-ignore lint/a11y/useKeyWithClickEvents: focus on a11y later
           <div
             key={char.id}
             data-token={char.id} // <— link handle

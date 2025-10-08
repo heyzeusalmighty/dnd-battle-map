@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import Peer from 'peerjs';
-import { Button } from '../ui/button';
-import { ClipboardCopyIcon } from 'lucide-react';
 import LoadingMapDialog from '@/app/map/components/LoadingMapDialog';
+import { ClipboardCopyIcon } from 'lucide-react';
+import type Peer from 'peerjs';
+import { useEffect, useState } from 'react';
+import { Button } from '../ui/button';
 
 import styles from './index.module.css';
 

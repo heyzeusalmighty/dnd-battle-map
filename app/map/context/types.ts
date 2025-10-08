@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, RefObject } from 'react';
+import type { Dispatch, SetStateAction, RefObject } from 'react';
 // import { useSearchParams } from 'next/navigation';
 // import Peer, { DataConnection } from 'peerjs';
 

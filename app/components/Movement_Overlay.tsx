@@ -1,8 +1,6 @@
-import React from 'react';
-import type { DistanceRule } from '../map/types';
+import type { DistanceRule, Terrain } from '../map/types';
 import { clipMovementAtWalls } from '../map/utils/distance';
 import { measureMoveCost } from '../map/utils/movement';
-import type { Terrain } from '../map/types';
 
 type Pt = { x: number; y: number };
 

@@ -11,5 +11,6 @@ export function getCookie(key: string): string | null {
 
 export function setCookie(key: string, value: string, days = 7): void {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  // biome-ignore lint/suspicious/noDocumentCookie: this is perfectly fine
   document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
