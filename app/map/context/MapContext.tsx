@@ -50,9 +50,9 @@ const INITIAL_OBJECTS: CustomObj[] = [
     color: '#C19A6B',
   },
   {
-    id: 'weapon',
-    label: 'Weapon',
-    icon: '🗡️',
+    id: 'furniture',
+    label: 'Furniture',
+    icon: '🪑',
     color: '#708090',
   },
 ];

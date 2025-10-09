@@ -32,8 +32,19 @@ export default function Tokens_Layer({
   const pad = 3;
   const inner = cellPx - pad * 2;
 
-  const tokenClasses = (isPlayer: boolean) =>
-    [
+  const tokenClasses = (isPlayer: boolean, type: string) => {
+    if (type !== 'pc' && type !== 'npc' && type !== 'standard') {
+      return [
+        'absolute z-10 flex items-center justify-center',
+        'ring-1 ring-black/10 dark:ring-white/20',
+        'ring-offset-1 ring-offset-white dark:ring-offset-neutral-900',
+        'ring-2 ring-purple-500/70', // no special ring for summons
+        'spiritualWeapon',
+        'shadow-sm transition-all duration-150',
+      ].join(' ');
+    }
+
+    return [
       'absolute z-10 flex items-center justify-center',
       isPlayer ? 'rounded-full' : 'rounded-md',
 
@@ -49,6 +60,7 @@ export default function Tokens_Layer({
       // you can drop bg-background. Keep it only if you rely on a CSS var:
       // "bg-background",
     ].join(' ');
+  };
 
   // Scroll the selected token into view (links tracker → map)
   useEffect(() => {
@@ -114,6 +126,14 @@ export default function Tokens_Layer({
         const left = char.x * cellPx + pad;
         const top = char.y * cellPx + pad;
         const selected = selectedCharacterId === char.id;
+        const type = char.npcType || (char.isPlayer ? 'pc' : 'npc');
+
+        const marker =
+          type === 'summon'
+            ? '🔆'
+            : type === 'spiritual weapon'
+              ? '⚔️'
+              : characterInitials(char.name);
 
         return (
           <div
@@ -121,8 +141,9 @@ export default function Tokens_Layer({
             data-token={char.id} // <— link handle
             title={tooltip(char)} // <— quick hover tooltip
             className={clsx(
-              tokenClasses(char.isPlayer),
-              selected ? styles.selectedPlayer : ''
+              tokenClasses(char.isPlayer, type),
+              selected ? styles.selectedPlayer : '',
+              type === 'spiritual weapon' ? styles.spiritualWeapon : ''
             )}
             style={{
               left,
@@ -136,9 +157,7 @@ export default function Tokens_Layer({
             aria-label={char.name}
             role="button"
           >
-            <span className="text-xs text-white font-medium">
-              {characterInitials(char.name)}
-            </span>
+            <span className="text-xs text-white font-medium">{marker}</span>
 
             {char.isDead && (
               <div className="absolute inset-0 flex items-center justify-center">

@@ -34,7 +34,7 @@ export interface Terrain {
 }
 
 // Characters (PCs/NPCs)
-export type NPCType = 'standard' | 'boss' | 'ally';
+export type NPCType = 'standard' | 'boss' | 'ally' | 'summon' | 'spiritual weapon';
 export type InitiativeMode = 'auto' | 'manual';
 
 export interface Character {
