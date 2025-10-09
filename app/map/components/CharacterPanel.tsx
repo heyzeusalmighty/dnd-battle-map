@@ -29,6 +29,7 @@ import { useMapContext } from '../context/MapContext';
 import type { Character, DamageEvent } from '../types';
 import { getId } from '../utils/id';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
+import AddSummonDialog from './AddSummonDialog';
 
 const CharacterPanel = () => {
   const { handlers, state, actions } = useMapContext();
@@ -516,6 +517,8 @@ const CharacterPanel = () => {
               )}
             </DialogContent>
           </Dialog>
+
+          <AddSummonDialog />
         </div>
       ) : (
         // --- Manage tab ---

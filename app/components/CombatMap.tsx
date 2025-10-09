@@ -490,7 +490,7 @@ export function CombatMap({
               )}
               {tile.type === 'furniture' && (
                 <div className="w-full h-full flex items-center justify-center text-white">
-                  <span className="text-xs">■</span>
+                  <span className="text-xs">🪑</span>
                 </div>
               )}
               {/* Custom objects */}
@@ -544,6 +544,12 @@ export function CombatMap({
                   <span className="text-xs">🔨</span>
                 </div>
               )}
+              {tile.type === 'furniture' && (
+                <div className="w-full h-full flex items-center justify-center text-white">
+                  <span className="text-xs">🪑</span>
+                </div>
+              )}
+              {tile.type}
             </div>
           ))}
 

@@ -1,12 +1,10 @@
-// components/Terrain_Layer.tsx
-import type React from 'react';
-import type { Terrain, CustomObj } from '../map/types';
-
 import {
+  getObjectLetter,
   getTerrainColor,
   textColorOn,
-  getObjectLetter,
 } from '@/app/map/utils/terrain';
+import type React from 'react';
+import type { CustomObj, Terrain } from '../map/types';
 
 type Props = {
   tiles: Terrain[];

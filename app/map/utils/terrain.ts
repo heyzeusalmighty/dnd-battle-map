@@ -6,8 +6,7 @@ export const BUILTIN_TERRAIN = new Set([
   'wall',
   'door',
   'difficult',
-  'water',
-  'furniture',
+  'water',  
 ]);
 
 export const getTerrainColor = (type: string) => {
