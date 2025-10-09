@@ -35,6 +35,7 @@ export function useHostPeerSession({
     setPeerId(id);
   }, [mapName]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: peerId is only set once
   useEffect(() => {
     if (!peerId) return;
     const p = new Peer(peerId);
@@ -116,7 +117,7 @@ export function useHostPeerSession({
       setConnections([]);
       connectionsRef.current = [];
     };
-  }, [peerId, gameState, moveCharacterCallback]);
+  }, [peerId])
 
   // Broadcast data to all connected peers
   const broadcastData = (data: unknown) => {

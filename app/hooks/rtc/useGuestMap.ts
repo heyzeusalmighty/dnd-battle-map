@@ -14,7 +14,8 @@ export function useGuestMap({
   const [connection, setConnection] = useState<DataConnection | null>(null);
   const peerRef = useRef<Peer | null>(null);
 
-  useEffect(() => {
+    // biome-ignore lint/correctness/useExhaustiveDependencies: start is only set once
+    useEffect(() => {
     if (!hostId || !start) return;
 
     // Create a new Peer instance with a random ID
@@ -48,7 +49,7 @@ export function useGuestMap({
       setConnected(false);
       setConnection(null);
     };
-  }, [hostId, start, username]);
+  }, [hostId, start]);
 
   // Send data to host
   const send = (data: unknown) => {
