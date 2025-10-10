@@ -129,6 +129,57 @@ const UserMapView = () => {
     });
   };
 
+  // sending messages to host to update character state
+  const handleUpdateHp = (newHp: number) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    guestMap.send({
+      type: 'updateHp',
+      characterId: selectedCharacter.id,
+      newHp,
+    });
+  };
+
+  const handleAddCondition = (condition: string) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    guestMap.send({
+      type: 'addCondition',
+      characterId: selectedCharacter.id,
+      condition,
+    });
+  };
+
+  const handleRemoveCondition = (condition: string) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    guestMap.send({
+      type: 'removeCondition',
+      characterId: selectedCharacter.id,
+      condition,
+    });
+  };
+
+  const handleToggleStatus = (
+    statusType: 'advantage' | 'disadvantage' | 'concentration'
+  ) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    const currentValue =
+      statusType === 'advantage'
+        ? selectedCharacter.hasAdvantage
+        : statusType === 'disadvantage'
+          ? selectedCharacter.hasDisadvantage
+          : selectedCharacter.concentrating;
+
+    guestMap.send({
+      type: 'toggleStatus',
+      characterId: selectedCharacter.id,
+      statusType,
+      value: !currentValue,
+    });
+  };
+
   return (
     <main className="flex-1 flex gap-4 p-4">
       <div className="flex flex-col gap-4">
@@ -176,6 +227,23 @@ const UserMapView = () => {
           <pre>
             MAP: {gameState?.mapWidth}x{gameState?.mapHeight}
           </pre>
+
+          {selectedCharacter && (
+            <div className="mt-4">
+              <PlayerHPControls
+                character={selectedCharacter}
+                onUpdateHp={handleUpdateHp}
+                onAddCondition={handleAddCondition}
+                onRemoveCondition={handleRemoveCondition}
+                onToggleAdvantage={() => handleToggleStatus('advantage')}
+                onToggleDisadvantage={() => handleToggleStatus('disadvantage')}
+                onToggleConcentration={() =>
+                  handleToggleStatus('concentration')
+                }
+              />
+            </div>
+          )}
+
           {selectedCharacter && (
             <div className="mb-2 p-2 border rounded bg-gray-50">
               <h4 className="font-bold">Selected Character:</h4>
