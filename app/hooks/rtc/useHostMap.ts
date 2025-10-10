@@ -13,16 +13,15 @@ interface MoveCharacterMessage {
 export function useHostPeerSession({
   mapName,
   moveCharacterCallback,
+  getCurrentGameState,
 }: {
   mapName: string;
   moveCharacterCallback?: (characterId: string, x: number, y: number) => void;
+  getCurrentGameState: () => AppSnapshot | undefined;
 }) {
   const [peer, setPeer] = useState<Peer | null>(null);
   const [connections, setConnections] = useState<DataConnection[]>([]);
-  const [peerId, setPeerId] = useState<string>('');
-  const [gameState, setGameState] = useState<AppSnapshot | undefined>(
-    undefined
-  );
+  const [peerId, setPeerId] = useState<string>('');  
   const connectionsRef = useRef<DataConnection[]>([]);
   const [messageCount, setMessageCount] = useState(0);
 
@@ -51,10 +50,16 @@ export function useHostPeerSession({
         connectionsRef.current = updated;
         return updated;
       });
-      console.log('New connection from', conn.peer);
+      console.log('New connection from', conn.peer);      
 
       // send the current game state immediately upon connection
-      conn.send({ type: 'snapshot', snapShot: gameState } as SnapshotUpdate);
+      const snap = getCurrentGameState();
+      console.log('Sending current game state to', conn.peer, snap);
+      if (snap) {
+        setTimeout(() => {
+          conn.send({ type: 'snapshot', snapShot: snap } as SnapshotUpdate);
+        }, 1000);
+      }
 
       conn.on('data', (data) => {
         console.log(`Received from ${conn.peer}:`, data);
@@ -99,7 +104,7 @@ export function useHostPeerSession({
             return updated;
           });
         } else {
-          console.log(`Connection to ${conn.peer} is open or starting.`);
+          console.log(`Connection to ${conn.peer} is open or starting.`);          
         }
       });
 
@@ -127,11 +132,8 @@ export function useHostPeerSession({
       'type' in data &&
       (data as { type: string }).type === 'snapshot'
     ) {
-      setMessageCount((c) => c + 1);
-      const snap = data as SnapshotUpdate;
-      setGameState(snap.snapShot);
-      console.log('message count', messageCount);
-      // console.log('ref count', connectionsRef.current.length);
+      setMessageCount((c) => c + 1);            
+      console.log('message count', messageCount);            
     }
 
     connectionsRef.current.forEach((conn) => {

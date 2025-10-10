@@ -15,7 +15,7 @@ export function useGuestMap({
   const peerRef = useRef<Peer | null>(null);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: start is only set once
-    useEffect(() => {
+  useEffect(() => {
     if (!hostId || !start) return;
 
     // Create a new Peer instance with a random ID
@@ -61,7 +61,7 @@ export function useGuestMap({
   // Listen for data from host
   const onData = (callback: (data: unknown) => void) => {
     if (connection) {
-      connection.on('data', callback);
+      connection.on('data', callback);      
     }
   };
 
