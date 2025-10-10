@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, type ReactNode, useContext, useState } from 'react';
 
 import type { AppSnapshot } from '../../map/types';
-import { demoCharacters, demoTerrain } from '../../map/utils/demo';
+import { coolCharacters, coolDemoTerrain } from '../../map/utils/demo';
 
 interface UserMapContextType {
   state: {
@@ -37,8 +37,8 @@ interface UserMapProviderProps {
 export const UserMapProvider = ({ children }: UserMapProviderProps) => {
   const [gameState, setGameState] = useState<AppSnapshot>({
     id: 0,
-    terrain: demoTerrain(),
-    characters: demoCharacters(),
+    terrain: coolDemoTerrain,
+    characters: coolCharacters,
     customObjects: [],
     currentTurn: 0,
     measurements: [],

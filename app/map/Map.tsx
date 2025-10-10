@@ -77,9 +77,14 @@ const MapContainer = () => {
     setShowHelp,
   });
 
+  const getCurrentGameState = useCallback(() => {
+    return takeSnapshot();
+  }, [takeSnapshot]);
+
   const { peer, connections, broadcastData } = useHostPeerSession({
     mapName,
     moveCharacterCallback: handleRemoteCharacterMove,
+    getCurrentGameState: getCurrentGameState,
   });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
@@ -90,6 +95,7 @@ const MapContainer = () => {
     setShowLoadDialog(true);
     const loadedMap = getFromLocalStorage<AppSnapshot>(mapName);
     if (loadedMap) {
+      console.log(loadedMap);
       restoreSnapshot(loadedMap);
     }
   }, [mapName, restoreSnapshot]);

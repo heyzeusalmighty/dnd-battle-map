@@ -37,6 +37,8 @@ const UserMapView = () => {
   // Listen for data if connected
   if (guestMap?.onData) {
     guestMap.onData((data: unknown) => {
+      console.log('Guest received data:', data);
+
       if (
         data &&
         typeof data === 'object' &&
