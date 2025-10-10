@@ -95,6 +95,7 @@ const MapContainer = () => {
     setShowLoadDialog(true);
     const loadedMap = getFromLocalStorage<AppSnapshot>(mapName);
     if (loadedMap) {
+      console.log(loadedMap);
       restoreSnapshot(loadedMap);
     }
   }, [mapName, restoreSnapshot]);
