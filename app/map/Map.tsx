@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
+import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
@@ -233,17 +234,22 @@ const MapContainer = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="px-4 pt-3 pb-1">
-        <h1 className="text-lg font-semibold flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mr-2"
-            onClick={handleHomeNavigation}
-          >
-            <House />
-          </Button>
-          {mapName}
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mr-2"
+              onClick={handleHomeNavigation}
+            >
+              <House />
+            </Button>
+            <div className="flex items-center text-sm gap-2">
+              <ThemeToggleSimple /> <span>Toggle Dark/Light Theme</span>
+            </div>
+            {mapName}
+          </h1>
+        </div>
       </header>
 
       <main className="flex-1 flex gap-4 p-4">
