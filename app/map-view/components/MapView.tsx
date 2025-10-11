@@ -1,5 +1,6 @@
 'use client';
 
+import { ThemeToggleSimple } from '@/app/components/theme-toggle';
 import type { SnapshotUpdate } from '@/app/map/types';
 import { useSearchParams } from 'next/navigation';
 import { useGuestMap } from '../../hooks/rtc/useGuestMap';
@@ -78,14 +79,20 @@ const UserMapView = () => {
 
   return (
     <main className="flex-1 flex gap-4 p-4">
-      <ConnectionCard
-        username={username}
-        setUsername={setUsername}
-        submitted={submitted}
-        setSubmitted={setSubmitted}
-        guestMap={guestMap}
-        mapName={mapName}
-      />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center text-sm gap-2">
+          <ThemeToggleSimple />
+          <span> Toggle Dark/Light Theme</span>
+        </div>
+        <ConnectionCard
+          username={username}
+          setUsername={setUsername}
+          submitted={submitted}
+          setSubmitted={setSubmitted}
+          guestMap={guestMap}
+          mapName={mapName}
+        />
+      </div>
 
       <div style={{ width: '100%', height: '100%' }}>
         <div>

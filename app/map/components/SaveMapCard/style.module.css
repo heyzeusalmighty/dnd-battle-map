@@ -1,13 +1,13 @@
 .content {
-  padding: 16px;
-  background-color: #f9f9f9;
-  border-bottom: 1px solid #eee;
+  padding: 16px;  
+  background-color: var(--card-background);
+  border-bottom: 1px solid var(--tw-border-style)  
 }
 
 .message {
   margin-bottom: 8px;
   font-size: 14px;
-  color: #333;
+  color: var(--card-foreground);  
 }
 
 .buttonGroup {
