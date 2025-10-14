@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, Dice5 } from 'lucide-react';
+import { StatusBadge } from '@/app/components/StatusBadge';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
@@ -12,7 +13,6 @@ import {
 } from '../../components/ui/dropdown-menu';
 import { useMapContext } from '../context/MapContext';
 import type { Character, RollPreset, RollScope } from '../types';
-
 import { capInit, rollInitiativeOnce } from '../utils/dice';
 
 const InitiativePanel = () => {
@@ -420,6 +420,33 @@ const InitiativePanel = () => {
                 ) : (
                   <>DMG: {char.damage ?? 0}</>
                 )}
+              </div>
+
+              {/* Status badges */}
+              <div className="flex flex-wrap gap-1 mt-2">
+                {char.hasAdvantage && (
+                  <StatusBadge kind="ADV" title="Advantage on attacks/checks">
+                    ADV
+                  </StatusBadge>
+                )}
+                {char.hasDisadvantage && (
+                  <StatusBadge
+                    kind="DIS"
+                    title="Disadvantage on attacks/checks"
+                  >
+                    DIS
+                  </StatusBadge>
+                )}
+                {char.concentrating && (
+                  <StatusBadge kind="CONC" title="Concentrating on a spell">
+                    CONC
+                  </StatusBadge>
+                )}
+                {char.conditions?.map((condition) => (
+                  <StatusBadge key={condition} kind="COND" title={condition}>
+                    {condition}
+                  </StatusBadge>
+                ))}
               </div>
 
               {/* Manual mode controls */}

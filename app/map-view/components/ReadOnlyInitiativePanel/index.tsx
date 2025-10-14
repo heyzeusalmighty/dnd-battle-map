@@ -1,6 +1,7 @@
+import { StatusBadge } from '@/app/components/StatusBadge';
+import { Badge } from '@/app/components/ui/badge';
 import { useUserMapContext } from '../../context/UserMapContext';
 import styles from './style.module.css';
-import { Badge } from '@/app/components/ui/badge';
 
 const ReadOnlyInitiativePanel = () => {
   const { state } = useUserMapContext();
@@ -55,6 +56,22 @@ const ReadOnlyInitiativePanel = () => {
               <Badge variant={char.isPlayer ? 'default' : 'secondary'}>
                 {char.isPlayer ? 'PC' : 'NPC'}
               </Badge>
+            </div>
+
+            {/* Status badges */}
+            <div className="flex flex-wrap gap-1 mt-2">
+              {char.hasAdvantage && <StatusBadge kind="ADV">ADV</StatusBadge>}
+              {char.hasDisadvantage && (
+                <StatusBadge kind="DIS">DIS</StatusBadge>
+              )}
+              {char.concentrating && (
+                <StatusBadge kind="CONC">CONC</StatusBadge>
+              )}
+              {char.conditions?.map((c) => (
+                <StatusBadge key={c} kind="COND" title={c}>
+                  {c}
+                </StatusBadge>
+              ))}
             </div>
           </div>
         );

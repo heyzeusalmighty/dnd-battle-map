@@ -3,6 +3,9 @@
 import { Focus, Sparkles, XCircle } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 
+const cx = (...parts: Array<string | false | null | undefined>) =>
+  parts.filter(Boolean).join(' ');
+
 interface QuickStatusTogglesProps {
   hasAdvantage?: boolean;
   hasDisadvantage?: boolean;
@@ -26,46 +29,51 @@ export function QuickStatusToggles({
 
   return (
     <div className="flex gap-2 flex-wrap">
+      <button className="bg-emerald-600 text-white border border-emerald-600 px-2 py-1 rounded">
+        plain test
+      </button>
       <Button
         size="sm"
-        variant={hasAdvantage ? 'default' : 'outline'}
+        variant="outline"
+        aria-pressed={hasAdvantage}
+        className={cx(
+          buttonSize,
+          hasAdvantage && 'bg-emerald-600 text-white border-emerald-600'
+        )}
         onClick={onToggleAdvantage}
-        className={`${buttonSize} ${
-          hasAdvantage ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50'
-        }`}
         title="Advantage on attacks/checks"
       >
         <Sparkles className="w-4 h-4 mr-1" />
         ADV
       </Button>
-
       <Button
         size="sm"
-        variant={hasDisadvantage ? 'default' : 'outline'}
+        variant="outline"
+        aria-pressed={hasDisadvantage}
+        className={cx(
+          buttonSize,
+          hasDisadvantage && 'bg-rose-600 text-white border-rose-600'
+        )}
         onClick={onToggleDisadvantage}
-        className={`${buttonSize} ${
-          hasDisadvantage ? 'bg-red-600 hover:bg-red-700' : 'hover:bg-red-50'
-        }`}
         title="Disadvantage on attacks/checks"
       >
         <XCircle className="w-4 h-4 mr-1" />
         DIS
       </Button>
-
       <Button
         size="sm"
-        variant={concentrating ? 'default' : 'outline'}
+        variant="outline"
+        aria-pressed={concentrating}
+        className={cx(
+          buttonSize,
+          concentrating && 'bg-violet-600 text-white border-violet-600'
+        )}
         onClick={onToggleConcentration}
-        className={`${buttonSize} ${
-          concentrating
-            ? 'bg-purple-600 hover:bg-purple-700'
-            : 'hover:bg-purple-50'
-        }`}
         title="Concentrating on a spell"
       >
         <Focus className="w-4 h-4 mr-1" />
         CONC
-      </Button>
+      </Button>{' '}
     </div>
   );
 }
