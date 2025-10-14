@@ -1,19 +1,20 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { ThemeToggleSimple } from '@/app/components/theme-toggle';
 import type { SnapshotUpdate } from '@/app/map/types';
-import { useSearchParams } from 'next/navigation';
 import { useGuestMap } from '../../hooks/rtc/useGuestMap';
 import { CombatLog } from '../../map/components/CombatLog';
 import '../../map/index.css';
 import { UserMapProvider, useUserMapContext } from '../context/UserMapContext';
 import useUserHotkeys from '../useUserHotKeys';
 import ConnectionCard from './ConnectionCard';
+import { PlayerHPControls } from './PlayerHPControls';
 import ReadOnlyGrid from './ReadOnlyGrid';
 import ReadOnlyInitiativePanel from './ReadOnlyInitiativePanel';
 
 const UserMapView = () => {
-  const { state, actions } = useUserMapContext();
+  const { state, actions, handlers } = useUserMapContext();
 
   const { gameState, username, submitted, messageCount, selectedCharacterId } =
     state;
@@ -74,8 +75,59 @@ const UserMapView = () => {
     });
   }
 
-  const selectedCharacter =
-    gameState?.characters.find((c) => c.id === selectedCharacterId) || null;
+  const selectedCharacter = gameState?.characters.find(
+    (c) => c.id === selectedCharacterId && c.isPlayer
+  );
+
+  const handleUpdateHp = (newHp: number) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    guestMap.send({
+      type: 'updateHp',
+      characterId: selectedCharacter.id,
+      newHp,
+    });
+  };
+
+  const handleAddCondition = (condition: string) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    guestMap.send({
+      type: 'addCondition',
+      characterId: selectedCharacter.id,
+      condition,
+    });
+  };
+
+  const handleRemoveCondition = (condition: string) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    guestMap.send({
+      type: 'removeCondition',
+      characterId: selectedCharacter.id,
+      condition,
+    });
+  };
+
+  const handleToggleStatus = (
+    statusType: 'advantage' | 'disadvantage' | 'concentration'
+  ) => {
+    if (!selectedCharacter || !guestMap?.send) return;
+
+    const currentValue =
+      statusType === 'advantage'
+        ? selectedCharacter.hasAdvantage
+        : statusType === 'disadvantage'
+          ? selectedCharacter.hasDisadvantage
+          : selectedCharacter.concentrating;
+
+    guestMap.send({
+      type: 'toggleStatus',
+      characterId: selectedCharacter.id,
+      statusType,
+      value: !currentValue,
+    });
+  };
 
   return (
     <main className="flex-1 flex gap-4 p-4">
@@ -104,6 +156,22 @@ const UserMapView = () => {
             handleCellMouseEnter={() => {}}
             broadcastData={guestMap ? guestMap.send : () => {}}
           />
+
+          {selectedCharacter && (
+            <div className="mt-4">
+              <PlayerHPControls
+                character={selectedCharacter}
+                onUpdateHp={handleUpdateHp}
+                onAddCondition={handleAddCondition}
+                onRemoveCondition={handleRemoveCondition}
+                onToggleAdvantage={() => handleToggleStatus('advantage')}
+                onToggleDisadvantage={() => handleToggleStatus('disadvantage')}
+                onToggleConcentration={() =>
+                  handleToggleStatus('concentration')
+                }
+              />
+            </div>
+          )}
 
           <pre>
             MAP: {gameState?.mapWidth}x{gameState?.mapHeight}
