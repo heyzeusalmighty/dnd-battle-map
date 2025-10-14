@@ -76,19 +76,26 @@ export default function Tokens_Layer({
 
   // Plain tooltip content
   const tooltip = (c: Character): string => {
-    const parts: string[] = []; // <- important: tell TS it's an array of strings
+    const parts: string[] = [];
 
     // Name
     parts.push(c.name);
 
-    // Initiative (for both)
-
+    // Initiative
     const im = typeof c.initiativeMod === 'number' ? c.initiativeMod : 0;
     const modStr = im !== 0 ? ` (${im >= 0 ? '+' : ''}${im})` : '';
-
     parts.push(`Init: ${c.initiative}${modStr}`);
 
-    // PCs: show HP only
+    // Quick statuses (adv/disadv/concentraion)
+    const quickStatuses: string[] = [];
+    if (c.hasAdvantage) quickStatuses.push('ADV');
+    if (c.hasDisadvantage) quickStatuses.push('DIS');
+    if (c.concentrating) quickStatuses.push('CONC');
+    if (quickStatuses.length > 0) {
+      parts.push(quickStatuses.join(' | '));
+    }
+
+    // HP/DMG
     if (c.isPlayer) {
       const cur = typeof c.hp === 'number' ? c.hp : 0;
       if (typeof c.maxHp === 'number' && c.maxHp > 0) {
@@ -96,10 +103,7 @@ export default function Tokens_Layer({
       } else {
         parts.push(`HP: ${cur}`);
       }
-    }
-    // NPCs: show DMG only (never HP)
-    // NPCs: show HP for DM, DMG for players
-    else {
+    } else {
       if (isDmView) {
         // DM sees actual HP
         const cur = typeof c.hp === 'number' ? c.hp : 0;
@@ -117,7 +121,38 @@ export default function Tokens_Layer({
         parts.push(`DMG: ${dmg}`);
       }
     }
+
+    // Conditions
+    if (c.conditions && c.conditions.length > 0) {
+      parts.push(`Conditions: ${c.conditions.join(', ')}`);
+    }
+
     return parts.join('\n');
+  };
+
+  const getTokenGlowClass = (c: Character): string | null => {
+    const hasPositive = c.hasAdvantage;
+    const hasNegative = c.hasDisadvantage;
+    const hasConcentration = c.concentrating;
+    const hasConditions = c.conditions && c.conditions.length > 0;
+
+    if (hasPositive && (hasNegative || hasConditions)) {
+      return styles.statusGlowYellow;
+    }
+
+    if (hasPositive) {
+      return styles.statusGlowGreen;
+    }
+
+    if (hasNegative || hasConditions) {
+      return styles.statusGlowRed;
+    }
+
+    if (hasConcentration) {
+      return styles.statusGlowPurple;
+    }
+
+    return null;
   };
 
   return (
@@ -126,6 +161,7 @@ export default function Tokens_Layer({
         const left = char.x * cellPx + pad;
         const top = char.y * cellPx + pad;
         const selected = selectedCharacterId === char.id;
+        const glowClass = getTokenGlowClass(char);
         const type = char.npcType || (char.isPlayer ? 'pc' : 'npc');
 
         const marker =
@@ -138,12 +174,13 @@ export default function Tokens_Layer({
         return (
           <div
             key={char.id}
-            data-token={char.id} // <— link handle
-            title={tooltip(char)} // <— quick hover tooltip
+            data-token={char.id}
+            title={tooltip(char)}
             className={clsx(
               tokenClasses(char.isPlayer, type),
               selected ? styles.selectedPlayer : '',
-              type === 'spiritual weapon' ? styles.spiritualWeapon : ''
+              type === 'spiritual weapon' ? styles.spiritualWeapon : '',
+              glowClass
             )}
             style={{
               left,
