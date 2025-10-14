@@ -188,7 +188,7 @@ export function PlayerHPControls({
         <Button
           variant="default"
           onClick={() => setShowHealDialog(!showHealDialog)}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          className="flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Heal
