@@ -6,6 +6,7 @@ import { Button } from '@/app/components/ui/button';
 import { Card } from '@/app/components/ui/card';
 import { Input } from '@/app/components/ui/input';
 import type { Character } from '@/app/map/types';
+import { COMMON_CONDITIONS } from '../../map/utils/conditions';
 import { QuickStatusToggles } from './QuickStatusToggles';
 
 interface PlayerHPControlsProps {
@@ -17,29 +18,6 @@ interface PlayerHPControlsProps {
   onToggleDisadvantage: () => void;
   onToggleConcentration: () => void;
 }
-
-const COMMON_CONDITIONS = [
-  'Prone',
-  'Restrained',
-  'Grappled',
-  'Stunned',
-  'Paralyzed',
-  'Unconscious',
-  'Incapacitated',
-  'Blinded',
-  'Deafened',
-  'Charmed',
-  'Frightened',
-  'Invisible',
-  'Petrified',
-  'Poisoned',
-  'Exhaustion 1',
-  'Exhaustion 2',
-  'Exhaustion 3',
-  'Exhaustion 4',
-  'Exhaustion 5',
-  'Exhaustion 6',
-];
 
 export function PlayerHPControls({
   character,

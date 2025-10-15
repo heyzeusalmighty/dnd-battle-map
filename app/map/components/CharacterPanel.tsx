@@ -26,9 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+<<<<<<< HEAD
 import { useMonsterSearch } from '../../hooks/rtc/useMonsterSearch';
+=======
+import { QuickStatusToggles } from '../../map-view/components/QuickStatusToggles';
+>>>>>>> 426b4c5 (Add DM conditions UI and player controls)
 import { useMapContext } from '../context/MapContext';
 import type { Character, DamageEvent } from '../types';
+import { COMMON_CONDITIONS } from '../utils/conditions';
 import { getId } from '../utils/id';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
 import AddSummonDialog from './AddSummonDialog';
@@ -727,6 +732,144 @@ const CharacterPanel = () => {
                           </>
                         )}
                       </div>
+                      {/* Quick Status Toggles */}
+                      <div className="mt-2">
+                        <QuickStatusToggles
+                          hasAdvantage={c.hasAdvantage}
+                          hasDisadvantage={c.hasDisadvantage}
+                          concentrating={c.concentrating}
+                          onToggleAdvantage={() => {
+                            saveSnapshot?.();
+                            setCharacters((prev) =>
+                              prev.map((ch) =>
+                                ch.id === c.id
+                                  ? {
+                                      ...ch,
+                                      hasAdvantage: !ch.hasAdvantage,
+                                      hasDisadvantage: ch.hasAdvantage
+                                        ? ch.hasDisadvantage
+                                        : false,
+                                    }
+                                  : ch
+                              )
+                            );
+                          }}
+                          onToggleDisadvantage={() => {
+                            saveSnapshot?.();
+                            setCharacters((prev) =>
+                              prev.map((ch) =>
+                                ch.id === c.id
+                                  ? {
+                                      ...ch,
+                                      hasDisadvantage: !ch.hasDisadvantage,
+                                      hasAdvantage: ch.hasDisadvantage
+                                        ? ch.hasAdvantage
+                                        : false,
+                                    }
+                                  : ch
+                              )
+                            );
+                          }}
+                          onToggleConcentration={() => {
+                            saveSnapshot?.();
+                            setCharacters((prev) =>
+                              prev.map((ch) =>
+                                ch.id === c.id
+                                  ? { ...ch, concentrating: !ch.concentrating }
+                                  : ch
+                              )
+                            );
+                          }}
+                          size="sm"
+                        />
+                      </div>
+
+                      {/* Conditions */}
+                      {(isSelected ||
+                        (c.conditions && c.conditions.length > 0)) && (
+                        <div className="mt-2 space-y-2">
+                          {/* Active Conditions */}
+                          {c.conditions && c.conditions.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {c.conditions.map((condition) => (
+                                <button
+                                  key={condition}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    saveSnapshot?.();
+                                    setCharacters((prev) =>
+                                      prev.map((ch) =>
+                                        ch.id === c.id
+                                          ? {
+                                              ...ch,
+                                              conditions: (
+                                                ch.conditions || []
+                                              ).filter(
+                                                (cond) => cond !== condition
+                                              ),
+                                            }
+                                          : ch
+                                      )
+                                    );
+                                  }}
+                                  className="px-2 py-0.5 text-xs bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 rounded-full transition-colors"
+                                  title="Click to remove"
+                                >
+                                  {condition} ✕
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Add Condition (only when selected) */}
+                          {isSelected && (
+                            <div className="flex gap-1">
+                              <Select
+                                value=""
+                                onValueChange={(condition) => {
+                                  if (
+                                    condition &&
+                                    !(c.conditions || []).includes(condition)
+                                  ) {
+                                    saveSnapshot?.();
+                                    setCharacters((prev) =>
+                                      prev.map((ch) =>
+                                        ch.id === c.id
+                                          ? {
+                                              ...ch,
+                                              conditions: [
+                                                ...(ch.conditions || []),
+                                                condition,
+                                              ],
+                                            }
+                                          : ch
+                                      )
+                                    );
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="h-7 text-xs">
+                                  <SelectValue placeholder="Add condition..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COMMON_CONDITIONS.filter(
+                                    (cond) =>
+                                      !(c.conditions || []).includes(cond)
+                                  ).map((condition) => (
+                                    <SelectItem
+                                      key={condition}
+                                      value={condition}
+                                      className="text-xs"
+                                    >
+                                      {condition}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* right column: more menu (delete only) */}
