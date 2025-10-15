@@ -40,10 +40,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Python scripts
+# IDE
 .idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 scripts/venv/
 scripts/.venv/
-scripts/*.pyc
 scripts/*.json
-*__pycache__/
