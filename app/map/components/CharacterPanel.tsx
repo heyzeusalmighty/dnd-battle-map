@@ -151,7 +151,7 @@ const CharacterPanel = () => {
           next.maxHp === cur.maxHp &&
           next.hp === cur.hp
         ) {
-          return prev; // no-op
+          return prev;
         }
 
         const copy = [...prev];
@@ -195,13 +195,11 @@ const CharacterPanel = () => {
       color: '#EF4444',
     };
 
-    // (Optional) // saveSnapshot(); if you wired undo/redo
     saveSnapshot();
     setCharacters((prev) => [...prev, newChar]);
 
-    // reset the form – leave fields blank again
     setNewCharName('');
-    setNewCharMaxHp(''); // ← Add this line
+    setNewCharMaxHp('');
     setNewCharInit('');
     setShowAddChar(false);
   };
@@ -269,7 +267,7 @@ const CharacterPanel = () => {
           ...c,
           hp: newHp,
           totalDamage: calculatedDamage,
-          isDead: newHp === 0, // ← Add this line
+          isDead: newHp === 0,
         };
       })
     );
@@ -308,7 +306,7 @@ const CharacterPanel = () => {
           ...c,
           hp: newHp,
           totalDamage: calculatedDamage,
-          isDead: newHp === 0, // ← Add this (will be false if revived)
+          isDead: newHp === 0,
         };
       })
     );

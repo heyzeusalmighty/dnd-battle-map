@@ -43,7 +43,11 @@ export function CombatLog({ damageLog, maxEvents = 10 }: CombatLogProps) {
                 {' '}
                 {event.amount > 0 ? ' hit for ' : ' healed for '}{' '}
               </span>
-              <span className={styles.eventDamage}>
+              <span
+                className={
+                  event.amount > 0 ? styles.eventDamage : styles.eventHealing
+                }
+              >
                 {Math.abs(event.amount)}
               </span>
               <span className={styles.eventText}>

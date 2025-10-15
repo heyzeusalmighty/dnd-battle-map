@@ -15,6 +15,7 @@ import { Button } from '../components/ui/button';
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import CharacterPanel from './components/CharacterPanel';
+import { CombatLog } from './components/CombatLog';
 import HelpDialog from './components/HelpDialog';
 import InitiativePanel from './components/InitiativePanel';
 import LoadingMapDialog from './components/LoadingMapDialog';
@@ -42,6 +43,7 @@ const MapContainer = () => {
     currentTurn,
     customObjects,
     mode,
+    damageLog,
   } = state;
 
   const {
@@ -293,6 +295,10 @@ const MapContainer = () => {
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel />
           <UtilityPanel />
+          <SaveMapCard
+            handleSaveMap={handleSaveMap}
+            handleLoadMap={handleLoadMap}
+          />
         </div>
 
         {/* Center - Map and Characters */}
@@ -308,15 +314,11 @@ const MapContainer = () => {
 
           <CharacterPanel />
         </div>
-        {/* Right Panel - Initiative */}
-
+        {/* Right Panel - Initiative + Combat Log */}
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">
           <InitiativePanel />
 
-          <SaveMapCard
-            handleSaveMap={handleSaveMap}
-            handleLoadMap={handleLoadMap}
-          />
+          <CombatLog damageLog={damageLog} maxEvents={10} />
         </div>
 
         {/* Help button + dialog (replaces always-on instructions) */}
