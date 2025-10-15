@@ -31,7 +31,7 @@ def main():
 
     print(f"\n{len(monsters)} monsters merged.")
 
-    output_file = '../public/monsters.json'
+    output_file = '../public/data/monsters.json'
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(monsters, f, indent=2, ensure_ascii=False)
 
