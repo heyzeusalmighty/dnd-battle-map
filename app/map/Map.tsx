@@ -82,10 +82,40 @@ const MapContainer = () => {
     return takeSnapshot();
   }, [takeSnapshot]);
 
+  // peer message handlers
+  const handleRemoteHpUpdate = (charId: string, newHp: number) => {
+    handlers.applyDirectHpChange(charId, newHp);
+  };
+
+  const handleRemoteAddCondition = (charId: string, condition: string) => {
+    handlers.addConditionToCharacter(charId, condition);
+  };
+
+  const handleRemoteRemoveCondition = (charId: string, condition: string) => {
+    handlers.removeConditionFromCharacter(charId, condition);
+  };
+
+  const handleRemoteToggleStatus = (
+    charId: string,
+    statusType: 'advantage' | 'disadvantage' | 'concentration',
+    value: boolean
+  ) => {
+    handlers.toggleCharacterStatus(charId, statusType, value);
+  };
+
+  const handleRemoteUndo = () => {
+    handlers.undo();
+  };
+
   const { peer, connections, broadcastData } = useHostPeerSession({
     mapName,
     moveCharacterCallback: handleRemoteCharacterMove,
     getCurrentGameState: getCurrentGameState,
+    updateHpCallback: handleRemoteHpUpdate,
+    addConditionCallback: handleRemoteAddCondition,
+    removeConditionCallback: handleRemoteRemoveCondition,
+    toggleStatusCallback: handleRemoteToggleStatus,
+    undoCallback: handleRemoteUndo,
   });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);

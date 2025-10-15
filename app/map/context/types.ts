@@ -1,16 +1,16 @@
-import type { Dispatch, SetStateAction, RefObject } from 'react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 // import { useSearchParams } from 'next/navigation';
 // import Peer, { DataConnection } from 'peerjs';
 
 import type {
+  AppSnapshot,
   Character,
   CustomObj,
+  DamageEvent,
   DistanceRule,
   Measurement,
-  Terrain,
-  AppSnapshot,
   RollPreset,
-  DamageEvent,
+  Terrain,
   // RollScope,
 } from '../types';
 
@@ -117,6 +117,14 @@ export interface MapContextType {
     handleClearPCs: () => void;
     handleDeleteCharacter: (charId: string) => void;
     handleRemoteCharacterMove: (charId: string, x: number, y: number) => void;
+    applyDirectHpChange: (charId: string, newHp: number) => void;
+    addConditionToCharacter: (charId: string, condition: string) => void;
+    removeConditionFromCharacter: (charId: string, condition: string) => void;
+    toggleCharacterStatus: (
+      charId: string,
+      statusType: 'advantage' | 'disadvantage' | 'concentration',
+      value: boolean
+    ) => void;
   };
 }
 

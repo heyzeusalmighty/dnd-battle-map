@@ -34,7 +34,12 @@ export interface Terrain {
 }
 
 // Characters (PCs/NPCs)
-export type NPCType = 'standard' | 'boss' | 'ally' | 'summon' | 'spiritual weapon';
+export type NPCType =
+  | 'standard'
+  | 'boss'
+  | 'ally'
+  | 'summon'
+  | 'spiritual weapon';
 export type InitiativeMode = 'auto' | 'manual';
 
 export interface Character {
@@ -56,6 +61,10 @@ export interface Character {
   resistances?: string[];
   notes?: string;
   isDead?: boolean;
+  conditions?: string[];
+  hasAdvantage?: boolean;
+  hasDisadvantage?: boolean;
+  concentrating?: boolean;
 }
 
 export interface DamageEvent {
@@ -117,4 +126,39 @@ export type AppSnapshot = {
 export interface SnapshotUpdate {
   type: 'snapshot';
   snapShot: AppSnapshot;
+}
+
+// player --> DM messages for status/conditions updates
+export interface UpdateHpMessage {
+  type: 'updateHp';
+  characterId: string;
+  newHp: number;
+  username: string;
+}
+
+export interface AddConditionMessage {
+  type: 'addCondition';
+  characterId: string;
+  condition: string;
+  username: string;
+}
+
+export interface RemoveConditionMessage {
+  type: 'removeCondition';
+  characterId: string;
+  condition: string;
+  username: string;
+}
+
+export interface ToggleStatusMessage {
+  type: 'toggleStatus';
+  characterId: string;
+  statusType: 'advantage' | 'disadvantage' | 'concentration';
+  value: boolean;
+  username: string;
+}
+
+export interface UndoActionMessage {
+  type: 'undoAction';
+  username: string;
 }

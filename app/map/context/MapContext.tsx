@@ -262,6 +262,85 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     setDamageLog(s.damageLog || []);
   };
 
+  // Handlers for character updates
+  const applyDirectHpChange = (charId: string, newHp: number) => {
+    saveSnapshot(); // For undo
+
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+
+        const clampedHp = Math.max(0, newHp);
+        const calculatedDamage = Math.max(0, c.maxHp - clampedHp);
+
+        return {
+          ...c,
+          hp: clampedHp,
+          totalDamage: calculatedDamage,
+          isDead: clampedHp === 0,
+        };
+      })
+    );
+  };
+
+  const addConditionToCharacter = (charId: string, condition: string) => {
+    saveSnapshot(); // For undo
+
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+
+        const currentConditions = c.conditions || [];
+        // Don't add duplicates
+        if (currentConditions.includes(condition)) return c;
+
+        return {
+          ...c,
+          conditions: [...currentConditions, condition],
+        };
+      })
+    );
+  };
+
+  const removeConditionFromCharacter = (charId: string, condition: string) => {
+    saveSnapshot(); // For undo
+
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+
+        const currentConditions = c.conditions || [];
+
+        return {
+          ...c,
+          conditions: currentConditions.filter((cond) => cond !== condition),
+        };
+      })
+    );
+  };
+
+  const toggleCharacterStatus = (
+    charId: string,
+    statusType: 'advantage' | 'disadvantage' | 'concentration',
+    value: boolean
+  ) => {
+    saveSnapshot(); // For undo
+
+    setCharacters((prev) =>
+      prev.map((c) => {
+        if (c.id !== charId) return c;
+
+        if (statusType === 'advantage') {
+          return { ...c, hasAdvantage: value };
+        } else if (statusType === 'disadvantage') {
+          return { ...c, hasDisadvantage: value };
+        } else {
+          return { ...c, concentrating: value };
+        }
+      })
+    );
+  };
+
   function scrollCellIntoCenter(
     x: number,
     y: number,
@@ -526,6 +605,10 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
       handleClearPCs,
       handleDeleteCharacter,
       handleRemoteCharacterMove,
+      applyDirectHpChange,
+      addConditionToCharacter,
+      removeConditionFromCharacter,
+      toggleCharacterStatus,
     },
     mapScrollRef,
   };
