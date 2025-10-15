@@ -1,8 +1,9 @@
+// app/components/BulkNpcForm.tsx
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMapContext } from '../map/context/MapContext';
-import type { Character } from '../map/types';
+import type { Character, Monster } from '../map/types';
 import {
   findOpenSpawnSlots,
   nextNpcIndex,
@@ -11,26 +12,80 @@ import {
 import { capInit, d20 } from '../map/utils/dice';
 import { getId } from '../map/utils/id';
 import { isWallAt } from '../map/utils/terrain';
+import { rollMonsterHP } from '../utils/diceRoller';
+import { MonsterTypeahead } from './MonsterTypeahead';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 
 type Props = {
+  monsters: Monster[];
   baseX?: number;
   baseY?: number;
 };
 
-export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
+export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
   const { state, actions, handlers } = useMapContext();
   const { characters, mapHeight, mapWidth, initiativeMode, terrain } = state;
   const { setCharacters, setInitiativeOrder, setSelectedCharacter } = actions;
   const { saveSnapshot } = handlers;
 
+  // --- form state
+  const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
   const [baseName, setBaseName] = useState('Zombie');
   const [count, setCount] = useState(3);
   const [initMod, setInitMod] = useState(0);
   const [rollOnCreate, setRollOnCreate] = useState(true);
-  const [maxHp, setMaxHp] = useState(1);
+
+  // Keep HP as a string for placeholder UX
+  const [maxHp, setMaxHp] = useState<string>(''); // ← empty shows placeholder
+
+  // HP mode/roll
+  const [hpMode, setHpMode] = useState<'average' | 'max' | 'roll'>('average');
+  const [lastRolledHp, setLastRolledHp] = useState<number | null>(null);
+  const [showRollButton, setShowRollButton] = useState(false);
+
+  // Populate defaults when a monster is selected
+  useEffect(() => {
+    if (!selectedMonster) return;
+    setBaseName(selectedMonster.name);
+    setMaxHp(String(selectedMonster.hp.average)); // string!
+    setInitMod(selectedMonster.initiative);
+    setHpMode('average');
+    setLastRolledHp(null);
+    setShowRollButton(true);
+  }, [selectedMonster]);
+
+  // Update HP when the HP mode changes
+  useEffect(() => {
+    if (!selectedMonster) return;
+
+    if (hpMode === 'average') {
+      setMaxHp(String(selectedMonster.hp.average));
+    } else if (hpMode === 'max') {
+      setMaxHp(String(selectedMonster.hp.max));
+    } else if (hpMode === 'roll' && lastRolledHp !== null) {
+      setMaxHp(String(lastRolledHp));
+    }
+  }, [hpMode, selectedMonster, lastRolledHp]);
+
+  const handleClearMonster = () => {
+    setSelectedMonster(null);
+    setBaseName('Zombie');
+    setMaxHp(''); // back to empty so placeholder shows
+    setInitMod(0);
+    setHpMode('average');
+    setLastRolledHp(null);
+    setShowRollButton(false);
+  };
+
+  const handleRollHP = () => {
+    if (!selectedMonster) return;
+    const result = rollMonsterHP(selectedMonster.hp);
+    setLastRolledHp(result.total);
+    setMaxHp(String(result.total)); // string
+    setHpMode('roll');
+  };
 
   const occupied = useMemo(() => {
     const occ = new Set<string>();
@@ -49,6 +104,10 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
     const name = baseName.trim();
     if (!name || count < 1) return;
 
+    // Parse & clamp HP here (commit time)
+    const parsed = parseInt(maxHp, 10);
+    const hp = Number.isFinite(parsed) ? Math.max(1, parsed) : 1;
+
     saveSnapshot();
 
     const startIndex = nextNpcIndex(name, characters);
@@ -62,7 +121,6 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
       isBlocked
     );
 
-    // Build the new characters once
     const toAdd: Character[] = Array.from({ length: count }, (_, i) => {
       const id = getId();
       const spawn = spawns[i] ?? {
@@ -76,8 +134,8 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
         y: spawn.y,
         isPlayer: false,
         color: batchShade,
-        hp: maxHp,
-        maxHp: maxHp,
+        hp,
+        maxHp: hp,
         totalDamage: 0,
         initiative: 0,
         initiativeMod: initMod,
@@ -85,7 +143,6 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
       };
     });
 
-    // Single state update: append, then (optionally) set initiative for just-created IDs
     setCharacters((prev) => {
       const createdIds = new Set(toAdd.map((n) => n.id));
       const appended = [...prev, ...toAdd];
@@ -107,7 +164,7 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
             total,
             capped,
             flags: null,
-          }, // matches your types
+          },
         };
       });
     });
@@ -117,10 +174,25 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
     }
 
     setSelectedCharacter(toAdd[toAdd.length - 1].id);
+
+    // Reset after creation
+    handleClearMonster();
   }
 
   return (
     <div className="space-y-3">
+      {/* Monster Search */}
+      <div>
+        <label className="text-sm font-medium mb-1 block">Search Monster</label>
+        <MonsterTypeahead
+          monsters={monsters}
+          onSelect={setSelectedMonster}
+          onClear={handleClearMonster}
+          selectedMonster={selectedMonster}
+        />
+      </div>
+
+      {/* Type / Name */}
       <div>
         <label className="text-sm font-medium">Type / Name</label>
         <Input
@@ -130,7 +202,8 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      {/* Count & Initiative */}
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-sm font-medium">Count</label>
           <Input
@@ -143,18 +216,6 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Max HP</label>
-          <Input
-            type="number"
-            min={1}
-            value={maxHp}
-            onChange={(e) =>
-              setMaxHp(Math.max(1, parseInt(e.target.value || '1', 10)))
-            }
-            placeholder="e.g., 22"
-          />
-        </div>
-        <div>
           <label className="text-sm font-medium">Initiative mod</label>
           <Input
             type="number"
@@ -164,6 +225,68 @@ export default function BulkNpcForm({ baseX = 1, baseY = 1 }: Props) {
         </div>
       </div>
 
+      {/* Starting HP + Roll (matches Single form UX) */}
+      <div>
+        <label className="text-sm font-medium block mb-1">Starting HP</label>
+        <div className="flex gap-2 items-end">
+          <Input
+            type="number"
+            min={1}
+            value={maxHp} // string
+            onChange={(e) => setMaxHp(e.target.value)} // don't coerce while typing
+            placeholder="e.g., 22"
+            className="flex-1"
+            onBlur={() => {
+              // optional: gentle clamp on blur, but still allow clearing to show placeholder
+              if (maxHp !== '') {
+                const n = Math.max(1, parseInt(maxHp, 10) || 1);
+                setMaxHp(String(n));
+              }
+            }}
+          />
+
+          {showRollButton && (
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={hpMode === 'average' ? 'default' : 'outline'}
+                onClick={() => setHpMode('average')}
+                className="text-xs px-2"
+              >
+                Avg
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={hpMode === 'max' ? 'default' : 'outline'}
+                onClick={() => setHpMode('max')}
+                className="text-xs px-2"
+              >
+                Max
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={hpMode === 'roll' ? 'default' : 'outline'}
+                onClick={handleRollHP}
+                className="text-xs px-2"
+              >
+                Roll
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {showRollButton && hpMode === 'roll' && lastRolledHp !== null && (
+          <p className="text-xs text-gray-500 mt-1">
+            Rolled {selectedMonster?.hp.formula} = {lastRolledHp} (applied to
+            all)
+          </p>
+        )}
+      </div>
+
+      {/* Roll initiative on create */}
       <div className="flex items-center gap-2">
         <Checkbox
           id="rollOnCreate"

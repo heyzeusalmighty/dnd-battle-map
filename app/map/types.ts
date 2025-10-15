@@ -67,6 +67,77 @@ export interface Character {
   concentrating?: boolean;
 }
 
+// monster stuff
+export interface MonsterHP {
+  average: number;
+  formula: string;
+  numDice: number;
+  dieSize: number;
+  modifier: number;
+  max: number;
+}
+
+export interface MonsterAbilityScore {
+  mod: number;
+  save: number;
+}
+
+export interface MonsterAbilities {
+  str: MonsterAbilityScore;
+  dex: MonsterAbilityScore;
+  con: MonsterAbilityScore;
+  int: MonsterAbilityScore;
+  wis: MonsterAbilityScore;
+  cha: MonsterAbilityScore;
+}
+
+export interface MonsterImmunities {
+  damage: string[];
+  conditions: string[];
+}
+
+export interface Monster {
+  name: string;
+  size: string;
+  type: string;
+  alignment: string;
+  ac: number;
+  hp: MonsterHP;
+  initiative: number;
+  speed: {
+    walk: number;
+  };
+  abilities: MonsterAbilities;
+  senses: {
+    darkvision?: number;
+    passivePerception: number;
+  };
+  languages: string[];
+  cr: string;
+  xp: number;
+  proficiencyBonus: number;
+  vulnerabilities: string[];
+  resistances: string[];
+  immunities: MonsterImmunities;
+  traits: Array<{
+    name: string;
+    description: string;
+  }>;
+  actions: Array<{
+    name: string;
+    description: string;
+  }>;
+  bonusActions: any[];
+  reactions: any[];
+  legendaryActions: any[];
+  environment: string[];
+  treasure: string;
+  source: {
+    book: string;
+    page: number;
+  };
+}
+
 export interface DamageEvent {
   id: string;
   characterId: string;

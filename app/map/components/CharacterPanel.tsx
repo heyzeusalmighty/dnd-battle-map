@@ -1,6 +1,7 @@
 import { MoreVertical } from 'lucide-react';
 import { useRef, useState } from 'react';
 import BulkNpcForm from '../../components/BulkNpcForm';
+import SingleNpcForm from '../../components/SingleNpcForm';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
@@ -25,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import { useMonsterSearch } from '../../hooks/rtc/useMonsterSearch';
 import { useMapContext } from '../context/MapContext';
 import type { Character, DamageEvent } from '../types';
 import { getId } from '../utils/id';
@@ -65,6 +67,7 @@ const CharacterPanel = () => {
     characters,
   } = state;
 
+  const { monsters, loading: monstersLoading } = useMonsterSearch();
   const [editingHp, setEditingHp] = useState<Record<string, string>>({});
 
   const damageEventQueue = useRef<DamageEvent[]>([]);
@@ -163,7 +166,7 @@ const CharacterPanel = () => {
     return { added, id: keptId };
   };
 
-  const handleAddCharacter = () => {
+  const _handleAddCharacter = () => {
     const name = newCharName.trim();
     if (!name) return;
 
@@ -443,77 +446,14 @@ const CharacterPanel = () => {
                 </button>
               </div>
 
-              {addMode === 'single' ? (
-                <div className="space-y-3">
-                  <div>
-                    <label
-                      className="text-sm font-medium"
-                      htmlFor="newCharName"
-                    >
-                      Name
-                    </label>
-                    <Input
-                      name="newCharName"
-                      value={newCharName}
-                      onChange={(e) => setNewCharName(e.target.value)}
-                      placeholder="e.g., Zombie"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label
-                        className="text-sm font-medium"
-                        htmlFor="newCharInit"
-                      >
-                        Initiative mod
-                      </label>
-                      <Input
-                        name="newCharInit"
-                        value={newCharInit}
-                        onChange={(e) => setNewCharInit(e.target.value)}
-                        placeholder="e.g., 2"
-                        inputMode="numeric"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        className="text-sm font-medium"
-                        htmlFor="newCharMaxHp"
-                      >
-                        Max HP
-                      </label>
-                      <Input
-                        name="newCharMaxHp"
-                        value={newCharMaxHp}
-                        onChange={(e) => setNewCharMaxHp(e.target.value)}
-                        placeholder="e.g., 22 for zombie"
-                        inputMode="numeric"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowAddChar(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        // you already have this function:
-                        // builds { id, name, x:0, y:0, hp:0, maxHp:0, initiativeMod, initiative:0, isPlayer:false, color:"#EF4444", damage }
-                        handleAddCharacter();
-                        setShowAddChar(false);
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </div>
+              {monstersLoading ? (
+                <div className="py-4 text-center text-sm text-gray-500">
+                  Loading monster data...
                 </div>
+              ) : addMode === 'single' ? (
+                <SingleNpcForm monsters={monsters} />
               ) : (
-                <BulkNpcForm />
+                <BulkNpcForm monsters={monsters} />
               )}
             </DialogContent>
           </Dialog>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/app/components/ui/button';
 import {
   Dialog,
@@ -8,7 +9,6 @@ import {
 } from '@/app/components/ui/dialog';
 import { Input } from '@/app/components/ui/input';
 import { RadioGroup } from '@/app/components/ui/radio-group';
-import { useState } from 'react';
 import { useMapContext } from '../../context/MapContext';
 import type { Character } from '../../types';
 import { getId } from '../../utils/id';
