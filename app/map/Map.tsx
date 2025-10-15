@@ -292,22 +292,22 @@ const MapContainer = () => {
         />
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel />
-
-          <CharacterPanel />
-
           <UtilityPanel />
         </div>
 
-        {/* Center - Map */}
-        <MapGrid
-          isCustomObjectType={isCustomObjectType}
-          getCustomObject={getCustomObject}
-          handleCellMouseDown={handleCellMouseDown}
-          handleCellMouseEnter={handleCellMouseEnter}
-          commit={commit}
-          paintSnap={paintSnap}
-        />
+        {/* Center - Map and Characters */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
+          <MapGrid
+            isCustomObjectType={isCustomObjectType}
+            getCustomObject={getCustomObject}
+            handleCellMouseDown={handleCellMouseDown}
+            handleCellMouseEnter={handleCellMouseEnter}
+            commit={commit}
+            paintSnap={paintSnap}
+          />
 
+          <CharacterPanel />
+        </div>
         {/* Right Panel - Initiative */}
 
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">
