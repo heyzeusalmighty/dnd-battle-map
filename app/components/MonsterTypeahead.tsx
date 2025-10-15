@@ -192,8 +192,9 @@ export function MonsterTypeahead({
                   }`}
                 >
                   <div className="font-medium">{monster.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {monster.type} • CR {monster.cr}
+                  <div className="text-xs text-gray-500">
+                    {monster.type} • HP: {monster.hp.average} (default){' / '}
+                    {monster.hp.max} (max)
                   </div>
                 </button>
               );

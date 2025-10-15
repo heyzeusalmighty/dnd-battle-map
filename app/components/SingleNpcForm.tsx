@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMapContext } from '../map/context/MapContext';
 import type { Character, Monster } from '../map/types';
 import { pickNpcShade } from '../map/utils/bulk';
