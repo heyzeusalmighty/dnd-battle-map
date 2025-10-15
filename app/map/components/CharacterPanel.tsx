@@ -27,8 +27,10 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import { useMonsterSearch } from '../../hooks/rtc/useMonsterSearch';
+import { QuickStatusToggles } from '../../map-view/components/QuickStatusToggles';
 import { useMapContext } from '../context/MapContext';
 import type { Character, DamageEvent } from '../types';
+import { COMMON_CONDITIONS } from '../utils/conditions';
 import { getId } from '../utils/id';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
 import AddSummonDialog from './AddSummonDialog';
@@ -149,7 +151,7 @@ const CharacterPanel = () => {
           next.maxHp === cur.maxHp &&
           next.hp === cur.hp
         ) {
-          return prev; // no-op
+          return prev;
         }
 
         const copy = [...prev];
@@ -193,13 +195,11 @@ const CharacterPanel = () => {
       color: '#EF4444',
     };
 
-    // (Optional) // saveSnapshot(); if you wired undo/redo
     saveSnapshot();
     setCharacters((prev) => [...prev, newChar]);
 
-    // reset the form – leave fields blank again
     setNewCharName('');
-    setNewCharMaxHp(''); // ← Add this line
+    setNewCharMaxHp('');
     setNewCharInit('');
     setShowAddChar(false);
   };
@@ -267,7 +267,7 @@ const CharacterPanel = () => {
           ...c,
           hp: newHp,
           totalDamage: calculatedDamage,
-          isDead: newHp === 0, // ← Add this line
+          isDead: newHp === 0,
         };
       })
     );
@@ -306,7 +306,7 @@ const CharacterPanel = () => {
           ...c,
           hp: newHp,
           totalDamage: calculatedDamage,
-          isDead: newHp === 0, // ← Add this (will be false if revived)
+          isDead: newHp === 0,
         };
       })
     );
@@ -513,249 +513,283 @@ const CharacterPanel = () => {
                     key={c.id}
                     role="button"
                     aria-selected={isSelected}
-                    onClick={() => handleCharacterClick(c.id)} // row = select
+                    onClick={() => handleCharacterClick(c.id)}
                     className={[
                       'group px-3 py-2 grid items-center gap-2 min-w-0',
                       isSelected ? 'bg-primary/5' : '',
                     ].join(' ')}
                     style={{
                       gridTemplateColumns: '1fr auto',
-                    }} // name/controls | menu
+                    }}
                   >
-                    {/* left column */}
-                    <div className="min-w-0">
-                      {/* header: full name (wrap) + pills underneath */}
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold leading-tight break-words whitespace-normal">
-                          {c.name}
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
-                          {/* tiny color dot to tie to token */}
+                    {/* Left column: name + controls */}
+                    <div className="min-w-0 space-y-2">
+                      {/* Row 1: Name + Badge + Menu */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className="inline-block w-2 h-2 rounded-full mr-1"
-                            style={{
-                              backgroundColor: c.color,
-                            }}
-                            aria-hidden
+                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: c.color }}
                           />
+                          <span className="text-sm font-semibold truncate">
+                            {c.name}
+                          </span>
+                        </div>
 
-                          {/* PC/NPC Badge */}
-                          <Badge variant={c.isPlayer ? 'default' : 'secondary'}>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={c.isPlayer ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
                             {c.isPlayer ? 'PC' : 'NPC'}
                           </Badge>
 
-                          {/* HP Badge - shown for both PCs and NPCs */}
-                          <Badge variant="outline">
-                            HP {c.hp}/{c.maxHp}
-                            {/* Show overheal indicator for PCs only */}
-                            {c.isPlayer && c.hp > c.maxHp && (
-                              <span className="text-green-600">
-                                {' '}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-60 group-hover:opacity-100"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Delete ${c.name}?`)) {
+                                    saveSnapshot?.();
+                                    handleDeleteCharacter(c.id);
+                                  }
+                                }}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+
+                      {/* Row 2: HP controls + Status toggles */}
+                      <div className="flex items-center justify-between gap-2">
+                        {/* HP controls on the left */}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              saveSnapshot?.();
+                              applyDamage(c.id, 1);
+                            }}
+                            aria-label="HP -1"
+                          >
+                            –
+                          </Button>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            className="h-7 w-16 text-center text-xs"
+                            value={editingHp[c.id] ?? String(c.hp)}
+                            onClick={(e) => e.stopPropagation()}
+                            onFocus={(e) => {
+                              e.currentTarget.select();
+                              e.currentTarget.dataset.originalHp = String(c.hp);
+                            }}
+                            onChange={(e) => {
+                              setEditingHp((prev) => ({
+                                ...prev,
+                                [c.id]: e.target.value,
+                              }));
+                            }}
+                            onBlur={(e) => {
+                              const newValue = parseInt(e.target.value, 10);
+                              const originalHp = parseInt(
+                                e.currentTarget.dataset.originalHp || '0',
+                                10
+                              );
+
+                              setEditingHp((prev) => {
+                                const copy = { ...prev };
+                                delete copy[c.id];
+                                return copy;
+                              });
+
+                              if (
+                                !Number.isFinite(newValue) ||
+                                newValue === originalHp
+                              )
+                                return;
+
+                              if (newValue < originalHp) {
+                                const damageAmount = originalHp - newValue;
+                                applyDamage(c.id, damageAmount);
+                              } else if (newValue > originalHp) {
+                                const healingAmount = newValue - originalHp;
+                                applyHealing(c.id, healingAmount);
+                              }
+                            }}
+                          />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            / {c.maxHp}
+                            {c.hp > c.maxHp && (
+                              <span className="text-green-600 ml-1">
                                 (+{c.hp - c.maxHp})
                               </span>
                             )}
-                          </Badge>
-                        </div>{' '}
-                      </div>
-
-                      {/* line 2: inline editor (hidden until hover or selected) */}
-                      <div
-                        className={`mt-1 ${
-                          isSelected ? 'flex' : 'hidden group-hover:flex'
-                        } items-center gap-1`}
-                      >
-                        {c.isPlayer ? (
-                          <>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveSnapshot?.();
-                                applyDamage(c.id, 1);
-                              }}
-                              aria-label="HP -1"
-                            >
-                              –
-                            </Button>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              className="h-7 w-16 text-center text-xs"
-                              value={editingHp[c.id] ?? String(c.hp)}
-                              onClick={(e) => e.stopPropagation()}
-                              onFocus={(e) => {
-                                e.currentTarget.select();
-                                e.currentTarget.dataset.originalHp = String(
-                                  c.hp
-                                );
-                              }}
-                              onChange={(e) => {
-                                setEditingHp((prev) => ({
-                                  ...prev,
-                                  [c.id]: e.target.value,
-                                }));
-                              }}
-                              onBlur={(e) => {
-                                const newValue = parseInt(e.target.value, 10);
-                                const originalHp = parseInt(
-                                  e.currentTarget.dataset.originalHp || '0',
-                                  10
-                                );
-
-                                setEditingHp((prev) => {
-                                  const copy = { ...prev };
-                                  delete copy[c.id];
-                                  return copy;
-                                });
-
-                                if (
-                                  !Number.isFinite(newValue) ||
-                                  newValue === originalHp
-                                )
-                                  return;
-
-                                if (newValue < originalHp) {
-                                  const damageAmount = originalHp - newValue;
-                                  applyDamage(c.id, damageAmount);
-                                } else if (newValue > originalHp) {
-                                  const healingAmount = newValue - originalHp;
-                                  applyHealing(c.id, healingAmount);
-                                }
-                              }}
-                            />{' '}
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              / {c.maxHp}
-                              {c.hp > c.maxHp && (
-                                <span className="text-green-600 ml-1">
-                                  (+{c.hp - c.maxHp})
-                                </span>
-                              )}
-                            </span>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveSnapshot?.();
-                                applyHealing(c.id, 1);
-                              }}
-                              aria-label="HP +1"
-                            >
-                              +
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveSnapshot?.();
-                                applyDamage(c.id, 1);
-                              }}
-                              aria-label="HP -1"
-                            >
-                              –
-                            </Button>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              className="h-7 w-16 text-center text-xs"
-                              value={editingHp[c.id] ?? String(c.hp)}
-                              onClick={(e) => e.stopPropagation()}
-                              onFocus={(e) => {
-                                e.currentTarget.select();
-                                e.currentTarget.dataset.originalHp = String(
-                                  c.hp
-                                );
-                              }}
-                              onChange={(e) => {
-                                setEditingHp((prev) => ({
-                                  ...prev,
-                                  [c.id]: e.target.value,
-                                }));
-                              }}
-                              onBlur={(e) => {
-                                const newValue = parseInt(e.target.value, 10);
-                                const originalHp = parseInt(
-                                  e.currentTarget.dataset.originalHp || '0',
-                                  10
-                                );
-
-                                setEditingHp((prev) => {
-                                  const copy = { ...prev };
-                                  delete copy[c.id];
-                                  return copy;
-                                });
-
-                                if (
-                                  !Number.isFinite(newValue) ||
-                                  newValue === originalHp
-                                )
-                                  return;
-
-                                if (newValue < originalHp) {
-                                  const damageAmount = originalHp - newValue;
-                                  applyDamage(c.id, damageAmount);
-                                } else if (newValue > originalHp) {
-                                  const healingAmount = newValue - originalHp;
-                                  applyHealing(c.id, healingAmount);
-                                }
-                              }}
-                            />{' '}
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              / {c.maxHp}
-                            </span>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveSnapshot?.();
-                                applyHealing(c.id, 1);
-                              }}
-                              aria-label="HP +1"
-                            >
-                              +
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* right column: more menu (delete only) */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0 opacity-60 group-hover:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label="More actions"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Delete ${c.name}?`)) {
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               saveSnapshot?.();
-                              handleDeleteCharacter(c.id);
+                              applyHealing(c.id, 1);
+                            }}
+                            aria-label="HP +1"
+                          >
+                            +
+                          </Button>
+                        </div>
+
+                        {/* Status toggles on the right */}
+                        <QuickStatusToggles
+                          hasAdvantage={c.hasAdvantage}
+                          hasDisadvantage={c.hasDisadvantage}
+                          concentrating={c.concentrating}
+                          onToggleAdvantage={() => {
+                            saveSnapshot?.();
+                            setCharacters((prev) =>
+                              prev.map((ch) =>
+                                ch.id === c.id
+                                  ? {
+                                      ...ch,
+                                      hasAdvantage: !ch.hasAdvantage,
+                                      hasDisadvantage: ch.hasAdvantage
+                                        ? ch.hasDisadvantage
+                                        : false,
+                                    }
+                                  : ch
+                              )
+                            );
+                          }}
+                          onToggleDisadvantage={() => {
+                            saveSnapshot?.();
+                            setCharacters((prev) =>
+                              prev.map((ch) =>
+                                ch.id === c.id
+                                  ? {
+                                      ...ch,
+                                      hasDisadvantage: !ch.hasDisadvantage,
+                                      hasAdvantage: ch.hasDisadvantage
+                                        ? ch.hasAdvantage
+                                        : false,
+                                    }
+                                  : ch
+                              )
+                            );
+                          }}
+                          onToggleConcentration={() => {
+                            saveSnapshot?.();
+                            setCharacters((prev) =>
+                              prev.map((ch) =>
+                                ch.id === c.id
+                                  ? { ...ch, concentrating: !ch.concentrating }
+                                  : ch
+                              )
+                            );
+                          }}
+                          size="sm"
+                        />
+                      </div>
+                      {/* Quick Status Toggles */}
+                      {/* Row 3: Conditions (only if present or selected) */}
+
+                      {(isSelected ||
+                        (c.conditions && c.conditions.length > 0)) && (
+                        <div className="space-y-2">
+                          {c.conditions && c.conditions.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {c.conditions.map((condition) => (
+                                <button
+                                  key={condition}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    saveSnapshot?.();
+                                    setCharacters((prev) =>
+                                      prev.map((ch) =>
+                                        ch.id === c.id
+                                          ? {
+                                              ...ch,
+                                              conditions: (
+                                                ch.conditions || []
+                                              ).filter(
+                                                (cond) => cond !== condition
+                                              ),
+                                            }
+                                          : ch
+                                      )
+                                    );
+                                  }}
+                                  className="px-2 py-0.5 text-xs bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 rounded-full
+      transition-colors"
+                                  title="Click to remove"
+                                >
+                                  {condition} ✕
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {isSelected && (
+                        <Select
+                          value=""
+                          onValueChange={(condition) => {
+                            if (
+                              condition &&
+                              !(c.conditions || []).includes(condition)
+                            ) {
+                              saveSnapshot?.();
+                              setCharacters((prev) =>
+                                prev.map((ch) =>
+                                  ch.id === c.id
+                                    ? {
+                                        ...ch,
+                                        conditions: [
+                                          ...(ch.conditions || []),
+                                          condition,
+                                        ],
+                                      }
+                                    : ch
+                                )
+                              );
                             }
                           }}
                         >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue placeholder="Add condition..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COMMON_CONDITIONS.filter(
+                              (cond) => !(c.conditions || []).includes(cond)
+                            ).map((condition) => (
+                              <SelectItem
+                                key={condition}
+                                value={condition}
+                                className="text-xs"
+                              >
+                                {condition}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
                   </div>
                 );
               })

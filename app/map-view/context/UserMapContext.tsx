@@ -25,6 +25,11 @@ interface UserMapContextType {
   handlers: {
     handleCellClick: (x: number, y: number) => void;
     handleCharacterClick: (characterId: string) => void;
+    addCondition: (charId: string, condition: string) => void;
+    removeCondition: (charId: string, condition: string) => void;
+    toggleAdvantage: (charId: string) => void;
+    toggleDisadvantage: (charId: string) => void;
+    toggleConcentration: (charId: string) => void;
   };
 }
 
@@ -82,7 +87,75 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
       setSelectedCharacterId(null);
     }
   };
+  const addCondition = (charId: string, condition: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      characters: prev.characters.map((c) => {
+        if (c.id !== charId) return c;
+        const currentConditions = c.conditions || [];
+        if (currentConditions.includes(condition)) return c;
+        return {
+          ...c,
+          conditions: [...currentConditions, condition],
+        };
+      }),
+    }));
+  };
 
+  const removeCondition = (charId: string, condition: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      characters: prev.characters.map((c) => {
+        if (c.id !== charId) return c;
+        const currentConditions = c.conditions || [];
+        return {
+          ...c,
+          conditions: currentConditions.filter((cond) => cond !== condition),
+        };
+      }),
+    }));
+  };
+
+  const toggleAdvantage = (charId: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      characters: prev.characters.map((c) => {
+        if (c.id !== charId) return c;
+        return {
+          ...c,
+          hasAdvantage: !c.hasAdvantage,
+          hasDisadvantage: !c.hasAdvantage ? false : c.hasDisadvantage,
+        };
+      }),
+    }));
+  };
+
+  const toggleDisadvantage = (charId: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      characters: prev.characters.map((c) => {
+        if (c.id !== charId) return c;
+        return {
+          ...c,
+          hasDisadvantage: !c.hasDisadvantage,
+          hasAdvantage: !c.hasDisadvantage ? false : c.hasAdvantage,
+        };
+      }),
+    }));
+  };
+
+  const toggleConcentration = (charId: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      characters: prev.characters.map((c) => {
+        if (c.id !== charId) return c;
+        return {
+          ...c,
+          concentrating: !c.concentrating,
+        };
+      }),
+    }));
+  };
   const value = {
     state: {
       gameState,
@@ -103,6 +176,11 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
     handlers: {
       handleCellClick,
       handleCharacterClick,
+      addCondition,
+      removeCondition,
+      toggleAdvantage,
+      toggleDisadvantage,
+      toggleConcentration,
     },
   };
 

@@ -61,6 +61,12 @@
   color: #ef4444;
 }
 
+/* healing numbers */
+.eventHealing {
+  font-weight: 700;
+  color: #22c55e;
+}
+
 /* round number */
 .eventRound {
   font-size: 0.75rem;

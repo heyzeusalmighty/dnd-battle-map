@@ -8,6 +8,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import { COMMON_CONDITIONS } from '../map/utils/conditions';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -48,25 +49,6 @@ interface InitiativeTrackerProps {
   onRemoveCondition: (id: string, condition: string) => void;
   onUpdateTempHp: (id: string, tempHp: number) => void;
 }
-
-const COMMON_CONDITIONS = [
-  'Blinded',
-  'Charmed',
-  'Deafened',
-  'Frightened',
-  'Grappled',
-  'Incapacitated',
-  'Invisible',
-  'Paralyzed',
-  'Petrified',
-  'Poisoned',
-  'Prone',
-  'Restrained',
-  'Stunned',
-  'Unconscious',
-  'Exhaustion',
-  'Concentration',
-];
 
 const NPC_TYPE_COLORS = {
   minion: '#FFA500',
