@@ -413,13 +413,7 @@ const InitiativePanel = () => {
 
               {/* Inline stats: HP for PCs, DMG for NPCs */}
               <div className="mt-1 text-xs text-muted-foreground">
-                {char.isPlayer ? (
-                  <>
-                    HP: {char.hp}/{char.maxHp}
-                  </>
-                ) : (
-                  <>DMG: {char.damage ?? 0}</>
-                )}
+                HP: {char.hp}/{char.maxHp}
               </div>
 
               {/* Status badges */}
