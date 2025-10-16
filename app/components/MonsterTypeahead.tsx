@@ -187,8 +187,8 @@ export function MonsterTypeahead({
                   aria-selected={isActive}
                   onClick={() => handleSelect(monster)}
                   onMouseEnter={() => setActiveIdx(i)}
-                  className={`w-full px-3 py-2 text-left border-b border-gray-100 last:border-b-0 transition-colors outline-none ${
-                    isActive ? 'bg-gray-100' : 'bg-white'
+                  className={`w-full px-3 py-2 text-left border-b border-border last:border-b-0 transition-colors outline-none ${
+                    isActive ? 'bg-muted' : 'bg-background'
                   }`}
                 >
                   <div className="font-medium">{monster.name}</div>
