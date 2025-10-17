@@ -14,6 +14,7 @@ import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
 import { useHostPeerSession } from '../hooks/rtc/useHostMap';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
+import { sanitizeForUrlPath } from '../utils/sanitizeForHttp';
 import CharacterPanel from './components/CharacterPanel';
 import { CombatLog } from './components/CombatLog';
 import HelpDialog from './components/HelpDialog';
@@ -68,7 +69,8 @@ const MapContainer = () => {
   } = handlers;
 
   const searchParams = useSearchParams();
-  const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
+  const rawMapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
+  const mapName = sanitizeForUrlPath(rawMapName);
   useHotkeys({
     mode,
     setMode,
@@ -279,7 +281,7 @@ const MapContainer = () => {
             <div className="flex items-center text-sm gap-2">
               <ThemeToggleSimple /> <span>Toggle Dark/Light Theme</span>
             </div>
-            {mapName}
+            {rawMapName}
           </h1>
         </div>
       </header>

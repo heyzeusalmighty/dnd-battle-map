@@ -96,6 +96,7 @@ const MapGrid: FC<MapGridProps> = ({
     setMeasurements,
     setCharacters,
     setTerrain,
+    setSelectedCharacter,
   } = actions;
   const { undo, redo, handleCharacterClick, saveSnapshot } = handlers;
 
@@ -135,7 +136,7 @@ const MapGrid: FC<MapGridProps> = ({
 
     if (selectedTool === 'select') {
       if (selectedCharacter) {
-        const sel = getSelectedChar(); // or however you fetch it
+        const sel = getSelectedChar();
         if (!sel) return;
 
         // no-op: same cell → skip snapshot & state write
@@ -145,6 +146,8 @@ const MapGrid: FC<MapGridProps> = ({
           setCharacters((prev) =>
             prev.map((c) => (c.id === selectedCharacter ? { ...c, x, y } : c))
           );
+          // clear selected character after move
+          setSelectedCharacter(null);
         });
       }
       return;
