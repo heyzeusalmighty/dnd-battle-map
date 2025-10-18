@@ -10,19 +10,20 @@ import { isWallAt } from '../map/utils/terrain';
 import { rollMonsterHP } from '../utils/diceRoller';
 import { MonsterTypeahead } from './MonsterTypeahead';
 import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 
 type Props = {
   monsters: Monster[];
   baseX?: number;
   baseY?: number;
+  rollOnCreate: boolean;
 };
 
 export default function SingleNpcForm({
   monsters,
   baseX = 1,
   baseY = 1,
+  rollOnCreate,
 }: Props) {
   const { state, actions, handlers } = useMapContext();
   const { characters, mapHeight, mapWidth, initiativeMode, terrain } = state;
@@ -31,24 +32,25 @@ export default function SingleNpcForm({
 
   // form
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
-  const [name, setName] = useState('');
+  const [name, setBaseName] = useState('');
   const [maxHp, setMaxHp] = useState('');
   const [initMod, setInitMod] = useState('');
   const [ac, setAc] = useState('');
-  const [rollOnCreate, setRollOnCreate] = useState(false);
 
   // HP roll
   const [hpMode, setHpMode] = useState<'average' | 'max' | 'roll'>('average');
   const [lastRolledHp, setLastRolledHp] = useState<number | null>(null);
+  const [_showRollButton, setShowRollButton] = useState(false);
 
   useEffect(() => {
     if (selectedMonster) {
-      setName(selectedMonster.name);
+      setBaseName(selectedMonster.name);
       setMaxHp(String(selectedMonster.hp.average));
       setInitMod(String(selectedMonster.initiative));
-      setAc(String(selectedMonster.ac));
       setHpMode('average');
       setLastRolledHp(null);
+      setShowRollButton(true);
+      setAc(String(selectedMonster.ac));
     }
   }, [selectedMonster]);
 
@@ -75,12 +77,13 @@ export default function SingleNpcForm({
 
   const handleClearMonster = () => {
     setSelectedMonster(null);
-    setName('');
+    setBaseName('Zombie');
     setMaxHp('');
     setInitMod('');
     setAc('');
     setHpMode('average');
     setLastRolledHp(null);
+    setShowRollButton(false);
   };
 
   const findOpenSpot = (): { x: number; y: number } => {
@@ -181,24 +184,24 @@ export default function SingleNpcForm({
 
       {/* Name */}
       <div>
-        <label className="text-sm font-medium">Name</label>
+        <label className="text-sm font-medium mb-1 block">Name</label>
         <Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Zombie"
+          onChange={(e) => setBaseName(e.target.value)}
+          placeholder="Zombie"
         />
       </div>
 
       {/* HP Section */}
       <div>
-        <label className="text-sm font-medium block mb-1">Max HP</label>
+        <label className="text-sm font-medium block mb-1">Starting HP</label>
         <div className="flex gap-2 items-end">
           <Input
             type="number"
             min={1}
             value={maxHp}
             onChange={(e) => setMaxHp(e.target.value)}
-            placeholder="e.g., 22"
+            placeholder="22"
             className="flex-1"
           />
 
@@ -245,36 +248,26 @@ export default function SingleNpcForm({
       {/* Initiative & AC */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-sm font-medium">Initiative mod</label>
+          <label className="text-sm font-medium mb-1 block">
+            Initiative mod
+          </label>
           <Input
             type="number"
             value={initMod}
             onChange={(e) => setInitMod(e.target.value)}
-            placeholder="e.g., 2"
+            placeholder="2"
           />
         </div>
         <div>
-          <label className="text-sm font-medium">AC</label>
+          <label className="text-sm font-medium mb-1 block">AC</label>
           <Input
             type="number"
             min={1}
             value={ac}
             onChange={(e) => setAc(e.target.value)}
-            placeholder="e.g., 15"
+            placeholder="15"
           />
         </div>
-      </div>
-
-      {/* Roll Initiative Checkbox */}
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="rollOnCreateSingle"
-          checked={rollOnCreate}
-          onCheckedChange={(v) => setRollOnCreate(!!v)}
-        />
-        <label htmlFor="rollOnCreateSingle" className="text-sm select-none">
-          Roll initiative on create
-        </label>
       </div>
 
       {/* Create Button */}

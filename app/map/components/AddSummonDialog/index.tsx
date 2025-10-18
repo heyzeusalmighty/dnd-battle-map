@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/app/components/ui/button';
 import {
@@ -8,76 +9,108 @@ import {
   DialogTrigger,
 } from '@/app/components/ui/dialog';
 import { Input } from '@/app/components/ui/input';
-import { RadioGroup } from '@/app/components/ui/radio-group';
 import { useMapContext } from '../../context/MapContext';
 import type { Character } from '../../types';
+import { capInit, d20 } from '../../utils/dice';
 import { getId } from '../../utils/id';
 
-const AddSummonDialog = () => {
-  const { actions, handlers } = useMapContext();
-  const { setCharacters } = actions;
+type Props = {
+  rollOnCreate: boolean; // ADD THIS
+};
+
+const AddSummonDialog = ({ rollOnCreate }: Props) => {
+  const { state, actions, handlers } = useMapContext();
+  const { initiativeMode } = state;
+  const { setCharacters, setInitiativeOrder, setSelectedCharacter } = actions;
   const { saveSnapshot } = handlers;
 
   const [showAddChar, setShowAddChar] = useState(false);
-  const [newCharName, setNewCharName] = useState('');
-  const [newCharInit, setNewCharInit] = useState('');
-  const [newCharMaxHp, setNewCharMaxHp] = useState('');
-  const [newCharType, setNewCharType] = useState<'summon' | 'spiritual weapon'>(
+  const [name, setName] = useState('');
+  const [summonType, setSummonType] = useState<'summon' | 'spiritual weapon'>(
     'spiritual weapon'
   );
+  const [maxHp, setMaxHp] = useState('');
+  const [initMod, setInitMod] = useState('');
+  const [ac, setAc] = useState('');
+
+  const handleClear = () => {
+    setName('');
+    setMaxHp('');
+    setInitMod('');
+    setAc('');
+    setSummonType('spiritual weapon');
+  };
 
   const handleAddCharacter = () => {
-    // Implement the logic to add a character
-    console.log('Adding character:', {
-      name: newCharName,
-      initiativeMod: newCharInit,
-      maxHp: newCharMaxHp,
-    });
+    const trimmedName = name.trim();
+    if (!trimmedName || !maxHp) return;
 
-    const name = newCharName.trim();
-    if (!name) return;
+    // Parse & clamp (matching other forms)
+    const parsed = parseInt(maxHp, 10);
+    const hp = Number.isFinite(parsed) ? Math.max(1, parsed) : 1;
+    const init = parseInt(initMod, 10) || 0;
+    const armorClass = parseInt(ac, 10) || 10;
 
-    const mod = Number.isFinite(parseInt(newCharInit, 10))
-      ? parseInt(newCharInit, 10)
-      : 0;
-    const maxHp = Number.isFinite(parseInt(newCharMaxHp, 10))
-      ? Math.max(1, parseInt(newCharMaxHp, 10))
-      : 1;
+    saveSnapshot();
 
-    // If your Character requires hp/maxHp, keep them (hidden in UI)
     const newChar: Character = {
       id: getId(),
-      name,
+      name: trimmedName,
       x: 0,
       y: 0,
-      hp: maxHp,
-      maxHp: maxHp,
-      damage: 0,
+      hp: hp,
+      maxHp: hp,
       totalDamage: 0,
       initiative: 0,
-      initiativeMod: mod,
-      isPlayer: false, // NPC
+      initiativeMod: init,
+      damage: 0,
+      ac: armorClass,
+      isPlayer: false,
       color: 'transparent',
-      npcType: newCharType,
+      npcType: summonType,
     };
 
-    // (Optional) // saveSnapshot(); if you wired undo/redo
-    saveSnapshot();
+    // Roll initiative if checkbox is checked
+    if (rollOnCreate) {
+      const die = d20();
+      const mod = init;
+      const total = die + mod;
+      const capped = capInit(total);
+
+      newChar.initiative = capped;
+      newChar.lastInitRoll = {
+        die,
+        mod,
+        total,
+        capped,
+        flags: null,
+      };
+    }
+
     setCharacters((prev) => [...prev, newChar]);
 
-    // Reset fields after adding
-    setNewCharName('');
-    setNewCharInit('');
-    setNewCharMaxHp('');
+    if (initiativeMode === 'manual') {
+      setInitiativeOrder((prev) => [...prev, newChar.id]);
+    }
 
-    // Close the dialog
+    setSelectedCharacter(newChar.id);
+
+    // Reset and close
+    handleClear();
     setShowAddChar(false);
   };
+
+  // Determine if AC should be shown
+  const showAc = summonType === 'summon';
 
   return (
     <Dialog open={showAddChar} onOpenChange={setShowAddChar}>
       <DialogTrigger asChild>
-        <Button className="w-full" variant="outline">
+        <Button
+          className="w-full h-10 text-sm flex items-center justify-center gap-2"
+          variant="outline"
+        >
+          <Sparkles className="w-5 h-5" />
           Add Summon
         </Button>
       </DialogTrigger>
@@ -88,79 +121,97 @@ const AddSummonDialog = () => {
         </DialogHeader>
 
         <div className="space-y-3">
+          {/* Summon Type */}
           <div>
-            <label className="text-sm font-medium" htmlFor="newCharName">
-              Name
+            <label className="text-sm font-medium mb-1 block">
+              Summon Type
             </label>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  id="spiritualWeapon"
+                  name="summonType"
+                  value="spiritual weapon"
+                  checked={summonType === 'spiritual weapon'}
+                  onChange={() => setSummonType('spiritual weapon')}
+                />
+                <label htmlFor="spiritualWeapon" className="text-sm">
+                  Spiritual Weapon
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  id="summon"
+                  name="summonType"
+                  value="summon"
+                  checked={summonType === 'summon'}
+                  onChange={() => setSummonType('summon')}
+                />
+                <label htmlFor="summon" className="text-sm">
+                  Summon
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="text-sm font-medium mb-1 block">Name</label>
             <Input
-              name="newCharName"
-              value={newCharName}
-              onChange={(e) => setNewCharName(e.target.value)}
-              placeholder="e.g., Zombie"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={
+                summonType === 'spiritual weapon' ? 'Greatsword' : 'Fire Mephit'
+              }
             />
           </div>
 
+          {/* Starting HP */}
           <div>
-            <label className="text-sm font-medium" htmlFor="newCharName">
-              Summon Type
+            <label className="text-sm font-medium mb-1 block">
+              Starting HP
             </label>
-            <RadioGroup value={newCharType} className="mt-1">
-              <div className="flex gap-4">
-                <div>
-                  <input
-                    type="radio"
-                    id="spiritualWeapon"
-                    name="summonType"
-                    value="spiritual weapon"
-                    checked={newCharType === 'spiritual weapon'}
-                    onChange={() => setNewCharType('spiritual weapon')}
-                    className="mr-2"
-                  />
-                  <label htmlFor="spiritualWeapon">Spiritual Weapon</label>
-                </div>
-                <div>
-                  <input
-                    type="radio"
-                    id="summon"
-                    name="summonType"
-                    value="summon"
-                    checked={newCharType === 'summon'}
-                    onChange={() => setNewCharType('summon')}
-                    className="mr-2"
-                  />
-                  <label htmlFor="summon">Summon</label>
-                </div>
-              </div>
-            </RadioGroup>
+            <Input
+              type="number"
+              min={1}
+              value={maxHp}
+              onChange={(e) => setMaxHp(e.target.value)}
+              placeholder="22"
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Initiative & AC (conditionally show AC) */}
+          <div
+            className={`grid gap-3 ${showAc ? 'grid-cols-2' : 'grid-cols-1'}`}
+          >
             <div>
-              <label className="text-sm font-medium" htmlFor="newCharInit">
+              <label className="text-sm font-medium mb-1 block">
                 Initiative mod
               </label>
               <Input
-                name="newCharInit"
-                value={newCharInit}
-                onChange={(e) => setNewCharInit(e.target.value)}
-                placeholder="e.g., 2"
-                inputMode="numeric"
+                type="number"
+                value={initMod}
+                onChange={(e) => setInitMod(e.target.value)}
+                placeholder="2"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium" htmlFor="newCharMaxHp">
-                Max HP
-              </label>
-              <Input
-                name="newCharMaxHp"
-                value={newCharMaxHp}
-                onChange={(e) => setNewCharMaxHp(e.target.value)}
-                placeholder="e.g., 22 for zombie"
-                inputMode="numeric"
-              />
-            </div>
+            {showAc && (
+              <div>
+                <label className="text-sm font-medium mb-1 block">AC</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ac}
+                  onChange={(e) => setAc(e.target.value)}
+                  placeholder="15"
+                />
+              </div>
+            )}
           </div>
 
+          {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowAddChar(false)}>
               Cancel

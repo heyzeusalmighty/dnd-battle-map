@@ -87,6 +87,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(
     null
   );
+  const shouldScrollToSelectionRef = useRef(true);
   const [charTab, setCharTab] = useState<'add' | 'manage'>('add');
   const [charQuery, setCharQuery] = useState('');
   const [charFilter, setCharFilter] = useState<'all' | 'pc' | 'npc'>('all');
@@ -341,7 +342,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     );
   };
 
-  function scrollCellIntoCenter(
+  function _scrollCellIntoCenter(
     x: number,
     y: number,
     behavior: ScrollBehavior = 'smooth'
@@ -358,18 +359,16 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     el.scrollTo({ left, top, behavior });
   }
 
-  const handleCharacterClick = (charId: string) => {
+  const handleCharacterClick = (
+    charId: string,
+    shouldScroll: boolean = true
+  ) => {
     if (selectedTool !== 'select') return;
 
-    // toggle selection; only center when selecting (not when de-selecting)
-    setSelectedCharacter((prev) => {
-      const next = prev === charId ? null : charId;
-      if (next) {
-        const c = characters.find((ch) => ch.id === next);
-        if (c) scrollCellIntoCenter(c.x, c.y); // uses the helper you added
-      }
-      return next;
-    });
+    shouldScrollToSelectionRef.current = shouldScroll;
+
+    // center only when selecting
+    setSelectedCharacter((prev) => (prev === charId ? null : charId));
   };
 
   const clearMeasurements = () => {
@@ -453,7 +452,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
 
   // center on character token
   useEffect(() => {
-    if (!selectedCharacter) return;
+    if (!selectedCharacter || !shouldScrollToSelectionRef.current) return;
     const c = characters.find((ch) => ch.id === selectedCharacter);
     if (!c) return;
 
@@ -464,7 +463,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     const cx = c.x * cellSize + cellSize / 2;
     const cy = c.y * cellSize + cellSize / 2;
 
-    // optional: only scroll if off-screen
+    // only scroll if off-screen
     const inView =
       cx >= el.scrollLeft &&
       cx <= el.scrollLeft + el.clientWidth &&
@@ -478,7 +477,10 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
         behavior: 'smooth',
       });
     }
-  }, [selectedCharacter, characters.find]);
+
+    // reset to true for next time
+    shouldScrollToSelectionRef.current = true;
+  }, [selectedCharacter, characters]);
 
   // cancel measurement
   useEffect(() => {

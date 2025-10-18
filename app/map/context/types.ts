@@ -112,7 +112,7 @@ export interface MapContextType {
     takeSnapshot: () => AppSnapshot;
     restoreSnapshot: (s: AppSnapshot) => void;
     clearMeasurements: () => void;
-    handleCharacterClick: (charId: string) => void;
+    handleCharacterClick: (charId: string, shouldScroll?: boolean) => void;
     handleClearNPCs: () => void;
     handleClearPCs: () => void;
     handleDeleteCharacter: (charId: string) => void;
