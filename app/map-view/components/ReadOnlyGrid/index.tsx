@@ -31,7 +31,7 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
     characters,
   } = state.gameState;
   const { selectedCharacterId, hoveredCell } = state;
-  const { setHoveredCell } = actions;
+  const { setHoveredCell, setSelectedCharacterId } = actions;
   const { handleCellClick, handleCharacterClick } = handlers;
 
   const selectedCharacter =
@@ -52,6 +52,8 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
         x,
         y,
       });
+      // unselect the character after moving
+      setSelectedCharacterId(null);
     }
   };
 

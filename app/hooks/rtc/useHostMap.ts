@@ -1,5 +1,3 @@
-import Peer, { type DataConnection } from 'peerjs';
-import { useEffect, useRef, useState } from 'react';
 import type {
   AddConditionMessage,
   AppSnapshot,
@@ -9,6 +7,8 @@ import type {
   UpdateHpMessage,
 } from '@/app/map/types';
 import { getCookie, setCookie } from '@/app/utils/cookie';
+import Peer, { type DataConnection } from 'peerjs';
+import { useEffect, useRef, useState } from 'react';
 
 // Utility function to detect browser (same as useGuestMap)
 const getBrowserInfo = () => {
@@ -424,12 +424,6 @@ export function useHostPeerSession({
     const activeConnections = connectionsRef.current.filter(
       (conn) => conn.open
     );
-    console.log(
-      '[useHostMap] 📡 Broadcasting data to',
-      activeConnections.length,
-      'peers:',
-      data
-    );
 
     if (
       typeof data === 'object' &&
@@ -438,7 +432,6 @@ export function useHostPeerSession({
       (data as { type: string }).type === 'snapshot'
     ) {
       setMessageCount((c) => c + 1);
-      console.log('[useHostMap] Snapshot broadcast count:', messageCount + 1);
     }
 
     let successCount = 0;
@@ -449,7 +442,6 @@ export function useHostPeerSession({
         try {
           conn.send(data);
           successCount++;
-          console.log('[useHostMap] ✅ Data sent to', conn.peer);
         } catch (error) {
           failCount++;
           console.error(
@@ -462,12 +454,6 @@ export function useHostPeerSession({
       } else {
         console.warn('[useHostMap] ⚠️ Skipping closed connection to', conn.peer);
       }
-    });
-
-    console.log('[useHostMap] Broadcast complete:', {
-      successCount,
-      failCount,
-      total: connectionsRef.current.length,
     });
   };
 
@@ -520,7 +506,6 @@ export function useHostPeerSession({
     })),
   };
 
-  console.log('[useHostMap] Current state:', debugInfo);
 
   return {
     peer,
