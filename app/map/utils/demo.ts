@@ -17,7 +17,7 @@ export function demoCharacters(): Character[] {
     x: 2,
     y: 2,
     hp: 7,
-    maxHp: mae?.hp ?? 31,
+    maxHp: mae?.hp ?? 38,
     totalDamage: 0,
     initiative: 1,
     // ✅ pull the default bonus from presets

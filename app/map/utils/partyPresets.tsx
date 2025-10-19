@@ -10,7 +10,7 @@ export type PartyPreset = {
 export const DEFAULT_PARTY: PartyPreset[] = [
   {
     name: 'Maelin',
-    hp: 31,
+    hp: 38,
     initiative: 0,
     initiativeMod: 2,
     ac: 17,
@@ -18,23 +18,23 @@ export const DEFAULT_PARTY: PartyPreset[] = [
   },
   {
     name: 'Aria',
-    hp: 31,
+    hp: 38,
     initiative: 0,
     initiativeMod: 4,
-    ac: 16,
+    ac: 17,
     color: '#F59E0B',
   },
   {
     name: 'Farmish',
-    hp: 30,
+    hp: 37,
     initiative: 0,
     initiativeMod: 0,
-    ac: 10,
+    ac: 13,
     color: '#10B981',
   },
   {
     name: 'Yustuss',
-    hp: 44,
+    hp: 54,
     initiative: 0,
     initiativeMod: 0,
     ac: 18,
