@@ -1,7 +1,6 @@
 'use client';
 
 import { clsx } from 'clsx';
-import { useEffect } from 'react';
 import type { Character } from '../../map/types';
 import styles from './styles.module.css';
 
@@ -62,17 +61,19 @@ export default function Tokens_Layer({
     ].join(' ');
   };
 
-  // Scroll the selected token into view (links tracker → map)
-  useEffect(() => {
-    if (!selectedCharacterId) return;
-    document
-      .querySelector<HTMLElement>(`[data-token="${selectedCharacterId}"]`)
-      ?.scrollIntoView({
-        block: 'center',
-        inline: 'center',
-        behavior: 'smooth',
-      });
-  }, [selectedCharacterId]);
+  // trying to midigate scroll jank by removing auto-scroll
+
+  // // Scroll the selected token into view (links tracker → map)
+  // useEffect(() => {
+  //   if (!selectedCharacterId) return;
+  //   document
+  //     .querySelector<HTMLElement>(`[data-token="${selectedCharacterId}"]`)
+  //     ?.scrollIntoView({
+  //       block: 'center',
+  //       inline: 'center',
+  //       behavior: 'smooth',
+  //     });
+  // }, [selectedCharacterId]);
 
   // Plain tooltip content
   const tooltip = (c: Character): string => {

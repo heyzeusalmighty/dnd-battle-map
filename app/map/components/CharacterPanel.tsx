@@ -1,10 +1,11 @@
-import { MoreVertical } from 'lucide-react';
+import { Ghost, MoreVertical, Users } from 'lucide-react';
 import { useRef, useState } from 'react';
 import BulkNpcForm from '../../components/BulkNpcForm';
 import SingleNpcForm from '../../components/SingleNpcForm';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import { Checkbox } from '../../components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ import { QuickStatusToggles } from '../../map-view/components/QuickStatusToggles
 import { useMapContext } from '../context/MapContext';
 import type { Character, DamageEvent } from '../types';
 import { COMMON_CONDITIONS } from '../utils/conditions';
+import { capInit, d20 } from '../utils/dice';
 import { getId } from '../utils/id';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
 import AddSummonDialog from './AddSummonDialog';
@@ -71,6 +73,7 @@ const CharacterPanel = () => {
 
   const { monsters, loading: monstersLoading } = useMonsterSearch();
   const [editingHp, setEditingHp] = useState<Record<string, string>>({});
+  const [rollOnCreate, setRollOnCreate] = useState(true);
 
   const damageEventQueue = useRef<DamageEvent[]>([]);
   const damageEventTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -79,7 +82,6 @@ const CharacterPanel = () => {
     const baseX = 1;
     const baseY = 1;
 
-    // Take one snapshot for the batch (optional but nice)
     saveSnapshot?.();
 
     const newlyAddedIds: string[] = [];
@@ -93,12 +95,28 @@ const CharacterPanel = () => {
         hp: p.hp,
         maxHp: p.hp,
         totalDamage: 0,
-        initiative: p.initiative ?? 0,
+        initiative: 0,
         initiativeMod: p.initiativeMod ?? 0,
         isPlayer: true,
         color: p.color ?? '#3B82F6',
         ac: p.ac,
       };
+
+      if (rollOnCreate) {
+        const die = d20();
+        const mod = p.initiativeMod ?? 0;
+        const total = die + mod;
+        const capped = capInit(total);
+
+        incoming.initiative = capped;
+        incoming.lastInitRoll = {
+          die,
+          mod,
+          total,
+          capped,
+          flags: null,
+        };
+      }
 
       const { added, id } = upsertPlayerByName(incoming);
       if (added) newlyAddedIds.push(id);
@@ -166,42 +184,6 @@ const CharacterPanel = () => {
     });
 
     return { added, id: keptId };
-  };
-
-  const _handleAddCharacter = () => {
-    const name = newCharName.trim();
-    if (!name) return;
-
-    const mod = Number.isFinite(parseInt(newCharInit, 10))
-      ? parseInt(newCharInit, 10)
-      : 0;
-    const maxHp = Number.isFinite(parseInt(newCharMaxHp, 10))
-      ? Math.max(1, parseInt(newCharMaxHp, 10))
-      : 1;
-
-    // If your Character requires hp/maxHp, keep them (hidden in UI)
-    const newChar: Character = {
-      id: getId(),
-      name,
-      x: 0,
-      y: 0,
-      hp: maxHp,
-      maxHp: maxHp,
-      damage: 0,
-      totalDamage: 0,
-      initiative: 0,
-      initiativeMod: mod,
-      isPlayer: false, // NPC
-      color: '#EF4444',
-    };
-
-    saveSnapshot();
-    setCharacters((prev) => [...prev, newChar]);
-
-    setNewCharName('');
-    setNewCharMaxHp('');
-    setNewCharInit('');
-    setShowAddChar(false);
   };
 
   // Debounced damage event batching
@@ -324,7 +306,6 @@ const CharacterPanel = () => {
     const p = DEFAULT_PARTY.find((pp) => pp.name === name);
     if (!p) return;
 
-    // choose a suggested slot; if upserting, existing position is preserved
     const baseX = 1,
       baseY = 1;
     const incoming: Character = {
@@ -335,12 +316,28 @@ const CharacterPanel = () => {
       hp: p.hp,
       maxHp: p.hp,
       totalDamage: 0,
-      initiative: p.initiative ?? 0,
+      initiative: 0,
       initiativeMod: p.initiativeMod ?? 0,
       isPlayer: true,
       color: p.color ?? '#3B82F6',
       ac: p.ac,
     };
+
+    if (rollOnCreate) {
+      const die = d20();
+      const mod = p.initiativeMod ?? 0;
+      const total = die + mod;
+      const capped = capInit(total);
+
+      incoming.initiative = capped;
+      incoming.lastInitRoll = {
+        die,
+        mod,
+        total,
+        capped,
+        flags: null,
+      };
+    }
 
     const { added, id } = upsertPlayerByName(incoming);
     if (initiativeMode === 'manual' && added) {
@@ -373,92 +370,128 @@ const CharacterPanel = () => {
       </div>
 
       {charTab === 'add' ? (
-        // --- Add tab (your existing controls) ---
-        <div className="space-y-3">
-          {/* Preset + Add */}
-          <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-            <div>
-              <div className="text-sm mb-1">Add:</div>
-              <Select value={presetToAdd} onValueChange={setPresetToAdd}>
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Choose a preset" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEFAULT_PARTY.map((p) => (
-                    <SelectItem key={p.name} value={p.name}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button className="h-8" onClick={() => addCharacterFromPreset()}>
-              Add
-            </Button>
+        <div className="space-y-4">
+          {/* Global Roll Initiative Checkbox */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="rollOnCreateGlobal"
+              checked={rollOnCreate}
+              onCheckedChange={(v) => setRollOnCreate(!!v)}
+            />
+            <label
+              htmlFor="rollOnCreateGlobal"
+              className="text-sm font-medium select-none"
+            >
+              Roll initiative on add
+            </label>
           </div>
 
-          {/* Add whole party */}
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={addPartyFromPresets}
-          >
-            Add Party ({DEFAULT_PARTY.length} presets)
-          </Button>
+          {/* Two Equal Columns */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* NPCs Column */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <h4 className="text-lg font-semibold">NPCs</h4>
 
-          {/* Open Custom NPC dialog */}
-          <Dialog open={showAddChar} onOpenChange={setShowAddChar}>
-            <DialogTrigger asChild>
-              <Button className="w-full" variant="outline">
-                Add Custom NPC
-              </Button>
-            </DialogTrigger>
+              <Dialog open={showAddChar} onOpenChange={setShowAddChar}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 text-sm flex items-center justify-center gap-2"
+                  >
+                    <Ghost className="w-5 h-5" />
+                    Add Monster
+                  </Button>
+                </DialogTrigger>
 
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Custom NPC</DialogTitle>
-              </DialogHeader>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add NPC</DialogTitle>
+                  </DialogHeader>
 
-              {/* Mode toggle */}
-              <div className="mb-3 inline-flex w-fit self-start rounded-md border overflow-hidden">
-                <button
-                  type="button"
-                  className={`px-3 py-1 text-sm flex-none ${
-                    addMode === 'single'
-                      ? 'bg-black text-white'
-                      : 'bg-transparent'
-                  }`}
-                  onClick={() => setAddMode('single')}
+                  {/* Mode toggle */}
+                  <div className="mb-3 inline-flex w-fit self-start rounded-md border overflow-hidden">
+                    <button
+                      type="button"
+                      className={`px-3 py-1 text-sm flex-none ${
+                        addMode === 'single'
+                          ? 'bg-black text-white'
+                          : 'bg-transparent'
+                      }`}
+                      onClick={() => setAddMode('single')}
+                    >
+                      Single
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1 text-sm flex-none ${
+                        addMode === 'bulk'
+                          ? 'bg-black text-white'
+                          : 'bg-transparent'
+                      }`}
+                      onClick={() => setAddMode('bulk')}
+                    >
+                      Bulk
+                    </button>
+                  </div>
+
+                  {monstersLoading ? (
+                    <div className="py-4 text-center text-sm text-gray-500">
+                      Loading monster data...
+                    </div>
+                  ) : addMode === 'single' ? (
+                    <SingleNpcForm
+                      monsters={monsters}
+                      rollOnCreate={rollOnCreate}
+                    />
+                  ) : (
+                    <BulkNpcForm
+                      monsters={monsters}
+                      rollOnCreate={rollOnCreate}
+                    />
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              <AddSummonDialog rollOnCreate={rollOnCreate} />
+            </div>
+
+            {/* Player Characters Column */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <h4 className="text-lg font-semibold">Player Characters</h4>
+
+              {/* PC Preset Row - Fixed alignment */}
+              <div className="flex gap-2 items-center">
+                <Select value={presetToAdd} onValueChange={setPresetToAdd}>
+                  <SelectTrigger className="h-10 flex-1">
+                    <SelectValue placeholder="Choose preset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEFAULT_PARTY.map((p) => (
+                      <SelectItem key={p.name} value={p.name}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  className="h-9 text-sm px-4"
+                  onClick={() => addCharacterFromPreset()}
                 >
-                  Single
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1 text-sm flex-none ${
-                    addMode === 'bulk'
-                      ? 'bg-black text-white'
-                      : 'bg-transparent'
-                  }`}
-                  onClick={() => setAddMode('bulk')}
-                >
-                  Bulk
-                </button>
+                  Add
+                </Button>
               </div>
 
-              {monstersLoading ? (
-                <div className="py-4 text-center text-sm text-gray-500">
-                  Loading monster data...
-                </div>
-              ) : addMode === 'single' ? (
-                <SingleNpcForm monsters={monsters} />
-              ) : (
-                <BulkNpcForm monsters={monsters} />
-              )}
-            </DialogContent>
-          </Dialog>
-
-          <AddSummonDialog />
+              {/* Add Party Button */}
+              <Button
+                variant="outline"
+                className="w-full h-10 text-sm flex items-center justify-center gap-2"
+                onClick={addPartyFromPresets}
+              >
+                <Users className="w-5 h-5" />
+                Add Party ({DEFAULT_PARTY.length})
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         // --- Manage tab ---
@@ -513,7 +546,7 @@ const CharacterPanel = () => {
                     key={c.id}
                     role="button"
                     aria-selected={isSelected}
-                    onClick={() => handleCharacterClick(c.id)}
+                    onClick={() => handleCharacterClick(c.id, false)}
                     className={[
                       'group px-3 py-2 grid items-center gap-2 min-w-0',
                       isSelected ? 'bg-primary/5' : '',

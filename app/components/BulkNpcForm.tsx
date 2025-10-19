@@ -15,16 +15,21 @@ import { isWallAt } from '../map/utils/terrain';
 import { rollMonsterHP } from '../utils/diceRoller';
 import { MonsterTypeahead } from './MonsterTypeahead';
 import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 
 type Props = {
   monsters: Monster[];
   baseX?: number;
   baseY?: number;
+  rollOnCreate: boolean;
 };
 
-export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
+export default function BulkNpcForm({
+  monsters,
+  baseX = 1,
+  baseY = 1,
+  rollOnCreate,
+}: Props) {
   const { state, actions, handlers } = useMapContext();
   const { characters, mapHeight, mapWidth, initiativeMode, terrain } = state;
   const { setCharacters, setInitiativeOrder, setSelectedCharacter } = actions;
@@ -34,8 +39,8 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
   const [baseName, setBaseName] = useState('Zombie');
   const [count, setCount] = useState(3);
-  const [initMod, setInitMod] = useState(0);
-  const [rollOnCreate, setRollOnCreate] = useState(true);
+  const [initMod, setInitMod] = useState('');
+  const [ac, setAc] = useState('');
 
   // Keep HP as a string for placeholder UX
   const [maxHp, setMaxHp] = useState<string>(''); // ← empty shows placeholder
@@ -49,11 +54,12 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
   useEffect(() => {
     if (!selectedMonster) return;
     setBaseName(selectedMonster.name);
-    setMaxHp(String(selectedMonster.hp.average)); // string!
-    setInitMod(selectedMonster.initiative);
+    setMaxHp(String(selectedMonster.hp.average));
+    setInitMod(String(selectedMonster.initiative));
     setHpMode('average');
     setLastRolledHp(null);
     setShowRollButton(true);
+    setAc(String(selectedMonster.ac));
   }, [selectedMonster]);
 
   // Update HP when the HP mode changes
@@ -73,7 +79,8 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
     setSelectedMonster(null);
     setBaseName('Zombie');
     setMaxHp(''); // back to empty so placeholder shows
-    setInitMod(0);
+    setInitMod('');
+    setAc('');
     setHpMode('average');
     setLastRolledHp(null);
     setShowRollButton(false);
@@ -107,6 +114,8 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
     // Parse & clamp HP here (commit time)
     const parsed = parseInt(maxHp, 10);
     const hp = Number.isFinite(parsed) ? Math.max(1, parsed) : 1;
+    const init = parseInt(initMod, 10) || 0;
+    const armorClass = parseInt(ac, 10) || 10;
 
     saveSnapshot();
 
@@ -138,8 +147,9 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
         maxHp: hp,
         totalDamage: 0,
         initiative: 0,
-        initiativeMod: initMod,
+        initiativeMod: init,
         damage: 0,
+        ac: armorClass,
       };
     });
 
@@ -192,40 +202,17 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
         />
       </div>
 
-      {/* Type / Name */}
+      {/* Name */}
       <div>
-        <label className="text-sm font-medium">Type / Name</label>
+        <label className="text-sm font-medium mb-1 block">Name</label>
         <Input
           value={baseName}
           onChange={(e) => setBaseName(e.target.value)}
-          placeholder="e.g., Zombie"
+          placeholder="Zombie"
         />
       </div>
 
-      {/* Count & Initiative */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-sm font-medium">Count</label>
-          <Input
-            type="number"
-            min={1}
-            value={count}
-            onChange={(e) =>
-              setCount(Math.max(1, parseInt(e.target.value || '1', 10)))
-            }
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Initiative mod</label>
-          <Input
-            type="number"
-            value={initMod}
-            onChange={(e) => setInitMod(parseInt(e.target.value || '0', 10))}
-          />
-        </div>
-      </div>
-
-      {/* Starting HP + Roll (matches Single form UX) */}
+      {/* HP Section */}
       <div>
         <label className="text-sm font-medium block mb-1">Starting HP</label>
         <div className="flex gap-2 items-end">
@@ -234,7 +221,7 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
             min={1}
             value={maxHp} // string
             onChange={(e) => setMaxHp(e.target.value)} // don't coerce while typing
-            placeholder="e.g., 22"
+            placeholder="22"
             className="flex-1"
             onBlur={() => {
               // optional: gentle clamp on blur, but still allow clearing to show placeholder
@@ -286,16 +273,40 @@ export default function BulkNpcForm({ monsters, baseX = 1, baseY = 1 }: Props) {
         )}
       </div>
 
-      {/* Roll initiative on create */}
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="rollOnCreate"
-          checked={rollOnCreate}
-          onCheckedChange={(v) => setRollOnCreate(!!v)}
-        />
-        <label htmlFor="rollOnCreate" className="text-sm select-none">
-          Roll initiative on create
-        </label>
+      {/* Count & Initiative */}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="text-sm font-medium mb-1 block">Count</label>
+          <Input
+            type="number"
+            min={1}
+            value={count}
+            onChange={(e) =>
+              setCount(Math.max(1, parseInt(e.target.value || '1', 10)))
+            }
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">
+            Initiative mod
+          </label>
+          <Input
+            type="number"
+            value={initMod}
+            onChange={(e) => setInitMod(e.target.value)}
+            placeholder="2"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">AC</label>
+          <Input
+            type="number"
+            min={1}
+            value={ac}
+            onChange={(e) => setAc(e.target.value)}
+            placeholder="15"
+          />
+        </div>
       </div>
 
       <Button
