@@ -1,8 +1,4 @@
-body {
-  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
-  background-size: 400% 400%;
-  animation: gradient-x 15s ease infinite;
-}
+
 @keyframes gradient-x {
   0%,
   100% {
@@ -20,6 +16,11 @@ body {
   gap: 20px;
   align-items: center;
   justify-content: center;
+  margin: -8px;
+
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
+  background-size: 400% 400%;
+  animation: gradient-x 15s ease infinite;
 }
 
 .glassCard {

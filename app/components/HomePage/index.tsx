@@ -2,7 +2,7 @@
 
 import { getAllLocalStorage } from '@/app/utils/localStorage';
 import { useEffect, useState } from 'react';
-
+import Dummy from './dummy';
 import styles from './index.module.css';
 
 interface HomePageProps {
@@ -15,6 +15,23 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
   useEffect(() => {
     const maps = getAllLocalStorage();
     setStoredMaps(maps);
+  }, []);
+
+  useEffect(() => {
+    const handleGameUpdate = (event: CustomEvent) => {
+      const data = event.detail;
+      console.log('Received game update:', data);
+      // Handle the game update data as needed
+    };
+
+    window.addEventListener('gameUpdate', handleGameUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        'gameUpdate',
+        handleGameUpdate as EventListener
+      );
+    };
   }, []);
 
   return (
@@ -60,6 +77,7 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
           </div>
         )}
       </div>
+      <Dummy />
     </div>
   );
 };

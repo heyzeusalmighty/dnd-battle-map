@@ -1,0 +1,37 @@
+{
+  "main": "./custom-worker.ts",
+  "name": "dnd-battle-map",
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    "louisarmstrongsdishwasher.com/*"
+  ],
+  "env": {
+    "production": {
+      "routes": [
+        "louisarmstrongsdishwasher.com/*"
+      ]
+    }
+  },
+  "durable_objects": {
+		"bindings": [
+			{
+				"class_name": "MyDurableObject",
+				"name": "DND_WEBSOCKETS",
+				"script_name": "worker"
+			},
+		],
+	},
+  "services": [
+    {
+        "binding": "DND_WEBSOCKETS",
+        "service": "dnd-websockets"
+    }
+  ]
+}
