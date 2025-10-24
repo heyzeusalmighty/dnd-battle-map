@@ -1,0 +1,22 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "worker",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-08-13",
+	"migrations": [
+		{
+			"new_sqlite_classes": [
+				"DNDWebSocketHibernationServer"
+			],
+			"tag": "v1"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "DNDWebSocketHibernationServer",
+				"name": "DND_WEBSOCKETS",                
+			}
+		]
+	}
+}

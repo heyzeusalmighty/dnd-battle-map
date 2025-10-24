@@ -22,16 +22,10 @@
   "durable_objects": {
 		"bindings": [
 			{
-				"class_name": "MyDurableObject",
+				"class_name": "DNDWebSocketHibernationServer",
 				"name": "DND_WEBSOCKETS",
-				"script_name": "worker"
-			},
-		],
-	},
-  "services": [
-    {
-        "binding": "DND_WEBSOCKETS",
-        "service": "dnd-websockets"
-    }
-  ]
+				"script_name": "dnd-websockets-worker"
+			}
+		]
+	}
 }

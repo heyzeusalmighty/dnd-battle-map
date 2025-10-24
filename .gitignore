@@ -57,3 +57,5 @@ __pycache__/
 scripts/venv/
 scripts/.venv/
 scripts/*.json
+
+worker/node_modules/

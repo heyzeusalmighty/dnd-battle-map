@@ -9,10 +9,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
-import { useHostPeerSession } from '../hooks/rtc/useHostMap';
+import useWebhooks from '../hooks/useWebhooks';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import { sanitizeForUrlPath } from '../utils/sanitizeForHttp';
 import CharacterPanel from './components/CharacterPanel';
@@ -24,6 +23,7 @@ import MapGrid from './components/MapGrid';
 import ObjectPanel from './components/ObjectPanel';
 import SaveMapCard from './components/SaveMapCard';
 import UtilityPanel from './components/UtilityPanel';
+import Websockets from './components/Websockets/Test';
 import { MapProvider, useMapContext } from './context/MapContext';
 import useHotkeys from './hooks/useHotKeys';
 import type { AppSnapshot, Terrain } from './types';
@@ -111,16 +111,30 @@ const MapContainer = () => {
     handlers.undo();
   };
 
-  const { peer, connections, broadcastData } = useHostPeerSession({
-    mapName,
-    moveCharacterCallback: handleRemoteCharacterMove,
-    getCurrentGameState: getCurrentGameState,
-    updateHpCallback: handleRemoteHpUpdate,
-    addConditionCallback: handleRemoteAddCondition,
-    removeConditionCallback: handleRemoteRemoveCondition,
-    toggleStatusCallback: handleRemoteToggleStatus,
-    undoCallback: handleRemoteUndo,
-  });
+  // const { peer, connections, broadcastData } = useHostPeerSession({
+  //   mapName,
+  //   moveCharacterCallback: handleRemoteCharacterMove,
+  //   getCurrentGameState: getCurrentGameState,
+  //   updateHpCallback: handleRemoteHpUpdate,
+  //   addConditionCallback: handleRemoteAddCondition,
+  //   removeConditionCallback: handleRemoteRemoveCondition,
+  //   toggleStatusCallback: handleRemoteToggleStatus,
+  //   undoCallback: handleRemoteUndo,
+  // });
+
+  const {
+    isConnected,
+    isConnecting,
+    error,
+    lastMessage,
+    connectionId,
+    connect,
+    disconnect,
+    sendGameUpdate,
+    sendPlayerAction,
+    sendMessage,
+    clearError,
+  } = useWebhooks(mapName);
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);
@@ -171,7 +185,7 @@ const MapContainer = () => {
   useEffect(() => {
     const fullSnapshot = takeSnapshot();
     const playerSnapshot = createPlayerSnapshot(fullSnapshot);
-    broadcastData({ type: 'snapshot', snapShot: playerSnapshot });
+    // broadcastData({ type: 'snapshot', snapShot: playerSnapshot });
   }, [characters, terrain, currentTurn]);
 
   // Helper functions
@@ -288,12 +302,12 @@ const MapContainer = () => {
 
       <main className="flex-1 flex gap-4 p-4">
         {/* Left Panel - Tools */}
-        <ConnectedPeersButton
+        {/* <ConnectedPeersButton
           connections={connections}
           sendData={broadcastData}
           peer={peer}
           mapName={mapName}
-        />
+        /> */}
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel />
           <UtilityPanel />
@@ -321,6 +335,18 @@ const MapContainer = () => {
           <InitiativePanel />
 
           <CombatLog damageLog={damageLog} maxEvents={10} />
+
+          <Websockets
+            isConnected={isConnected}
+            isConnecting={isConnecting}
+            error={error}
+            lastMessage={lastMessage}
+            connectionId={connectionId}
+            connect={connect}
+            disconnect={disconnect}
+            sendMessage={sendMessage}
+            clearError={clearError}
+          />
         </div>
 
         {/* Help button + dialog (replaces always-on instructions) */}

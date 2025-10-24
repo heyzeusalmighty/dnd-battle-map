@@ -44,11 +44,11 @@ interface UseWebhooksReturn extends WebhookConnection {
 }
 
 // Cloudflare WebSocket worker configuration
-const WEBHOOK_WORKER_URL = process.env.NEXT_PUBLIC_WEBHOOK_WORKER_URL || 'wss://dnd-webhooks.your-subdomain.workers.dev';
+const WEBHOOK_WORKER_URL = process.env.NEXT_PUBLIC_WS_HOST;
 const RECONNECT_INTERVAL = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
-const useWebhooks = (): UseWebhooksReturn => {
+const useWebhooks = (gameName: string): UseWebhooksReturn => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -110,7 +110,8 @@ const useWebhooks = (): UseWebhooksReturn => {
     try {
       // Connect to Cloudflare WebSocket worker with query parameters
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const wsUrl = `${WEBHOOK_WORKER_URL}?connectionId=${connectionId}&clientType=web&gameId=${process.env.NEXT_PUBLIC_GAME_ID || 'default'}`;
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const wsUrl = `${proto}://${WEBHOOK_WORKER_URL}?connectionId=${connectionId}&clientType=web&gameName=${gameName}`;
       
       console.log('Connecting to Cloudflare WebSocket worker:', wsUrl);
       
@@ -130,10 +131,8 @@ const useWebhooks = (): UseWebhooksReturn => {
         // Send initial handshake
         ws.send(JSON.stringify({
           type: 'handshake',
-          data: {
-            clientType: 'web',
-            gameId: process.env.NEXT_PUBLIC_GAME_ID || 'default',
-            timestamp: Date.now()
+          data: {            
+            gameName,            
           }
         }));
       };
@@ -147,7 +146,7 @@ const useWebhooks = (): UseWebhooksReturn => {
 
           // Handle specific message types
           switch (message.type) {
-            case 'connection_established':
+            case 'player_connected':
               console.log('Connection established with ID:', message.data.connectionId);
               if (typeof message.data.connectionId === 'string') {
                 updateState({ connectionId: message.data.connectionId });
@@ -171,6 +170,10 @@ const useWebhooks = (): UseWebhooksReturn => {
               updateState({ error: errorMessage });
               break;
             }
+
+            case 'handshake_ack':
+              console.log('Handshake acknowledged by server', message.data);
+              break;
             
             default:
               console.log('Unknown message type:', message.type);
@@ -199,17 +202,17 @@ const useWebhooks = (): UseWebhooksReturn => {
           connectionId: null
         });
 
-        // Auto-reconnect logic (unless manually disconnected)
-        if (event.code !== 1000 && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttemptsRef.current++;
-          console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
+        // // Auto-reconnect logic (unless manually disconnected)
+        // if (event.code !== 1000 && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        //   reconnectAttemptsRef.current++;
+        //   console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
           
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect({ reconnect: true });
-          }, RECONNECT_INTERVAL);
-        } else if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-          updateState({ error: 'Max reconnection attempts reached' });
-        }
+        //   reconnectTimeoutRef.current = setTimeout(() => {
+        //     connect({ reconnect: true });
+        //   }, RECONNECT_INTERVAL);
+        // } else if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        //   updateState({ error: 'Max reconnection attempts reached' });
+        // }
       };
 
     } catch (error) {
@@ -219,7 +222,7 @@ const useWebhooks = (): UseWebhooksReturn => {
         error: 'Failed to create WebSocket connection'
       });
     }
-  }, [state.isConnecting, updateState]);
+  }, [state.isConnecting, updateState, gameName]);
 
   const sendMessage = useCallback((type: string, data: GameData | PlayerAction | Record<string, unknown>) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -252,15 +255,15 @@ const useWebhooks = (): UseWebhooksReturn => {
     sendMessage('player_action', action);
   }, [sendMessage]);
 
-  // Auto-connect on mount
-  useEffect(() => {
-    connect();
+  // // Auto-connect on mount
+  // useEffect(() => {
+  //   connect();
 
-    // Cleanup on unmount
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
+  //   // Cleanup on unmount
+  //   return () => {
+  //     disconnect();
+  //   };
+  // }, [connect, disconnect]);
 
   // Cleanup on unmount
   useEffect(() => {

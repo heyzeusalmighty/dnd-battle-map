@@ -1,7 +1,7 @@
 'use client';
 import useWebhooks from '@/app/hooks/useWebhooks';
 
-function GameComponent() {
+function GameComponent({ gameName }: { gameName: string }) {
   const {
     isConnected,
     isConnecting,
@@ -13,7 +13,7 @@ function GameComponent() {
     sendGameUpdate,
     sendPlayerAction,
     clearError,
-  } = useWebhooks();
+  } = useWebhooks(gameName);
 
   // Send game updates
   const handleCharacterMove = (
