@@ -9,13 +9,13 @@ export function saveToLocalStorage<T>(name: string, data: T): void {
 }
 
 const isJsonString = (str: string): boolean => {
-    try {
-        JSON.parse(str);
-    } catch (e) {
-        return false;
-    }
-    return true;
-}
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+};
 
 export function getAllLocalStorage(): Record<string, string> {
   const result: Record<string, string> = {};

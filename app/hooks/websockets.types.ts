@@ -17,7 +17,10 @@ export interface PlayerAction {
 
 export interface WebhookMessage {
   type: string;
-  data: GameData | PlayerAction | { connectionId?: string; message?: string; [key: string]: unknown };
+  data:
+    | GameData
+    | PlayerAction
+    | { connectionId?: string; message?: string; [key: string]: unknown };
   timestamp: number;
   id?: string;
   connectionId?: string;

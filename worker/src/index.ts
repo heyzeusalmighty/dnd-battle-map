@@ -7,34 +7,24 @@ export interface Env {
 // ES Module Worker - Main export default handler
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    // Handle WebSocket upgrade requests
-
-    console.log("Incoming request:", request.url);
+    // Handle WebSocket upgrade requests    
     if (request.headers.get("Upgrade") === "websocket") {
       // Extract connection parameters from URL
-        console.log('Handling WebSocket upgrade request');
-
-        try {
-            const url = new URL(request.url);
-      const connectionId = url.searchParams.get("connectionId") || crypto.randomUUID();
-      const mapName = url.searchParams.get("mapName") || "default";
-
-      console.log(url, mapName)
-
-      console.log(env.DND_WEBSOCKETS)
-      
-      // Create Durable Object ID based on mapName for room isolation
-      const durableObjectId = env.DND_WEBSOCKETS.idFromName(mapName);
-      const durableObjectStub = env.DND_WEBSOCKETS.get(durableObjectId);
-      
-      // Forward the request to the Durable Object
-      return durableObjectStub.fetch(request);
-        } catch (error) {
-            console.error('Error handling WebSocket upgrade:', error);
-            return new Response("WebSocket upgrade error", { status: 500 });
-        }
-
-      
+      try {
+        const url = new URL(request.url);
+        const connectionId = url.searchParams.get("connectionId") || crypto.randomUUID();
+        const mapName = url.searchParams.get("mapName") || "default";
+    
+        // Create Durable Object ID based on mapName for room isolation
+        const durableObjectId = env.DND_WEBSOCKETS.idFromName(mapName);
+        const durableObjectStub = env.DND_WEBSOCKETS.get(durableObjectId);
+        
+        // Forward the request to the Durable Object
+        return durableObjectStub.fetch(request);
+      } catch (error) {
+        console.error('Error handling WebSocket upgrade:', error);
+        return new Response("WebSocket upgrade error", { status: 500 });
+      }
     }
     
     // Handle non-WebSocket requests
@@ -56,8 +46,6 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("Expected WebSocket", { status: 400 });
     }
-
-    console.log("CLASS :::: WebSocket upgrade request:", request.url);
 
     // Extract connection parameters
     const url = new URL(request.url);
@@ -174,14 +162,13 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
       type: "handshake_ack",
       connectionId,
       serverTime: Date.now(),
-      connectedClients: this.ctx.getWebSockets().length,
+      connectedClients: this.getConnectedClientsInSameMap(ws),
       gameState: this.gameState,
-      
     };
     
     ws.send(JSON.stringify(response));
     
-    // Notify other clients about new connection
+    // Notify other clients about new connection (same mapName only)
     this.broadcastToOthers(ws, {
       type: "player_connected",      
       playerId: message.data.playerId,
@@ -195,7 +182,7 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
       this.gameState = { ...this.gameState, ...message.data };
     }
     
-    // Broadcast to all other clients
+    // Broadcast to all other clients in the same mapName
     this.broadcastToOthers(ws, {
       type: "game_update",
       connectionId,
@@ -205,7 +192,7 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
   }
 
   private handlePlayerAction(ws: WebSocket, message: any, connectionId: string) {
-    // Broadcast player action to all other clients
+    // Broadcast player action to all other clients in the same mapName
     this.broadcastToOthers(ws, {
       type: "player_action",
       connectionId,
@@ -216,8 +203,8 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
   }
 
   private handleChatMessage(ws: WebSocket, message: any, connectionId: string) {
-    // Broadcast chat message to all clients (including sender)    
-    this.broadcastToAll({
+    // Broadcast chat message to all clients in the same mapName (including sender)    
+    this.broadcastToAll(ws, {
       type: "chat_message",
       connectionId,
       message: message.message,
@@ -226,23 +213,20 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
     });
   }
 
-  // Utility methods
-  private broadcastToAll(message: any) {
+  // Utility methods - Updated to filter by mapName
+  private broadcastToAll(senderWs: WebSocket, message: any) {
     const messageStr = JSON.stringify(message);
+    const senderTags = this.ctx.getTags(senderWs);
+    const senderMapName = senderTags?.[2]; // mapName is the 3rd tag
+    
+    console.log("Broadcasting message to all clients in map:", senderMapName, message);
+    
     this.ctx.getWebSockets().forEach(ws => {
-        console.log("Broadcasting message to all clients:", message);
-      try {
-        ws.send(messageStr);
-      } catch (error) {
-        console.error("Error broadcasting to client:", error);
-      }
-    });
-  }
-
-  private broadcastToOthers(sender: WebSocket, message: any) {
-    const messageStr = JSON.stringify(message);
-    this.ctx.getWebSockets().forEach(ws => {
-      if (ws !== sender) {
+      const tags = this.ctx.getTags(ws);
+      const mapName = tags?.[2]; // mapName is the 3rd tag
+      
+      // Only send to clients in the same mapName
+      if (mapName === senderMapName) {
         try {
           ws.send(messageStr);
         } catch (error) {
@@ -250,5 +234,65 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
         }
       }
     });
+  }
+
+  private broadcastToOthers(sender: WebSocket, message: any) {
+    const messageStr = JSON.stringify(message);
+    const senderTags = this.ctx.getTags(sender);
+    const senderMapName = senderTags?.[2]; // mapName is the 3rd tag
+    
+    console.log("Broadcasting message to others in map:", senderMapName, message);
+    
+    this.ctx.getWebSockets().forEach(ws => {
+      if (ws !== sender) {
+        const tags = this.ctx.getTags(ws);
+        const mapName = tags?.[2]; // mapName is the 3rd tag
+        
+        // Only send to clients in the same mapName
+        if (mapName === senderMapName) {
+          try {
+            ws.send(messageStr);
+          } catch (error) {
+            console.error("Error broadcasting to client:", error);
+          }
+        }
+      }
+    });
+  }
+
+  // Helper method to get count of connected clients in the same map
+  private getConnectedClientsInSameMap(ws: WebSocket): number {
+    const tags = this.ctx.getTags(ws);
+    const mapName = tags?.[2]; // mapName is the 3rd tag
+    
+    let count = 0;
+    this.ctx.getWebSockets().forEach(socket => {
+      const socketTags = this.ctx.getTags(socket);
+      const socketMapName = socketTags?.[2];
+      if (socketMapName === mapName) {
+        count++;
+      }
+    });
+    
+    return count;
+  }
+
+  // Optional: Method to get list of connection IDs in the same map
+  private getConnectionsInSameMap(ws: WebSocket): string[] {
+    const tags = this.ctx.getTags(ws);
+    const mapName = tags?.[2]; // mapName is the 3rd tag
+    
+    const connections: string[] = [];
+    this.ctx.getWebSockets().forEach(socket => {
+      const socketTags = this.ctx.getTags(socket);
+      const socketMapName = socketTags?.[2];
+      const connectionId = socketTags?.[0];
+      
+      if (socketMapName === mapName && connectionId) {
+        connections.push(connectionId);
+      }
+    });
+    
+    return connections;
   }
 }

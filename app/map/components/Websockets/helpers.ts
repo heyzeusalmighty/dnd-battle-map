@@ -3,7 +3,7 @@ export const waitForOpen = (ws: WebSocket, timeoutMs = 5000) => {
     if (ws.readyState === WebSocket.OPEN) return resolve();
     const t = setTimeout(() => {
       cleanup();
-      reject(new Error("WS open timeout"));
+      reject(new Error('WS open timeout'));
     }, timeoutMs);
     const onOpen = () => {
       cleanup();
@@ -11,17 +11,17 @@ export const waitForOpen = (ws: WebSocket, timeoutMs = 5000) => {
     };
     const onErr = () => {
       cleanup();
-      reject(new Error("WS error before open"));
+      reject(new Error('WS error before open'));
     };
     const cleanup = () => {
       clearTimeout(t);
-      ws.removeEventListener("open", onOpen);
-      ws.removeEventListener("error", onErr);
+      ws.removeEventListener('open', onOpen);
+      ws.removeEventListener('error', onErr);
     };
-    ws.addEventListener("open", onOpen);
-    ws.addEventListener("error", onErr);
+    ws.addEventListener('open', onOpen);
+    ws.addEventListener('error', onErr);
   });
-}
+};
 
 export const waitFor = (
   predicate: () => boolean,
@@ -39,4 +39,4 @@ export const waitFor = (
     };
     tick();
   });
-}
+};
