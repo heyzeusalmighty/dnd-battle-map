@@ -10,6 +10,7 @@ interface WebsocketsProps {
   disconnect: () => void;
   sendMessage: (type: string, data: any) => void;
   clearError: () => void;
+  players?: string[];
 }
 
 const Websockets: FC<WebsocketsProps> = ({
@@ -22,6 +23,7 @@ const Websockets: FC<WebsocketsProps> = ({
   disconnect,
   sendMessage,
   clearError,
+  players,
 }) => {
   const sendDummyMessage = () => {
     sendMessage('chat_message', {
@@ -41,7 +43,6 @@ const Websockets: FC<WebsocketsProps> = ({
               ? 'Connecting...'
               : 'Disconnected'}
         </p>
-        <p>Connection ID: {connectionId}</p>
         {error && <p>Error: {error}</p>}
 
         {!isConnected && (
@@ -92,6 +93,12 @@ const Websockets: FC<WebsocketsProps> = ({
             Send Message
           </button>
         )}
+
+        <div>
+          {players?.map((player, idx) => (
+            <div key={idx}>Player: {player}</div>
+          ))}
+        </div>
       </div>
     </div>
   );

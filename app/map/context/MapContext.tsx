@@ -171,7 +171,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
         ? 'measure'
         : 'paint';
 
-  const filteredCharacters = characters.filter((c) => {
+  const filteredCharacters = characters?.filter((c) => {
     if (charFilter === 'pc' && !c.isPlayer) return false;
     if (charFilter === 'npc' && c.isPlayer) return false;
     if (charQuery.trim()) {

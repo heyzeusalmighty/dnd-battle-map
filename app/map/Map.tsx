@@ -134,7 +134,8 @@ const MapContainer = () => {
     sendPlayerAction,
     sendMessage,
     clearError,
-  } = useWebhooks(mapName);
+    players,
+  } = useWebhooks({ mapName, playerId: 'DM' });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);
@@ -346,6 +347,7 @@ const MapContainer = () => {
             disconnect={disconnect}
             sendMessage={sendMessage}
             clearError={clearError}
+            players={players}
           />
         </div>
 

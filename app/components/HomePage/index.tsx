@@ -2,7 +2,6 @@
 
 import { getAllLocalStorage } from '@/app/utils/localStorage';
 import { useEffect, useState } from 'react';
-import Dummy from './dummy';
 import styles from './index.module.css';
 
 interface HomePageProps {
@@ -77,7 +76,6 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
           </div>
         )}
       </div>
-      <Dummy />
     </div>
   );
 };

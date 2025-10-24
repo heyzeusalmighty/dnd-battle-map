@@ -1,38 +1,7 @@
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
-// Types for Cloudflare WebSocket worker
-interface GameData {
-  characterId?: string;
-  position?: { x: number; y: number };
-  hp?: number;
-  conditions?: Record<string, boolean>;
-  mapData?: unknown;
-  [key: string]: unknown;
-}
-
-interface PlayerAction {
-  actionType: string;
-  playerId: string;
-  targetId?: string;
-  data?: unknown;
-  [key: string]: unknown;
-}
-
-interface WebhookMessage {
-  type: string;
-  data: GameData | PlayerAction | { connectionId?: string; message?: string; [key: string]: unknown };
-  timestamp: number;
-  id?: string;
-}
-
-interface WebhookConnection {
-  isConnected: boolean;
-  isConnecting: boolean;
-  error: string | null;
-  lastMessage: WebhookMessage | null;
-  connectionId: string | null;
-}
+import type { GameData, PlayerAction, WebhookConnection, WebhookMessage } from './websockets.types';
 
 interface UseWebhooksReturn extends WebhookConnection {
   connect: (options?: { reconnect?: boolean }) => void;
@@ -41,17 +10,25 @@ interface UseWebhooksReturn extends WebhookConnection {
   sendGameUpdate: (gameData: GameData) => void;
   sendPlayerAction: (action: PlayerAction) => void;
   clearError: () => void;
+  players: string[];
 }
 
-// Cloudflare WebSocket worker configuration
 const WEBHOOK_WORKER_URL = process.env.NEXT_PUBLIC_WS_HOST;
-const RECONNECT_INTERVAL = 3000;
-const MAX_RECONNECT_ATTEMPTS = 5;
 
-const useWebhooks = (gameName: string): UseWebhooksReturn => {
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectAttemptsRef = useRef(0);
+interface WebHooksProps {
+  mapName: string
+  playerId: string
+}
+
+
+const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
+  const { mapName, playerId } = props;
+
+  const [players, setPlayers] = useState<string[]>([]);
+
+  
+
+  const wsRef = useRef<WebSocket | null>(null);  
   
   const [state, setState] = useState<WebhookConnection>({
     isConnected: false,
@@ -70,17 +47,11 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
   }, [updateState]);
 
   const disconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    
     if (wsRef.current) {
       wsRef.current.close(1000, 'Manual disconnect');
       wsRef.current = null;
-    }
+    }   
     
-    reconnectAttemptsRef.current = 0;
     updateState({
       isConnected: false,
       isConnecting: false,
@@ -88,7 +59,7 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
     });
   }, [updateState]);
 
-  const connect = useCallback((options: { reconnect?: boolean } = {}) => {
+  const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       console.log('WebSocket already connected');
       return;
@@ -99,10 +70,10 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
       return;
     }
 
-    // Clear any existing reconnect timeout
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
+    if (!playerId || playerId.trim() === '') {
+      console.warn('Player ID is required to connect');
+      updateState({ error: 'Player ID is required' });
+      return;
     }
 
     updateState({ isConnecting: true, error: null });
@@ -111,7 +82,7 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
       // Connect to Cloudflare WebSocket worker with query parameters
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      const wsUrl = `${proto}://${WEBHOOK_WORKER_URL}?connectionId=${connectionId}&clientType=web&gameName=${gameName}`;
+      const wsUrl = `${proto}://${WEBHOOK_WORKER_URL}?connectionId=${connectionId}&clientType=web&mapName=${mapName}`;
       
       console.log('Connecting to Cloudflare WebSocket worker:', wsUrl);
       
@@ -120,7 +91,7 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
 
       ws.onopen = () => {
         console.log('Connected to Cloudflare WebSocket worker');
-        reconnectAttemptsRef.current = 0;
+        
         updateState({
           isConnected: true,
           isConnecting: false,
@@ -132,7 +103,8 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
         ws.send(JSON.stringify({
           type: 'handshake',
           data: {            
-            gameName,            
+            mapName,
+            playerId
           }
         }));
       };
@@ -146,11 +118,19 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
 
           // Handle specific message types
           switch (message.type) {
-            case 'player_connected':
-              console.log('Connection established with ID:', message.data.connectionId);
-              if (typeof message.data.connectionId === 'string') {
-                updateState({ connectionId: message.data.connectionId });
+            case 'player_connected': {
+              console.log('Player connected:', message);
+              
+              const { playerId } = message;
+              if (playerId && !players.includes(playerId)) {
+                setPlayers((prev) => [...prev, playerId]);
               }
+              break;
+            }
+
+            case 'player_disconnected':
+              console.log('Player disconnected:', message);
+              setPlayers((prev) => prev.filter(id => id !== message.playerId));
               break;
             
             case 'game_update':
@@ -172,8 +152,13 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
             }
 
             case 'handshake_ack':
-              console.log('Handshake acknowledged by server', message.data);
+              console.log('Handshake acknowledged by server', message.connectionId);
+              if (typeof message.connectionId === 'string') {
+                updateState({ connectionId: message.connectionId });
+              }
               break;
+
+            
             
             default:
               console.log('Unknown message type:', message.type);
@@ -200,19 +185,7 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
           isConnected: false,
           isConnecting: false,
           connectionId: null
-        });
-
-        // // Auto-reconnect logic (unless manually disconnected)
-        // if (event.code !== 1000 && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-        //   reconnectAttemptsRef.current++;
-        //   console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
-          
-        //   reconnectTimeoutRef.current = setTimeout(() => {
-        //     connect({ reconnect: true });
-        //   }, RECONNECT_INTERVAL);
-        // } else if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-        //   updateState({ error: 'Max reconnection attempts reached' });
-        // }
+        });        
       };
 
     } catch (error) {
@@ -222,7 +195,7 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
         error: 'Failed to create WebSocket connection'
       });
     }
-  }, [state.isConnecting, updateState, gameName]);
+  }, [state.isConnecting, updateState, mapName, playerId, players.includes]);
 
   const sendMessage = useCallback((type: string, data: GameData | PlayerAction | Record<string, unknown>) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -255,24 +228,7 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
     sendMessage('player_action', action);
   }, [sendMessage]);
 
-  // // Auto-connect on mount
-  // useEffect(() => {
-  //   connect();
 
-  //   // Cleanup on unmount
-  //   return () => {
-  //     disconnect();
-  //   };
-  // }, [connect, disconnect]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return {
     ...state,
@@ -281,7 +237,8 @@ const useWebhooks = (gameName: string): UseWebhooksReturn => {
     sendMessage,
     sendGameUpdate,
     sendPlayerAction,
-    clearError
+    clearError,
+    players
   };
 };
 

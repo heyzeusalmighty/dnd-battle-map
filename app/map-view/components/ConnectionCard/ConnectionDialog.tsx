@@ -28,7 +28,7 @@ const ConnectionDialog: FC<ConnectionDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Enter your username to join the map</DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4">
+        <form onSubmit={onSubmit} className="grid gap-4" autoComplete="off">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

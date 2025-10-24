@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import { useMonsterSearch } from '../../hooks/rtc/useMonsterSearch';
+import { useMonsterSearch } from '../../hooks/useMonsterSearch';
 import { QuickStatusToggles } from '../../map-view/components/QuickStatusToggles';
 import { useMapContext } from '../context/MapContext';
 import type { Character, DamageEvent } from '../types';

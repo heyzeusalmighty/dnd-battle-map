@@ -63,14 +63,14 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
     const url = new URL(request.url);
     const connectionId = url.searchParams.get("connectionId") || crypto.randomUUID();
     const clientType = url.searchParams.get("clientType") || "unknown";
-    const gameId = url.searchParams.get("gameId") || "default";
+    const mapName    = url.searchParams.get("mapName") || "default";
 
     // Create WebSocket pair
     const webSocketPair = new WebSocketPair();
     const [client, server] = Object.values(webSocketPair);
 
     // Accept WebSocket connection
-    this.ctx.acceptWebSocket(server, [connectionId, clientType, gameId]);
+    this.ctx.acceptWebSocket(server, [connectionId, clientType, mapName]);
 
     // Store connection metadata
     this.connections.set(connectionId, server);
@@ -79,7 +79,7 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
     server.send(JSON.stringify({
       type: "connected",
       connectionId,
-      gameId,
+      mapName,
       timestamp: Date.now()
     }));
 
@@ -175,16 +175,16 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
       connectionId,
       serverTime: Date.now(),
       connectedClients: this.ctx.getWebSockets().length,
-      gameState: this.gameState
+      gameState: this.gameState,
+      
     };
     
     ws.send(JSON.stringify(response));
     
     // Notify other clients about new connection
     this.broadcastToOthers(ws, {
-      type: "player_connected",
-      connectionId,
-      playerData: message.playerData,
+      type: "player_connected",      
+      playerId: message.data.playerId,
       timestamp: Date.now()
     });
   }
