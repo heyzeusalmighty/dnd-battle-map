@@ -1,33 +1,27 @@
+import type { ConnectedPlayer } from '@/app/hooks/websockets.types';
 import LoadingMapDialog from '@/app/map/components/LoadingMapDialog';
 import { ClipboardCopyIcon } from 'lucide-react';
-import type Peer from 'peerjs';
 import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
-
 import styles from './index.module.css';
 
-interface Connection {
-  peer: string;
-  metadata?: {
-    username?: string;
-  };
-  open: boolean;
-}
-
 interface ConnectedPeersButtonProps {
-  connections: Connection[];
-  sendData: (data: unknown) => void;
-  peer: Peer | null;
+  players: ConnectedPlayer[];
+  isConnected: boolean;
+  isConnecting: boolean;
+  connect: () => void;
   mapName: string;
 }
 
 const ConnectedPeersButton = ({
-  connections,
-  sendData,
-  peer,
+  players,
+  isConnected,
+  isConnecting,
+  connect,
   mapName,
 }: ConnectedPeersButtonProps) => {
   const [showClipboardMessage, setShowClipboardMessage] = useState(false);
+  const [connectOnMount, setConnectOnMount] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,14 +32,21 @@ const ConnectedPeersButton = ({
     return () => clearTimeout(timer);
   }, [showClipboardMessage]);
 
+  useEffect(() => {
+    if (!isConnected && !isConnecting && !connectOnMount) {
+      connect();
+      setConnectOnMount(true);
+    }
+  }, [isConnected, isConnecting, connectOnMount, connect]);
+
   const handlePeerButtonClick = () => {
-    sendData({ type: 'request-peers', payload: { pop: 'wow' } });
+    // sendData({ type: 'request-peers', payload: { pop: 'wow' } });
   };
 
   const copyToClipboard = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
-        const url = `${window.location.origin}/map-view?connectionId=${peer?.id}&mapName=${mapName}`;
+        const url = `${window.location.origin}/map-view?mapName=${mapName}`;
         await navigator.clipboard.writeText(url);
         setShowClipboardMessage(true);
       } catch (err) {
@@ -56,12 +57,10 @@ const ConnectedPeersButton = ({
     }
   };
 
-  const users = connections.map((c) => c.metadata?.username || 'Unknown');
-
-  const buttonMessage = peer?.disconnected
+  const buttonMessage = isConnecting
     ? 'Reconnecting...'
-    : users.length > 0
-      ? `${users.length} peer(s) connected`
+    : players.length > 0
+      ? `${players.length} peer(s) connected`
       : 'No peers connected';
 
   return (
@@ -77,19 +76,19 @@ const ConnectedPeersButton = ({
         <Button
           id="connection-status"
           onClick={handlePeerButtonClick}
-          title={users.join(', ')}
+          title={players.join(', ')}
           className={styles.statusButton}
         >
           {buttonMessage}
-          {peer?.disconnected && <span className={styles.redDot} />}
+          {!isConnected && <span className={styles.redDot} />}
         </Button>
-        {users.length > 0 && (
+        {players.length > 0 && (
           <div className={styles.peerList}>
             <div className={styles.peerListTitle}>Connected Peers:</div>
             <ul>
-              {connections.map((c) => (
-                <li key={c.peer} className={styles.peerListItem}>
-                  {c.metadata?.username || c.peer}
+              {players.map((p) => (
+                <li key={p.connectionId} className={styles.peerListItem}>
+                  {p.playerId}
                 </li>
               ))}
             </ul>

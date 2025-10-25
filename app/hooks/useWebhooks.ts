@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
-
+import type { AppSnapshot } from '../map/types';
 import type {
-  GameData,
+  ConnectedPlayer,
+  MoveCharacterData,
   PlayerAction,
   WebhookConnection,
   WebhookMessage,
@@ -12,12 +13,13 @@ interface UseWebhooksReturn extends WebhookConnection {
   disconnect: () => void;
   sendMessage: (
     type: string,
-    data: GameData | PlayerAction | Record<string, unknown>
+    data: AppSnapshot | PlayerAction | Record<string, unknown>
   ) => void;
-  sendGameUpdate: (gameData: GameData) => void;
+  sendGameUpdate: (gameData: AppSnapshot) => void;
   sendPlayerAction: (action: PlayerAction) => void;
+  sendMoveCharacter: (action: MoveCharacterData) => void;
   clearError: () => void;
-  players: string[];
+  players: ConnectedPlayer[];
 }
 
 const WEBHOOK_WORKER_URL = process.env.NEXT_PUBLIC_WS_HOST;
@@ -30,7 +32,7 @@ interface WebHooksProps {
 const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
   const { mapName, playerId } = props;
 
-  const [players, setPlayers] = useState<string[]>([]);
+  const [players, setPlayers] = useState<ConnectedPlayer[]>([]);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -127,23 +129,30 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
             case 'player_connected': {
               console.log('Player connected:', message);
 
-              const { playerId } = message;
-              if (playerId && !players.includes(playerId)) {
-                setPlayers((prev) => [...prev, playerId]);
+              const { playerId, connectionId = '' } = message;
+              if (playerId && !players.find((p) => p.playerId === playerId)) {
+                setPlayers((prev) => [...prev, { playerId, connectionId }]);
               }
+              window.dispatchEvent(
+                new CustomEvent('playerConnected', { detail: message })
+              );
               break;
             }
 
             case 'player_disconnected':
               console.log('Player disconnected:', message);
               setPlayers((prev) =>
-                prev.filter((id) => id !== message.playerId)
+                prev.filter(
+                  (player) => player.connectionId !== message.connectionId
+                )
+              );
+              window.dispatchEvent(
+                new CustomEvent('playerDisconnected', { detail: message })
               );
               break;
 
             case 'game_update':
               console.log('Game update received:', message.data);
-              // You can dispatch custom events or call callbacks here
               window.dispatchEvent(
                 new CustomEvent('gameUpdate', { detail: message.data })
               );
@@ -156,11 +165,21 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
               );
               break;
 
+            case 'move_character':
+              window.dispatchEvent(
+                new CustomEvent('moveCharacter', { detail: message.data })
+              );
+              break;
+
             case 'error': {
               console.error('WebSocket error message:', message.data);
+              // Safely narrow message.data to an indexable object and check the "message" property
+              const maybeData = message.data as
+                | Record<string, unknown>
+                | undefined;
               const errorMessage =
-                typeof message.data.message === 'string'
-                  ? message.data.message
+                maybeData && typeof maybeData.message === 'string'
+                  ? (maybeData.message as string)
                   : 'Unknown error';
               updateState({ error: errorMessage });
               break;
@@ -210,10 +229,17 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
         error: 'Failed to create WebSocket connection',
       });
     }
-  }, [state.isConnecting, updateState, mapName, playerId, players.includes]);
+  }, [state.isConnecting, updateState, mapName, playerId, players]);
 
   const sendMessage = useCallback(
-    (type: string, data: GameData | PlayerAction | Record<string, unknown>) => {
+    (
+      type: string,
+      data:
+        | AppSnapshot
+        | PlayerAction
+        | MoveCharacterData
+        | Record<string, unknown>
+    ) => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         console.warn('WebSocket not connected, cannot send message');
         updateState({ error: 'WebSocket not connected' });
@@ -239,7 +265,7 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
   );
 
   const sendGameUpdate = useCallback(
-    (gameData: GameData) => {
+    (gameData: AppSnapshot) => {
       sendMessage('game_update', gameData);
     },
     [sendMessage]
@@ -252,6 +278,13 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
     [sendMessage]
   );
 
+  const sendMoveCharacter = useCallback(
+    (action: MoveCharacterData) => {
+      sendMessage('move_character', action);
+    },
+    [sendMessage]
+  );
+
   return {
     ...state,
     connect,
@@ -259,6 +292,7 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
     sendMessage,
     sendGameUpdate,
     sendPlayerAction,
+    sendMoveCharacter,
     clearError,
     players,
   };

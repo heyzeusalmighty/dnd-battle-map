@@ -1,6 +1,6 @@
+import { MoveCharacterData } from '@/app/hooks/websockets.types';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-
 import type {
   AppSnapshot,
   Character,
@@ -15,7 +15,6 @@ import type {
 import { GRID_SIZE } from '../utils/constants';
 import { demoCharacters, demoTerrain } from '../utils/demo';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
-
 import type { MapContextType } from './types';
 
 const MapContext = createContext<MapContextType | undefined>(undefined);
@@ -413,9 +412,13 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     // If you later add a manual initiative order, remember to also remove the id there.
   };
 
-  const handleRemoteCharacterMove = (charId: string, x: number, y: number) => {
+  const handleRemoteCharacterMove = (data: MoveCharacterData) => {
+    console.log('Remote character move', data);
+    const { characterId, position } = data;
     setCharacters((prev) =>
-      prev.map((c) => (c.id === charId ? { ...c, x, y } : c))
+      prev.map((c) =>
+        c.id === characterId ? { ...c, x: position.x, y: position.y } : c
+      )
     );
   };
 

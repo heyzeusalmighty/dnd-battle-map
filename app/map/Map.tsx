@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
 import useWebhooks from '../hooks/useWebhooks';
@@ -23,9 +24,9 @@ import MapGrid from './components/MapGrid';
 import ObjectPanel from './components/ObjectPanel';
 import SaveMapCard from './components/SaveMapCard';
 import UtilityPanel from './components/UtilityPanel';
-import Websockets from './components/Websockets/Test';
 import { MapProvider, useMapContext } from './context/MapContext';
 import useHotkeys from './hooks/useHotKeys';
+import useMapEventListeners from './hooks/useMapEventListener';
 import type { AppSnapshot, Terrain } from './types';
 import { getId } from './utils/id';
 import { createPlayerSnapshot } from './utils/playerSnapshot';
@@ -111,6 +112,12 @@ const MapContainer = () => {
     handlers.undo();
   };
 
+  const sendGameState = () => {
+    const fullSnapshot = takeSnapshot();
+    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
+    sendGameUpdate(playerSnapshot);
+  };
+
   // const { peer, connections, broadcastData } = useHostPeerSession({
   //   mapName,
   //   moveCharacterCallback: handleRemoteCharacterMove,
@@ -136,6 +143,12 @@ const MapContainer = () => {
     clearError,
     players,
   } = useWebhooks({ mapName, playerId: 'DM' });
+
+  useMapEventListeners({
+    handleRemoteCharacterMove,
+    handleRemoteHpUpdate,
+    sendGameState,
+  });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);
@@ -186,8 +199,8 @@ const MapContainer = () => {
   useEffect(() => {
     const fullSnapshot = takeSnapshot();
     const playerSnapshot = createPlayerSnapshot(fullSnapshot);
-    // broadcastData({ type: 'snapshot', snapShot: playerSnapshot });
-  }, [characters, terrain, currentTurn]);
+    sendGameUpdate(playerSnapshot);
+  }, [terrain, currentTurn]);
 
   // Helper functions
 
@@ -303,12 +316,13 @@ const MapContainer = () => {
 
       <main className="flex-1 flex gap-4 p-4">
         {/* Left Panel - Tools */}
-        {/* <ConnectedPeersButton
-          connections={connections}
-          sendData={broadcastData}
-          peer={peer}
+        <ConnectedPeersButton
+          players={players}
           mapName={mapName}
-        /> */}
+          isConnected={isConnected}
+          isConnecting={isConnecting}
+          connect={connect}
+        />
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel />
           <UtilityPanel />
@@ -336,19 +350,6 @@ const MapContainer = () => {
           <InitiativePanel />
 
           <CombatLog damageLog={damageLog} maxEvents={10} />
-
-          <Websockets
-            isConnected={isConnected}
-            isConnecting={isConnecting}
-            error={error}
-            lastMessage={lastMessage}
-            connectionId={connectionId}
-            connect={connect}
-            disconnect={disconnect}
-            sendMessage={sendMessage}
-            clearError={clearError}
-            players={players}
-          />
         </div>
 
         {/* Help button + dialog (replaces always-on instructions) */}

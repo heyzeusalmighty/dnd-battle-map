@@ -106,6 +106,13 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
         case "chat_message":
           this.handleChatMessage(ws, parsedMessage, connectionId);
           break;
+
+        case "move_character":
+          this.handleMoveCharacter(ws, parsedMessage, connectionId);
+          break;
+            
+          
+          
           
         case "ping":
           ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
@@ -172,6 +179,7 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
     this.broadcastToOthers(ws, {
       type: "player_connected",      
       playerId: message.data.playerId,
+      connectionId,
       timestamp: Date.now()
     });
   }
@@ -192,8 +200,8 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
   }
 
   private handlePlayerAction(ws: WebSocket, message: any, connectionId: string) {
-    // Broadcast player action to all other clients in the same mapName
-    this.broadcastToOthers(ws, {
+    // Broadcast player action to all clients in the same mapName
+    this.broadcastToAll(ws, {
       type: "player_action",
       connectionId,
       action: message.action,
@@ -209,6 +217,18 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
       connectionId,
       message: message.message,
       playerName: message.playerName,
+      timestamp: Date.now()
+    });
+  }
+
+  private handleMoveCharacter(ws: WebSocket, message: any, connectionId: string) {
+    // Broadcast character movement to other clients in the same map
+    this.broadcastToOthers(ws, {
+      type: "move_character",
+      connectionId,
+      data: message.data,
+      characterId: message.characterId,
+      position: message.position,
       timestamp: Date.now()
     });
   }

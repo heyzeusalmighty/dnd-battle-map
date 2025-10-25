@@ -3,10 +3,12 @@
 import { ThemeToggleSimple } from '@/app/components/theme-toggle';
 import useWebhooks from '@/app/hooks/useWebhooks';
 import Websockets from '@/app/map/components/Websockets/Test';
+import type { CharacterStatus } from '@/app/map/types';
 import { useSearchParams } from 'next/navigation';
 import { CombatLog } from '../../map/components/CombatLog';
 import '../../map/index.css';
 import { UserMapProvider, useUserMapContext } from '../context/UserMapContext';
+import useMapViewEventListeners from '../hooks/useMapViewEventListeners';
 import useUserHotkeys from '../useUserHotKeys';
 import ConnectionCard from './ConnectionCard';
 import { PlayerHPControls } from './PlayerHPControls';
@@ -45,6 +47,7 @@ const UserMapView = () => {
     disconnect,
     sendGameUpdate,
     sendPlayerAction,
+    sendMoveCharacter,
     sendMessage,
     clearError,
   } = useWebhooks({ mapName, playerId: username });
@@ -53,49 +56,49 @@ const UserMapView = () => {
     (c) => c.id === selectedCharacterId && c.isPlayer
   );
 
+  useMapViewEventListeners(setGameState);
+
   const handleUpdateHp = (newHp: number) => {
-    // if (!selectedCharacter || !guestMap?.send) return;
-    // guestMap.send({
-    //   type: 'updateHp',
-    //   characterId: selectedCharacter.id,
-    //   newHp,
-    // });
+    if (!selectedCharacter) return;
+    sendPlayerAction({
+      actionType: 'updateHp',
+      characterId: selectedCharacter.id,
+      newHp,
+    });
   };
 
   const handleAddCondition = (condition: string) => {
-    // if (!selectedCharacter || !guestMap?.send) return;
-    // guestMap.send({
-    //   type: 'addCondition',
-    //   characterId: selectedCharacter.id,
-    //   condition,
-    // });
+    if (!selectedCharacter) return;
+    sendPlayerAction({
+      actionType: 'addCondition',
+      characterId: selectedCharacter.id,
+      condition,
+    });
   };
 
   const handleRemoveCondition = (condition: string) => {
-    // if (!selectedCharacter || !guestMap?.send) return;
-    // guestMap.send({
-    //   type: 'removeCondition',
-    //   characterId: selectedCharacter.id,
-    //   condition,
-    // });
+    if (!selectedCharacter) return;
+    sendPlayerAction({
+      actionType: 'removeCondition',
+      characterId: selectedCharacter.id,
+      condition,
+    });
   };
 
-  const handleToggleStatus = (
-    statusType: 'advantage' | 'disadvantage' | 'concentration'
-  ) => {
-    // if (!selectedCharacter || !guestMap?.send) return;
-    // const currentValue =
-    //   statusType === 'advantage'
-    //     ? selectedCharacter.hasAdvantage
-    //     : statusType === 'disadvantage'
-    //       ? selectedCharacter.hasDisadvantage
-    //       : selectedCharacter.concentrating;
-    // guestMap.send({
-    //   type: 'toggleStatus',
-    //   characterId: selectedCharacter.id,
-    //   statusType,
-    //   value: !currentValue,
-    // });
+  const handleToggleStatus = (statusType: CharacterStatus) => {
+    if (!selectedCharacter) return;
+    const currentValue =
+      statusType === 'advantage'
+        ? selectedCharacter.hasAdvantage
+        : statusType === 'disadvantage'
+          ? selectedCharacter.hasDisadvantage
+          : selectedCharacter.concentrating;
+    sendPlayerAction({
+      actionType: 'toggleStatus',
+      characterId: selectedCharacter.id,
+      statusType,
+      value: !currentValue,
+    });
   };
 
   return (
@@ -134,7 +137,7 @@ const UserMapView = () => {
           <ReadOnlyGrid
             handleCellMouseDown={() => {}}
             handleCellMouseEnter={() => {}}
-            broadcastData={() => {}}
+            sendMoveCharacter={sendMoveCharacter}
           />
 
           <pre>

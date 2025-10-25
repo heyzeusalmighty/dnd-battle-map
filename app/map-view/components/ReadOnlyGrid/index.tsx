@@ -4,6 +4,7 @@ import Movement_Overlay from '@/app/components/Movement_Overlay';
 import Terrain_Layer from '@/app/components/Terrain_Layer';
 import Tokens_Layer from '@/app/components/Tokens_Layer';
 import { Card } from '@/app/components/ui/card';
+import type { MoveCharacterData } from '@/app/hooks/websockets.types';
 import { GRID_SIZE } from '@/app/map/utils/constants';
 import { BUILTIN_TERRAIN } from '@/app/map/utils/terrain';
 import type { FC } from 'react';
@@ -13,13 +14,13 @@ import style from './style.module.css';
 interface ReadOnlyGridProps {
   handleCellMouseDown: (e: React.MouseEvent, x: number, y: number) => void;
   handleCellMouseEnter: (e: React.MouseEvent, x: number, y: number) => void;
-  broadcastData: (data: unknown) => void;
+  sendMoveCharacter: (action: MoveCharacterData) => void;
 }
 
 const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   handleCellMouseDown,
   handleCellMouseEnter,
-  broadcastData,
+  sendMoveCharacter,
 }) => {
   const { state, actions, handlers } = useUserMapContext();
   const {
@@ -46,11 +47,9 @@ const ReadOnlyGrid: FC<ReadOnlyGridProps> = ({
   const onCellClick = (x: number, y: number) => {
     handleCellClick(x, y);
     if (selectedCharacterId) {
-      broadcastData({
-        type: 'moveCharacter',
+      sendMoveCharacter({
         characterId: selectedCharacterId,
-        x,
-        y,
+        position: { x, y },
       });
       // unselect the character after moving
       setSelectedCharacterId(null);
