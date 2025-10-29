@@ -2,9 +2,18 @@ import { PlayerAction } from '@/app/hooks/websockets.types';
 import { AppSnapshot, Character } from '@/app/map/types';
 import React, { useEffect } from 'react';
 
-const useMapViewEventListeners = (
-  setGameState: React.Dispatch<React.SetStateAction<AppSnapshot>>
-) => {
+interface MapViewEventListenersProps {
+  setGameState: React.Dispatch<React.SetStateAction<AppSnapshot>>;
+  handleRemoteCharacterMove: (
+    characterId: string,
+    position: { x: number; y: number }
+  ) => void;
+}
+
+const useMapViewEventListeners = ({
+  setGameState,
+  handleRemoteCharacterMove,
+}: MapViewEventListenersProps) => {
   // PLAYER ACTION
   useEffect(() => {
     const onPlayerAction: EventListener = (e: Event) => {
@@ -97,6 +106,21 @@ const useMapViewEventListeners = (
       window.removeEventListener('gameUpdate', onGameUpdate);
     };
   }, [setGameState]);
+
+  useEffect(() => {
+    const onMoveCharacter: EventListener = (e: Event) => {
+      const ev = e as CustomEvent<any>;
+      console.log('Received move character event:', ev.detail);
+      const { characterId, position } = ev.detail;
+      handleRemoteCharacterMove(characterId, position);
+    };
+
+    window.addEventListener('moveCharacter', onMoveCharacter);
+
+    return () => {
+      window.removeEventListener('moveCharacter', onMoveCharacter);
+    };
+  }, [handleRemoteCharacterMove]);
 };
 
 export default useMapViewEventListeners;

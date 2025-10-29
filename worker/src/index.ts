@@ -165,6 +165,8 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
   // Message handlers
   private handleHandshake(ws: WebSocket, message: any, connectionId: string) {
     console.log(`Handshake from ${connectionId}:`, message);
+
+    const connectedClients = this.getConnectionsInSameMap(ws);
     const response = {
       type: "handshake_ack",
       connectionId,
@@ -180,7 +182,8 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
       type: "player_connected",      
       playerId: message.data.playerId,
       connectionId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      connectedClients
     });
   }
 

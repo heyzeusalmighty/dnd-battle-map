@@ -1,16 +1,30 @@
-import type { MoveCharacterData } from '@/app/hooks/websockets.types';
+import type {
+  MoveCharacterData,
+  PlayerAction,
+} from '@/app/hooks/websockets.types';
 import { useEffect } from 'react';
+import { CharacterStatus } from '../types';
 
 interface MapEventListenersProps {
   handleRemoteCharacterMove: (data: MoveCharacterData) => void;
   handleRemoteHpUpdate: (characterId: string, newHp: number) => void;
   sendGameState: () => void;
+  handleRemoteAddCondition: (characterId: string, condition: string) => void;
+  handleRemoteRemoveCondition: (characterId: string, condition: string) => void;
+  handleRemoteToggleStatus: (
+    characterId: string,
+    status: CharacterStatus,
+    value: boolean
+  ) => void;
 }
 
 const useMapEventListeners = ({
   handleRemoteCharacterMove,
   handleRemoteHpUpdate,
   sendGameState,
+  handleRemoteAddCondition,
+  handleRemoteRemoveCondition,
+  handleRemoteToggleStatus,
 }: MapEventListenersProps) => {
   useEffect(() => {
     const onMoveCharacter: EventListener = (e: Event) => {
@@ -43,17 +57,45 @@ const useMapEventListeners = ({
   // playerAction
   useEffect(() => {
     const onPlayerAction: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<PlayerAction>;
       console.log('Received player action event:', ev.detail);
 
-      handleRemoteHpUpdate(ev.detail.characterId, ev.detail.newHp);
+      const { actionType } = ev.detail;
+      if (actionType === 'updateHp') {
+        const { newHp, characterId } = ev.detail;
+        handleRemoteHpUpdate(characterId, newHp as number);
+      }
+
+      if (actionType === 'addCondition') {
+        const { characterId, condition } = ev.detail;
+        handleRemoteAddCondition(characterId, condition as string);
+      }
+
+      if (actionType === 'removeCondition') {
+        const { characterId, condition } = ev.detail;
+        handleRemoteRemoveCondition(characterId, condition as string);
+      }
+
+      if (actionType === 'toggleStatus') {
+        const { characterId, statusType, value } = ev.detail;
+        handleRemoteToggleStatus(
+          characterId,
+          statusType as CharacterStatus,
+          value as boolean
+        );
+      }
     };
 
     window.addEventListener('playerAction', onPlayerAction);
     return () => {
       window.removeEventListener('playerAction', onPlayerAction);
     };
-  }, [handleRemoteHpUpdate]);
+  }, [
+    handleRemoteHpUpdate,
+    handleRemoteAddCondition,
+    handleRemoteRemoveCondition,
+    handleRemoteToggleStatus,
+  ]);
 
   // playerConnected
   useEffect(() => {

@@ -60,12 +60,20 @@ const ReadOnlyInitiativePanel = () => {
 
             {/* Status badges */}
             <div className="flex flex-wrap gap-1 mt-2">
-              {char.hasAdvantage && <StatusBadge kind="ADV">ADV</StatusBadge>}
+              {char.hasAdvantage && (
+                <StatusBadge kind="ADV" title="Advantage">
+                  ADV
+                </StatusBadge>
+              )}
               {char.hasDisadvantage && (
-                <StatusBadge kind="DIS">DIS</StatusBadge>
+                <StatusBadge kind="DIS" title="Disadvantage">
+                  DIS
+                </StatusBadge>
               )}
               {char.concentrating && (
-                <StatusBadge kind="CONC">CONC</StatusBadge>
+                <StatusBadge kind="CONC" title="Concentration">
+                  CONC
+                </StatusBadge>
               )}
               {char.conditions?.map((c) => (
                 <StatusBadge key={c} kind="COND" title={c}>

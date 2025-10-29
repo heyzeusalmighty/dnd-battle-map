@@ -129,9 +129,17 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
             case 'player_connected': {
               console.log('Player connected:', message);
 
-              const { playerId, connectionId = '' } = message;
+              const {
+                playerId,
+                connectionId = '',
+                connectedClients = [],
+              } = message;
               if (playerId && !players.find((p) => p.playerId === playerId)) {
-                setPlayers((prev) => [...prev, { playerId, connectionId }]);
+                const stillHerePlayers = players.filter((p) =>
+                  connectedClients.some((c: string) => c === p.connectionId)
+                );
+
+                setPlayers([...stillHerePlayers, { playerId, connectionId }]);
               }
               window.dispatchEvent(
                 new CustomEvent('playerConnected', { detail: message })

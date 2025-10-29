@@ -15,7 +15,7 @@ import type {
 import { GRID_SIZE } from '../utils/constants';
 import { demoCharacters, demoTerrain } from '../utils/demo';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
-import type { MapContextType } from './types';
+import type { CharacterStatus, MapContextType } from './types';
 
 const MapContext = createContext<MapContextType | undefined>(undefined);
 
@@ -320,7 +320,7 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
 
   const toggleCharacterStatus = (
     charId: string,
-    statusType: 'advantage' | 'disadvantage' | 'concentration',
+    statusType: CharacterStatus,
     value: boolean
   ) => {
     saveSnapshot(); // For undo

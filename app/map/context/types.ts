@@ -1,9 +1,5 @@
+import type { MoveCharacterData } from '@/app/hooks/websockets.types';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
-
-// import { useSearchParams } from 'next/navigation';
-// import Peer, { DataConnection } from 'peerjs';
-
-import { MoveCharacterData } from '@/app/hooks/websockets.types';
 import type {
   AppSnapshot,
   Character,
@@ -130,3 +126,5 @@ export interface MapContextType {
 }
 
 export type Tool = 'move' | 'measure' | 'terrain' | 'character' | 'edit';
+
+export type CharacterStatus = 'advantage' | 'disadvantage' | 'concentration';

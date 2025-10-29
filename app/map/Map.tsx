@@ -27,7 +27,7 @@ import UtilityPanel from './components/UtilityPanel';
 import { MapProvider, useMapContext } from './context/MapContext';
 import useHotkeys from './hooks/useHotKeys';
 import useMapEventListeners from './hooks/useMapEventListener';
-import type { AppSnapshot, Terrain } from './types';
+import type { AppSnapshot, CharacterStatus, Terrain } from './types';
 import { getId } from './utils/id';
 import { createPlayerSnapshot } from './utils/playerSnapshot';
 import { BUILTIN_TERRAIN } from './utils/terrain';
@@ -102,7 +102,7 @@ const MapContainer = () => {
 
   const handleRemoteToggleStatus = (
     charId: string,
-    statusType: 'advantage' | 'disadvantage' | 'concentration',
+    statusType: CharacterStatus,
     value: boolean
   ) => {
     handlers.toggleCharacterStatus(charId, statusType, value);
@@ -148,6 +148,9 @@ const MapContainer = () => {
     handleRemoteCharacterMove,
     handleRemoteHpUpdate,
     sendGameState,
+    handleRemoteAddCondition,
+    handleRemoteRemoveCondition,
+    handleRemoteToggleStatus,
   });
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
@@ -343,7 +346,10 @@ const MapContainer = () => {
             paintSnap={paintSnap}
           />
 
-          <CharacterPanel />
+          <CharacterPanel
+            sendMessage={sendMessage}
+            sendPlayerAction={sendPlayerAction}
+          />
         </div>
         {/* Right Panel - Initiative + Combat Log */}
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">

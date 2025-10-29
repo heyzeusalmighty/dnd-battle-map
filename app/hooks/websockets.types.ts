@@ -41,6 +41,7 @@ export interface WebhookMessage {
   id?: string;
   connectionId?: string;
   playerId?: string;
+  connectedClients?: string[];
 }
 
 export interface WebhookConnection {

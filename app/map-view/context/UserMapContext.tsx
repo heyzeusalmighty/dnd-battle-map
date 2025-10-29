@@ -30,6 +30,10 @@ interface UserMapContextType {
     toggleAdvantage: (charId: string) => void;
     toggleDisadvantage: (charId: string) => void;
     toggleConcentration: (charId: string) => void;
+    handleRemoteCharacterMove: (
+      characterId: string,
+      position: { x: number; y: number }
+    ) => void;
   };
 }
 
@@ -156,6 +160,19 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
       }),
     }));
   };
+
+  const handleRemoteCharacterMove = (
+    characterId: string,
+    position: { x: number; y: number }
+  ) => {
+    setGameState((prev) => ({
+      ...prev,
+      characters: prev.characters.map((c) =>
+        c.id === characterId ? { ...c, ...position } : c
+      ),
+    }));
+  };
+
   const value = {
     state: {
       gameState,
@@ -181,6 +198,7 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
       toggleAdvantage,
       toggleDisadvantage,
       toggleConcentration,
+      handleRemoteCharacterMove,
     },
   };
 

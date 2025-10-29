@@ -2,7 +2,6 @@
 
 import { ThemeToggleSimple } from '@/app/components/theme-toggle';
 import useWebhooks from '@/app/hooks/useWebhooks';
-import Websockets from '@/app/map/components/Websockets/Test';
 import type { CharacterStatus } from '@/app/map/types';
 import { useSearchParams } from 'next/navigation';
 import { CombatLog } from '../../map/components/CombatLog';
@@ -20,43 +19,29 @@ const UserMapView = () => {
 
   const { gameState, username, submitted, messageCount, selectedCharacterId } =
     state;
-  const {
-    setGameState,
-    setUsername,
-    setSubmitted,
-    setMessageCount,
-    setSelectedCharacterId,
-  } = actions;
+  const { setGameState, setUsername, setSubmitted, setSelectedCharacterId } =
+    actions;
+  const { handleRemoteCharacterMove } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
-  const hostId = searchParams.get('connectionId');
 
   useUserHotkeys({ setSelectedCharacterId });
-
-  // Only connect after username is submitted
-  const ready = Boolean(submitted && hostId);
 
   const {
     isConnected,
     isConnecting,
-    error,
-    lastMessage,
-    connectionId,
     connect,
     disconnect,
-    sendGameUpdate,
     sendPlayerAction,
     sendMoveCharacter,
-    sendMessage,
-    clearError,
   } = useWebhooks({ mapName, playerId: username });
 
   const selectedCharacter = gameState?.characters.find(
     (c) => c.id === selectedCharacterId && c.isPlayer
   );
 
-  useMapViewEventListeners(setGameState);
+  useMapViewEventListeners({ setGameState, handleRemoteCharacterMove });
 
   const handleUpdateHp = (newHp: number) => {
     if (!selectedCharacter) return;
@@ -113,19 +98,11 @@ const UserMapView = () => {
           setUsername={setUsername}
           submitted={submitted}
           setSubmitted={setSubmitted}
-          guestMap={null}
           mapName={mapName}
-        />
-        <Websockets
           isConnected={isConnected}
           isConnecting={isConnecting}
-          error={error}
-          lastMessage={lastMessage}
-          connectionId={connectionId}
           connect={connect}
           disconnect={disconnect}
-          sendMessage={sendMessage}
-          clearError={clearError}
         />
       </div>
 

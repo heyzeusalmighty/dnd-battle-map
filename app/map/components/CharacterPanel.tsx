@@ -29,13 +29,22 @@ import {
 import { useMonsterSearch } from '../../hooks/useMonsterSearch';
 import { QuickStatusToggles } from '../../map-view/components/QuickStatusToggles';
 import { useMapContext } from '../context/MapContext';
+import type { CharacterStatus } from '../context/types';
 import type { Character, DamageEvent } from '../types';
 import { COMMON_CONDITIONS } from '../utils/conditions';
 import { getId } from '../utils/id';
 import { DEFAULT_PARTY } from '../utils/partyPresets';
 import AddSummonDialog from './AddSummonDialog';
 
-const CharacterPanel = () => {
+interface CharacterPanelProps {
+  sendMessage: (message: string) => void;
+  sendPlayerAction: (action: any) => void;
+}
+
+const CharacterPanel = ({
+  sendMessage,
+  sendPlayerAction,
+}: CharacterPanelProps) => {
   const { handlers, state, actions } = useMapContext();
   const {
     setCharacters,
@@ -242,11 +251,11 @@ const CharacterPanel = () => {
   };
 
   // handle damage for any character
-  const applyDamage = (charId: string, amount: number) => {
+  const applyDamage = (characterId: string, amount: number) => {
     const damageAmount = Number.isFinite(amount) ? Math.floor(amount) : 0;
     if (damageAmount <= 0) return;
 
-    const char = characters.find((c) => c.id === charId);
+    const char = characters.find((c) => c.id === characterId);
     if (!char) return;
 
     const oldHp = char.hp;
@@ -259,7 +268,7 @@ const CharacterPanel = () => {
 
     setCharacters((prev) =>
       prev.map((c) => {
-        if (c.id !== charId) return c;
+        if (c.id !== characterId) return c;
 
         const calculatedDamage = Math.max(0, c.maxHp - newHp);
 
@@ -274,6 +283,11 @@ const CharacterPanel = () => {
 
     // Log damage and death
     logDamageEvent(char, oldHp, newHp);
+    sendPlayerAction({
+      actionType: 'updateHp',
+      characterId,
+      newHp,
+    });
 
     if (justDied) {
       console.log(`${char.name} hit da flo'`);
@@ -281,11 +295,11 @@ const CharacterPanel = () => {
   };
 
   // handle healing for any character
-  const applyHealing = (charId: string, amount: number) => {
+  const applyHealing = (characterId: string, amount: number) => {
     const healAmount = Number.isFinite(amount) ? Math.floor(amount) : 0;
     if (healAmount <= 0) return;
 
-    const char = characters.find((c) => c.id === charId);
+    const char = characters.find((c) => c.id === characterId);
     if (!char) return;
 
     const oldHp = char.hp;
@@ -298,7 +312,7 @@ const CharacterPanel = () => {
 
     setCharacters((prev) =>
       prev.map((c) => {
-        if (c.id !== charId) return c;
+        if (c.id !== characterId) return c;
 
         const calculatedDamage = Math.max(0, c.maxHp - newHp);
 
@@ -312,6 +326,11 @@ const CharacterPanel = () => {
     );
 
     logDamageEvent(char, oldHp, newHp);
+    sendPlayerAction({
+      actionType: 'updateHp',
+      characterId,
+      newHp,
+    });
 
     if (wasRevived) {
       console.log(`${char.name} has been revived!`);
@@ -346,6 +365,35 @@ const CharacterPanel = () => {
     if (initiativeMode === 'manual' && added) {
       setInitiativeOrder((prev) => [...prev, id]);
     }
+  };
+
+  const toggleStatus = (
+    characterId: string,
+    statusType: CharacterStatus,
+    value: boolean
+  ) => {
+    sendPlayerAction({
+      actionType: 'toggleStatus',
+      characterId,
+      statusType,
+      value,
+    });
+  };
+
+  const handleAddCondition = (characterId: string, condition: string) => {
+    sendPlayerAction({
+      actionType: 'addCondition',
+      characterId,
+      condition,
+    });
+  };
+
+  const handleRemoveCondition = (characterId: string, condition: string) => {
+    sendPlayerAction({
+      actionType: 'removeCondition',
+      characterId,
+      condition,
+    });
   };
 
   return (
@@ -676,6 +724,7 @@ const CharacterPanel = () => {
                                   : ch
                               )
                             );
+                            toggleStatus(c.id, 'advantage', !c.hasAdvantage);
                           }}
                           onToggleDisadvantage={() => {
                             saveSnapshot?.();
@@ -692,6 +741,11 @@ const CharacterPanel = () => {
                                   : ch
                               )
                             );
+                            toggleStatus(
+                              c.id,
+                              'disadvantage',
+                              !c.hasDisadvantage
+                            );
                           }}
                           onToggleConcentration={() => {
                             saveSnapshot?.();
@@ -701,6 +755,11 @@ const CharacterPanel = () => {
                                   ? { ...ch, concentrating: !ch.concentrating }
                                   : ch
                               )
+                            );
+                            toggleStatus(
+                              c.id,
+                              'concentration',
+                              !c.concentrating
                             );
                           }}
                           size="sm"
@@ -734,6 +793,7 @@ const CharacterPanel = () => {
                                           : ch
                                       )
                                     );
+                                    handleRemoveCondition(c.id, condition);
                                   }}
                                   className="px-2 py-0.5 text-xs bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 rounded-full
       transition-colors"
@@ -768,6 +828,7 @@ const CharacterPanel = () => {
                                     : ch
                                 )
                               );
+                              handleAddCondition(c.id, condition);
                             }
                           }}
                         >
