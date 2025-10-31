@@ -24,8 +24,7 @@
 			{
 				"class_name": "DNDWebSocketHibernationServer",
 				"name": "DND_WEBSOCKETS",
-        "script_name": "worker"
-				// "script_name": "dnd-websockets-worker"
+        "script_name": "worker"				
 			}
 		]
 	}

@@ -12,7 +12,7 @@ import {
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
-import useWebhooks from '../hooks/useWebhooks';
+import useWebhooks from '../hooks/useWebSockets';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import { sanitizeForUrlPath } from '../utils/sanitizeForHttp';
 import CharacterPanel from './components/CharacterPanel';
@@ -118,17 +118,6 @@ const MapContainer = () => {
     sendGameUpdate(playerSnapshot);
   };
 
-  // const { peer, connections, broadcastData } = useHostPeerSession({
-  //   mapName,
-  //   moveCharacterCallback: handleRemoteCharacterMove,
-  //   getCurrentGameState: getCurrentGameState,
-  //   updateHpCallback: handleRemoteHpUpdate,
-  //   addConditionCallback: handleRemoteAddCondition,
-  //   removeConditionCallback: handleRemoteRemoveCondition,
-  //   toggleStatusCallback: handleRemoteToggleStatus,
-  //   undoCallback: handleRemoteUndo,
-  // });
-
   const {
     isConnected,
     isConnecting,
@@ -137,12 +126,6 @@ const MapContainer = () => {
     sendPlayerAction,
     players,
     sendMoveCharacter,
-    error,
-    lastMessage,
-    connectionId,
-    sendMessage,
-    clearError,
-    disconnect,
   } = useWebhooks({ mapName, playerId: 'DM' });
 
   useMapEventListeners({
@@ -154,10 +137,8 @@ const MapContainer = () => {
     handleRemoteToggleStatus,
   });
 
-  // Add interval ref to store the timer
-  const gameStateIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   // Function to send current game state
+  const gameStateIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sendCurrentGameState = useCallback(() => {
     const fullSnapshot = takeSnapshot();
     const playerSnapshot = createPlayerSnapshot(fullSnapshot);
@@ -166,22 +147,16 @@ const MapContainer = () => {
 
   // Set up 30-second interval for sending game state
   useEffect(() => {
-    // Only start the interval if we're connected
     if (isConnected) {
-      // Clear any existing interval first
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);
       }
 
-      // Set up new interval to send game state every 30 seconds
       gameStateIntervalRef.current = setInterval(() => {
         console.log('Sending periodic game state update...');
         sendCurrentGameState();
       }, 30000); // 30 seconds = 30000 milliseconds
-
-      console.log('Started 30-second game state sync interval');
     } else {
-      // Clear interval if disconnected
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);
         gameStateIntervalRef.current = null;
@@ -189,7 +164,6 @@ const MapContainer = () => {
       }
     }
 
-    // Cleanup function
     return () => {
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);

@@ -1,7 +1,7 @@
 'use client';
 
 import { ThemeToggleSimple } from '@/app/components/theme-toggle';
-import useWebhooks from '@/app/hooks/useWebhooks';
+import useWebhooks from '@/app/hooks/useWebSockets';
 import type { CharacterStatus } from '@/app/map/types';
 import { useSearchParams } from 'next/navigation';
 import { CombatLog } from '../../map/components/CombatLog';
