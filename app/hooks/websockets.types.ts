@@ -30,7 +30,7 @@ export interface MoveCharacterData {
   [key: string]: unknown;
 }
 
-export interface WebhookMessage {
+export interface WebSocketMessage {
   type: string;
   data:
     | AppSnapshot
@@ -44,11 +44,11 @@ export interface WebhookMessage {
   connectedClients?: string[];
 }
 
-export interface WebhookConnection {
+export interface WebSocketConnection {
   isConnected: boolean;
   isConnecting: boolean;
   error: string | null;
-  lastMessage: WebhookMessage | null;
+  lastMessage: WebSocketMessage | null;
   connectionId: string | null;
 }
 

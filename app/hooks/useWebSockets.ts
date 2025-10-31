@@ -4,11 +4,11 @@ import type {
   ConnectedPlayer,
   MoveCharacterData,
   PlayerAction,
-  WebhookConnection,
-  WebhookMessage,
+  WebSocketConnection,
+  WebSocketMessage,
 } from './websockets.types';
 
-interface UseWebhooksReturn extends WebhookConnection {
+interface UseWebSocketsReturn extends WebSocketConnection {
   connect: (options?: { reconnect?: boolean }) => void;
   disconnect: () => void;
   sendMessage: (
@@ -22,21 +22,21 @@ interface UseWebhooksReturn extends WebhookConnection {
   players: ConnectedPlayer[];
 }
 
-const WEBHOOK_WORKER_URL = process.env.NEXT_PUBLIC_WS_HOST;
+const WEBSOCKET_WORKER_URL = process.env.NEXT_PUBLIC_WS_HOST;
 
-interface WebHooksProps {
+interface WebSocketsProps {
   mapName: string;
   playerId: string;
 }
 
-const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
+const useWebSockets = (props: WebSocketsProps): UseWebSocketsReturn => {
   const { mapName, playerId } = props;
 
   const [players, setPlayers] = useState<ConnectedPlayer[]>([]);
 
   const wsRef = useRef<WebSocket | null>(null);
 
-  const [state, setState] = useState<WebhookConnection>({
+  const [state, setState] = useState<WebSocketConnection>({
     isConnected: false,
     isConnecting: false,
     error: null,
@@ -44,7 +44,7 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
     connectionId: null,
   });
 
-  const updateState = useCallback((updates: Partial<WebhookConnection>) => {
+  const updateState = useCallback((updates: Partial<WebSocketConnection>) => {
     setState((prev) => ({ ...prev, ...updates }));
   }, []);
 
@@ -88,7 +88,7 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
       // Connect to Cloudflare WebSocket worker with query parameters
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      const wsUrl = `${proto}://${WEBHOOK_WORKER_URL}?connectionId=${connectionId}&clientType=web&mapName=${mapName}`;
+      const wsUrl = `${proto}://${WEBSOCKET_WORKER_URL}?connectionId=${connectionId}&clientType=web&mapName=${mapName}`;
 
       console.log('Connecting to Cloudflare WebSocket worker:', wsUrl);
 
@@ -119,8 +119,8 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
 
       ws.onmessage = (event) => {
         try {
-          const message: WebhookMessage = JSON.parse(event.data);
-          console.log('Received webhook message:', message);
+          const message: WebSocketMessage = JSON.parse(event.data);
+          console.log('Received websocket message:', message);
 
           updateState({ lastMessage: message });
 
@@ -254,7 +254,7 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
         return;
       }
 
-      const message: WebhookMessage = {
+      const message: WebSocketMessage = {
         type,
         data,
         timestamp: Date.now(),
@@ -263,7 +263,7 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
 
       try {
         wsRef.current.send(JSON.stringify(message));
-        console.log('Sent webhook message:', message);
+        console.log('Sent websocket message:', message);
       } catch (error) {
         console.error('Failed to send WebSocket message:', error);
         updateState({ error: 'Failed to send message' });
@@ -306,4 +306,4 @@ const useWebhooks = (props: WebHooksProps): UseWebhooksReturn => {
   };
 };
 
-export default useWebhooks;
+export default useWebSockets;

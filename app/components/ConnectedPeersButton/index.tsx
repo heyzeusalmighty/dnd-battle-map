@@ -39,9 +39,7 @@ const ConnectedPeersButton = ({
     }
   }, [isConnected, isConnecting, connectOnMount, connect]);
 
-  const handlePeerButtonClick = () => {
-    // sendData({ type: 'request-peers', payload: { pop: 'wow' } });
-  };
+  const handlePeerButtonClick = () => {};
 
   const copyToClipboard = async () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {

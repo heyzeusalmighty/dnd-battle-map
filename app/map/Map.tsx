@@ -12,7 +12,7 @@ import {
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
-import useWebhooks from '../hooks/useWebSockets';
+import useWebSockets from '../hooks/useWebSockets';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import { sanitizeForUrlPath } from '../utils/sanitizeForHttp';
 import CharacterPanel from './components/CharacterPanel';
@@ -36,7 +36,6 @@ const MapContainer = () => {
   // Map configuration
   const { state, actions, handlers } = useMapContext();
   const {
-    characters,
     terrain,
     isDragging,
     dragMode,
@@ -112,12 +111,6 @@ const MapContainer = () => {
     handlers.undo();
   };
 
-  const sendGameState = () => {
-    const fullSnapshot = takeSnapshot();
-    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
-    sendGameUpdate(playerSnapshot);
-  };
-
   const {
     isConnected,
     isConnecting,
@@ -126,7 +119,13 @@ const MapContainer = () => {
     sendPlayerAction,
     players,
     sendMoveCharacter,
-  } = useWebhooks({ mapName, playerId: 'DM' });
+  } = useWebSockets({ mapName, playerId: 'DM' });
+
+  const sendGameState = useCallback(() => {
+    const fullSnapshot = takeSnapshot();
+    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
+    sendGameUpdate(playerSnapshot);
+  }, [takeSnapshot, sendGameUpdate]);
 
   useMapEventListeners({
     handleRemoteCharacterMove,

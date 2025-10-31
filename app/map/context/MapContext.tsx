@@ -413,7 +413,6 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
   };
 
   const handleRemoteCharacterMove = (data: MoveCharacterData) => {
-    console.log('Remote character move', data);
     const { characterId, position } = data;
     setCharacters((prev) =>
       prev.map((c) =>

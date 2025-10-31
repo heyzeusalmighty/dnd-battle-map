@@ -16,23 +16,6 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
     setStoredMaps(maps);
   }, []);
 
-  useEffect(() => {
-    const handleGameUpdate = (event: CustomEvent) => {
-      const data = event.detail;
-      console.log('Received game update:', data);
-      // Handle the game update data as needed
-    };
-
-    window.addEventListener('gameUpdate', handleGameUpdate as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        'gameUpdate',
-        handleGameUpdate as EventListener
-      );
-    };
-  }, []);
-
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.glassCard}>

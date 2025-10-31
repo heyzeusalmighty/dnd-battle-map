@@ -11,8 +11,7 @@ export default {
     if (request.headers.get("Upgrade") === "websocket") {
       // Extract connection parameters from URL
       try {
-        const url = new URL(request.url);
-        const connectionId = url.searchParams.get("connectionId") || crypto.randomUUID();
+        const url = new URL(request.url);        
         const mapName = url.searchParams.get("mapName") || "default";
     
         // Create Durable Object ID based on mapName for room isolation

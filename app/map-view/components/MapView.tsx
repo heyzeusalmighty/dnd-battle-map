@@ -1,7 +1,7 @@
 'use client';
 
 import { ThemeToggleSimple } from '@/app/components/theme-toggle';
-import useWebhooks from '@/app/hooks/useWebSockets';
+import useWebSockets from '@/app/hooks/useWebSockets';
 import type { CharacterStatus } from '@/app/map/types';
 import { useSearchParams } from 'next/navigation';
 import { CombatLog } from '../../map/components/CombatLog';
@@ -35,7 +35,7 @@ const UserMapView = () => {
     disconnect,
     sendPlayerAction,
     sendMoveCharacter,
-  } = useWebhooks({ mapName, playerId: username });
+  } = useWebSockets({ mapName, playerId: username });
 
   const selectedCharacter = gameState?.characters.find(
     (c) => c.id === selectedCharacterId && c.isPlayer
