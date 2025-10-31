@@ -1,4 +1,3 @@
-
 @keyframes gradient-x {
   0%,
   100% {
@@ -24,7 +23,14 @@
 }
 
 .glassCard {
-  background: rgba(255, 255, 255, 0.1);
+  /* white in the center, fading to black at the edges */
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 0.9) 15%,
+    rgba(255, 255, 255, 0.6) 35%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
   backdrop-filter: blur(16px);
   border-radius: 1.5rem;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
@@ -40,9 +46,7 @@
   color: #fff;
   text-align: center;
   margin-bottom: 1.5rem;
-  text-shadow:
-    0 2px 8px #7c3aed,
-    0 4px 24px #ec4899;
+  text-shadow: 0 2px 8px #7c3aed, 0 4px 24px #ec4899;
   letter-spacing: 0.05em;
 }
 
@@ -76,9 +80,7 @@
   font-weight: 700;
   box-shadow: 0 2px 8px #7c3aed44;
   outline: none;
-  transition:
-    box-shadow 0.3s,
-    border-color 0.3s;
+  transition: box-shadow 0.3s, border-color 0.3s;
 }
 .input::placeholder {
   color: rgba(255, 255, 255, 0.7);
@@ -106,9 +108,7 @@
   box-shadow: 0 2px 12px #ec489988;
   border: none;
   cursor: pointer;
-  transition:
-    transform 0.3s,
-    background 0.3s;
+  transition: transform 0.3s, background 0.3s;
 }
 .button:hover {
   transform: scale(1.05);
@@ -130,7 +130,14 @@
   font-weight: 600;
   text-decoration: none;
   text-align: center;
-  transition:
-    background 0.3s,
-    transform 0.3s;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.goblinImage {
+  display: block;
+  margin: 0 auto 1.5rem auto;
+  width: 120px;
+  height: auto;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px #00000088;
 }
