@@ -34,6 +34,7 @@ import { BUILTIN_TERRAIN } from './utils/terrain';
 
 const MapContainer = () => {
   // Map configuration
+  const [changeMade, setChangeMade] = useState(false);
   const { state, actions, handlers } = useMapContext();
   const {
     terrain,
@@ -82,9 +83,9 @@ const MapContainer = () => {
     setShowHelp,
   });
 
-  const getCurrentGameState = useCallback(() => {
-    return takeSnapshot();
-  }, [takeSnapshot]);
+  // const getCurrentGameState = useCallback(() => {
+  //   return takeSnapshot();
+  // }, [takeSnapshot]);
 
   // peer message handlers
   const handleRemoteHpUpdate = (charId: string, newHp: number) => {
@@ -107,9 +108,9 @@ const MapContainer = () => {
     handlers.toggleCharacterStatus(charId, statusType, value);
   };
 
-  const handleRemoteUndo = () => {
-    handlers.undo();
-  };
+  // const handleRemoteUndo = () => {
+  //   handlers.undo();
+  // };
 
   const {
     isConnected,
@@ -134,6 +135,7 @@ const MapContainer = () => {
     handleRemoteAddCondition,
     handleRemoteRemoveCondition,
     handleRemoteToggleStatus,
+    setChangeMade,
   });
 
   // Function to send current game state
@@ -146,7 +148,7 @@ const MapContainer = () => {
 
   // Set up 30-second interval for sending game state
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && changeMade) {
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);
       }
@@ -154,6 +156,7 @@ const MapContainer = () => {
       gameStateIntervalRef.current = setInterval(() => {
         console.log('Sending periodic game state update...');
         sendCurrentGameState();
+        setChangeMade(false);
       }, 30000); // 30 seconds = 30000 milliseconds
     } else {
       if (gameStateIntervalRef.current) {
@@ -169,7 +172,7 @@ const MapContainer = () => {
         gameStateIntervalRef.current = null;
       }
     };
-  }, [isConnected, sendCurrentGameState]);
+  }, [isConnected, sendCurrentGameState, changeMade]);
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);

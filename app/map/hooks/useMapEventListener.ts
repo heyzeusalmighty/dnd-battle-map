@@ -16,6 +16,7 @@ interface MapEventListenersProps {
     status: CharacterStatus,
     value: boolean
   ) => void;
+  setChangeMade: (value: boolean) => void;
 }
 
 const useMapEventListeners = ({
@@ -25,12 +26,14 @@ const useMapEventListeners = ({
   handleRemoteAddCondition,
   handleRemoteRemoveCondition,
   handleRemoteToggleStatus,
+  setChangeMade,
 }: MapEventListenersProps) => {
   useEffect(() => {
     const onMoveCharacter: EventListener = (e: Event) => {
       const ev = e as CustomEvent<any>;
       console.log('Received move character event:', ev.detail);
       handleRemoteCharacterMove(ev.detail);
+      setChangeMade(true);
     };
 
     window.addEventListener('moveCharacter', onMoveCharacter);
@@ -38,7 +41,7 @@ const useMapEventListeners = ({
     return () => {
       window.removeEventListener('moveCharacter', onMoveCharacter);
     };
-  }, [handleRemoteCharacterMove]);
+  }, [handleRemoteCharacterMove, setChangeMade]);
 
   // gameUpdate
   useEffect(() => {
@@ -59,6 +62,7 @@ const useMapEventListeners = ({
     const onPlayerAction: EventListener = (e: Event) => {
       const ev = e as CustomEvent<PlayerAction>;
       console.log('Received player action event:', ev.detail);
+      setChangeMade(true);
 
       const { actionType } = ev.detail;
       if (actionType === 'updateHp') {
@@ -95,6 +99,7 @@ const useMapEventListeners = ({
     handleRemoteAddCondition,
     handleRemoteRemoveCondition,
     handleRemoteToggleStatus,
+    setChangeMade,
   ]);
 
   // playerConnected

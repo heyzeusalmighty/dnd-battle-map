@@ -1,4 +1,4 @@
-import { MoveCharacterData } from '@/app/hooks/websockets.types';
+import type { MoveCharacterData } from '@/app/hooks/websockets.types';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type {
