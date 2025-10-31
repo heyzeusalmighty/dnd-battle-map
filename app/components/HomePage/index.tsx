@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { getAllLocalStorage } from '@/app/utils/localStorage';
-import { useEffect, useState } from 'react';
-import styles from './index.module.css';
+import { getAllLocalStorage } from "@/app/utils/localStorage";
+import { useEffect, useState } from "react";
+import styles from "./index.module.css";
 
 interface HomePageProps {
   createInvoice: (formData: FormData) => Promise<void>;
@@ -20,6 +20,11 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
     <div className={styles.pageWrapper}>
       <div className={styles.glassCard}>
         <h1 className={styles.title}>DND Battle Map</h1>
+        <img
+          src="/images/goblin_01.png"
+          alt="Goblin"
+          className={styles.goblinImage}
+        />
         <form action={createInvoice} className={styles.form}>
           <h2 className={styles.subtitle}>Create a New Map</h2>
           <div className={styles.inputGroup}>
