@@ -506,7 +506,6 @@ export function useHostPeerSession({
     })),
   };
 
-
   return {
     peer,
     connections,

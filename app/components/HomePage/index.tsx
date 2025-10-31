@@ -2,7 +2,6 @@
 
 import { getAllLocalStorage } from '@/app/utils/localStorage';
 import { useEffect, useState } from 'react';
-
 import styles from './index.module.css';
 
 interface HomePageProps {

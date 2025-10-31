@@ -33,8 +33,8 @@ const useHotkeys = (props: UseHotkeysProps) => {
       tag === 'select' ||
       t.isContentEditable
     );
-  }, [])
-  
+  }, []);
+
   // hotkey enablers
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -114,7 +114,17 @@ const useHotkeys = (props: UseHotkeysProps) => {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode, undo, redo, handleNextTurn, setCurrentTurn, setMode, setPaintTool, isTypingTarget, setShowHelp]);
+  }, [
+    mode,
+    undo,
+    redo,
+    handleNextTurn,
+    setCurrentTurn,
+    setMode,
+    setPaintTool,
+    isTypingTarget,
+    setShowHelp,
+  ]);
 };
 
 export default useHotkeys;

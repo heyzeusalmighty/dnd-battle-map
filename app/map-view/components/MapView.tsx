@@ -1,12 +1,13 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { ThemeToggleSimple } from '@/app/components/theme-toggle';
-import type { SnapshotUpdate } from '@/app/map/types';
-import { useGuestMap } from '../../hooks/rtc/useGuestMap';
+import useWebSockets from '@/app/hooks/useWebSockets';
+import type { CharacterStatus } from '@/app/map/types';
+import { useSearchParams } from 'next/navigation';
 import { CombatLog } from '../../map/components/CombatLog';
 import '../../map/index.css';
 import { UserMapProvider, useUserMapContext } from '../context/UserMapContext';
+import useMapViewEventListeners from '../hooks/useMapViewEventListeners';
 import useUserHotkeys from '../useUserHotKeys';
 import ConnectionCard from './ConnectionCard';
 import { PlayerHPControls } from './PlayerHPControls';
@@ -18,111 +19,67 @@ const UserMapView = () => {
 
   const { gameState, username, submitted, messageCount, selectedCharacterId } =
     state;
-  const {
-    setGameState,
-    setUsername,
-    setSubmitted,
-    setMessageCount,
-    setSelectedCharacterId,
-  } = actions;
+  const { setGameState, setUsername, setSubmitted, setSelectedCharacterId } =
+    actions;
+  const { handleRemoteCharacterMove } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
-  const hostId = searchParams.get('connectionId');
 
   useUserHotkeys({ setSelectedCharacterId });
 
-  // Only connect after username is submitted
-  const ready = Boolean(submitted && hostId);
-  const guestMap = useGuestMap({ hostId, username, start: ready });
-
-  // Listen for data if connected
-  if (guestMap?.onData) {
-    guestMap.onData((data: unknown) => {
-      console.log('Guest received data:', data);
-
-      if (
-        data &&
-        typeof data === 'object' &&
-        'type' in data &&
-        // biome-ignore lint/suspicious/noExplicitAny: any any any
-        (data as any).type === 'snapshot'
-      ) {
-        setMessageCount((c) => c + 1);
-        try {
-          const dataObj = data as SnapshotUpdate;
-          const newId = dataObj?.snapShot?.id;
-          const oldId = gameState?.id;
-
-          if (oldId === 0) {
-            // this is the initial state on connection
-            setGameState(dataObj.snapShot);
-            return;
-          }
-
-          if (oldId && oldId !== newId && oldId < newId) {
-            console.log(
-              `Map ID changed from OLD =>  ${oldId} :::: NEW => ${newId}`
-            );
-            setGameState((data as SnapshotUpdate).snapShot);
-          }
-        } catch (e) {
-          console.error('Error parsing snapshot data:', e);
-        }
-      } else {
-        console.log('Received unknown data:', data);
-      }
-    });
-  }
+  const {
+    isConnected,
+    isConnecting,
+    connect,
+    disconnect,
+    sendPlayerAction,
+    sendMoveCharacter,
+  } = useWebSockets({ mapName, playerId: username });
 
   const selectedCharacter = gameState?.characters.find(
     (c) => c.id === selectedCharacterId && c.isPlayer
   );
 
-  const handleUpdateHp = (newHp: number) => {
-    if (!selectedCharacter || !guestMap?.send) return;
+  useMapViewEventListeners({ setGameState, handleRemoteCharacterMove });
 
-    guestMap.send({
-      type: 'updateHp',
+  const handleUpdateHp = (newHp: number) => {
+    if (!selectedCharacter) return;
+    sendPlayerAction({
+      actionType: 'updateHp',
       characterId: selectedCharacter.id,
       newHp,
     });
   };
 
   const handleAddCondition = (condition: string) => {
-    if (!selectedCharacter || !guestMap?.send) return;
-
-    guestMap.send({
-      type: 'addCondition',
+    if (!selectedCharacter) return;
+    sendPlayerAction({
+      actionType: 'addCondition',
       characterId: selectedCharacter.id,
       condition,
     });
   };
 
   const handleRemoveCondition = (condition: string) => {
-    if (!selectedCharacter || !guestMap?.send) return;
-
-    guestMap.send({
-      type: 'removeCondition',
+    if (!selectedCharacter) return;
+    sendPlayerAction({
+      actionType: 'removeCondition',
       characterId: selectedCharacter.id,
       condition,
     });
   };
 
-  const handleToggleStatus = (
-    statusType: 'advantage' | 'disadvantage' | 'concentration'
-  ) => {
-    if (!selectedCharacter || !guestMap?.send) return;
-
+  const handleToggleStatus = (statusType: CharacterStatus) => {
+    if (!selectedCharacter) return;
     const currentValue =
       statusType === 'advantage'
         ? selectedCharacter.hasAdvantage
         : statusType === 'disadvantage'
           ? selectedCharacter.hasDisadvantage
           : selectedCharacter.concentrating;
-
-    guestMap.send({
-      type: 'toggleStatus',
+    sendPlayerAction({
+      actionType: 'toggleStatus',
       characterId: selectedCharacter.id,
       statusType,
       value: !currentValue,
@@ -141,8 +98,11 @@ const UserMapView = () => {
           setUsername={setUsername}
           submitted={submitted}
           setSubmitted={setSubmitted}
-          guestMap={guestMap}
           mapName={mapName}
+          isConnected={isConnected}
+          isConnecting={isConnecting}
+          connect={connect}
+          disconnect={disconnect}
         />
       </div>
 
@@ -154,7 +114,7 @@ const UserMapView = () => {
           <ReadOnlyGrid
             handleCellMouseDown={() => {}}
             handleCellMouseEnter={() => {}}
-            broadcastData={guestMap ? guestMap.send : () => {}}
+            sendMoveCharacter={sendMoveCharacter}
           />
 
           <pre>

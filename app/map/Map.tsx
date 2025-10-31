@@ -12,7 +12,7 @@ import {
 import ConnectedPeersButton from '../components/ConnectedPeersButton';
 import { ThemeToggleSimple } from '../components/theme-toggle';
 import { Button } from '../components/ui/button';
-import { useHostPeerSession } from '../hooks/rtc/useHostMap';
+import useWebSockets from '../hooks/useWebSockets';
 import { getFromLocalStorage, saveToLocalStorage } from '../utils/localStorage';
 import { sanitizeForUrlPath } from '../utils/sanitizeForHttp';
 import CharacterPanel from './components/CharacterPanel';
@@ -26,16 +26,17 @@ import SaveMapCard from './components/SaveMapCard';
 import UtilityPanel from './components/UtilityPanel';
 import { MapProvider, useMapContext } from './context/MapContext';
 import useHotkeys from './hooks/useHotKeys';
-import type { AppSnapshot, Terrain } from './types';
+import useMapEventListeners from './hooks/useMapEventListener';
+import type { AppSnapshot, CharacterStatus, Terrain } from './types';
 import { getId } from './utils/id';
 import { createPlayerSnapshot } from './utils/playerSnapshot';
 import { BUILTIN_TERRAIN } from './utils/terrain';
 
 const MapContainer = () => {
   // Map configuration
+  const [changeMade, setChangeMade] = useState(false);
   const { state, actions, handlers } = useMapContext();
   const {
-    characters,
     terrain,
     isDragging,
     dragMode,
@@ -82,9 +83,9 @@ const MapContainer = () => {
     setShowHelp,
   });
 
-  const getCurrentGameState = useCallback(() => {
-    return takeSnapshot();
-  }, [takeSnapshot]);
+  // const getCurrentGameState = useCallback(() => {
+  //   return takeSnapshot();
+  // }, [takeSnapshot]);
 
   // peer message handlers
   const handleRemoteHpUpdate = (charId: string, newHp: number) => {
@@ -101,26 +102,77 @@ const MapContainer = () => {
 
   const handleRemoteToggleStatus = (
     charId: string,
-    statusType: 'advantage' | 'disadvantage' | 'concentration',
+    statusType: CharacterStatus,
     value: boolean
   ) => {
     handlers.toggleCharacterStatus(charId, statusType, value);
   };
 
-  const handleRemoteUndo = () => {
-    handlers.undo();
-  };
+  // const handleRemoteUndo = () => {
+  //   handlers.undo();
+  // };
 
-  const { peer, connections, broadcastData } = useHostPeerSession({
-    mapName,
-    moveCharacterCallback: handleRemoteCharacterMove,
-    getCurrentGameState: getCurrentGameState,
-    updateHpCallback: handleRemoteHpUpdate,
-    addConditionCallback: handleRemoteAddCondition,
-    removeConditionCallback: handleRemoteRemoveCondition,
-    toggleStatusCallback: handleRemoteToggleStatus,
-    undoCallback: handleRemoteUndo,
+  const {
+    isConnected,
+    isConnecting,
+    connect,
+    sendGameUpdate,
+    sendPlayerAction,
+    players,
+    sendMoveCharacter,
+  } = useWebSockets({ mapName, playerId: 'DM' });
+
+  const sendGameState = useCallback(() => {
+    const fullSnapshot = takeSnapshot();
+    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
+    sendGameUpdate(playerSnapshot);
+  }, [takeSnapshot, sendGameUpdate]);
+
+  useMapEventListeners({
+    handleRemoteCharacterMove,
+    handleRemoteHpUpdate,
+    sendGameState,
+    handleRemoteAddCondition,
+    handleRemoteRemoveCondition,
+    handleRemoteToggleStatus,
+    setChangeMade,
   });
+
+  // Function to send current game state
+  const gameStateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sendCurrentGameState = useCallback(() => {
+    const fullSnapshot = takeSnapshot();
+    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
+    sendGameUpdate(playerSnapshot);
+  }, [takeSnapshot, sendGameUpdate]);
+
+  // Set up 30-second interval for sending game state
+  useEffect(() => {
+    if (isConnected && changeMade) {
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current);
+      }
+
+      gameStateIntervalRef.current = setInterval(() => {
+        console.log('Sending periodic game state update...');
+        sendCurrentGameState();
+        setChangeMade(false);
+      }, 30000); // 30 seconds = 30000 milliseconds
+    } else {
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current);
+        gameStateIntervalRef.current = null;
+        console.log('Cleared game state sync interval (disconnected)');
+      }
+    }
+
+    return () => {
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current);
+        gameStateIntervalRef.current = null;
+      }
+    };
+  }, [isConnected, sendCurrentGameState, changeMade]);
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);
@@ -159,8 +211,6 @@ const MapContainer = () => {
     }
   }, [mapIsLoaded, handleLoadMap]);
 
-  // ---- undo / redo snapshot
-  // snapshot helper
   function commit(mutator: () => void) {
     saveSnapshot();
     mutator();
@@ -171,8 +221,8 @@ const MapContainer = () => {
   useEffect(() => {
     const fullSnapshot = takeSnapshot();
     const playerSnapshot = createPlayerSnapshot(fullSnapshot);
-    broadcastData({ type: 'snapshot', snapShot: playerSnapshot });
-  }, [characters, terrain, currentTurn]);
+    sendGameUpdate(playerSnapshot);
+  }, [terrain, currentTurn]);
 
   // Helper functions
 
@@ -289,10 +339,11 @@ const MapContainer = () => {
       <main className="flex-1 flex gap-4 p-4">
         {/* Left Panel - Tools */}
         <ConnectedPeersButton
-          connections={connections}
-          sendData={broadcastData}
-          peer={peer}
+          players={players}
           mapName={mapName}
+          isConnected={isConnected}
+          isConnecting={isConnecting}
+          connect={connect}
         />
         <div className="w-64 flex-shrink-0 space-y-4">
           <ObjectPanel />
@@ -312,9 +363,10 @@ const MapContainer = () => {
             handleCellMouseEnter={handleCellMouseEnter}
             commit={commit}
             paintSnap={paintSnap}
+            sendMoveCharacter={sendMoveCharacter}
           />
 
-          <CharacterPanel />
+          <CharacterPanel sendPlayerAction={sendPlayerAction} />
         </div>
         {/* Right Panel - Initiative + Combat Log */}
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">

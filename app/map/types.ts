@@ -42,6 +42,8 @@ export type NPCType =
   | 'spiritual weapon';
 export type InitiativeMode = 'auto' | 'manual';
 
+export type CharacterStatus = 'advantage' | 'disadvantage' | 'concentration';
+
 export interface Character {
   id: string;
   name: string;

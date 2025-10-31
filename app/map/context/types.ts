@@ -1,7 +1,5 @@
+import type { MoveCharacterData } from '@/app/hooks/websockets.types';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
-// import { useSearchParams } from 'next/navigation';
-// import Peer, { DataConnection } from 'peerjs';
-
 import type {
   AppSnapshot,
   Character,
@@ -11,7 +9,6 @@ import type {
   Measurement,
   RollPreset,
   Terrain,
-  // RollScope,
 } from '../types';
 
 export interface MapContextType {
@@ -116,7 +113,7 @@ export interface MapContextType {
     handleClearNPCs: () => void;
     handleClearPCs: () => void;
     handleDeleteCharacter: (charId: string) => void;
-    handleRemoteCharacterMove: (charId: string, x: number, y: number) => void;
+    handleRemoteCharacterMove: (data: MoveCharacterData) => void;
     applyDirectHpChange: (charId: string, newHp: number) => void;
     addConditionToCharacter: (charId: string, condition: string) => void;
     removeConditionFromCharacter: (charId: string, condition: string) => void;
@@ -129,3 +126,5 @@ export interface MapContextType {
 }
 
 export type Tool = 'move' | 'measure' | 'terrain' | 'character' | 'edit';
+
+export type CharacterStatus = 'advantage' | 'disadvantage' | 'concentration';

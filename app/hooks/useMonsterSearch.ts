@@ -1,6 +1,6 @@
 // app/hooks/useMonsterSearch.ts
 import { useEffect, useMemo, useState } from 'react';
-import type { Monster } from '../../map/types';
+import type { Monster } from '../map/types';
 
 export function useMonsterSearch() {
   const [monsters, setMonsters] = useState<Monster[]>([]);
@@ -18,7 +18,7 @@ export function useMonsterSearch() {
         }
 
         const data = await response.json();
-        setMonsters(data);
+        setMonsters(data as Monster[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {

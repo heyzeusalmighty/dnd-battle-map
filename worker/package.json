@@ -1,0 +1,19 @@
+{
+	"name": "dnd-web-socket",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"cf-typegen": "wrangler types"
+	},
+	"devDependencies": {
+		"typescript": "^5.5.2",
+		"wrangler": "^4.30.0"
+	},
+	"dependencies": {
+		"ai": "^4.2.0",
+		"workers-ai-provider": "^0.7.4"
+	}
+}

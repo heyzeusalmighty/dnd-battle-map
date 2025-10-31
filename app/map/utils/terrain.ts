@@ -2,12 +2,7 @@
 
 import type { CustomObj, Terrain } from '../types';
 
-export const BUILTIN_TERRAIN = new Set([
-  'wall',
-  'door',
-  'difficult',
-  'water',  
-]);
+export const BUILTIN_TERRAIN = new Set(['wall', 'door', 'difficult', 'water']);
 
 export const getTerrainColor = (type: string) => {
   switch (type) {

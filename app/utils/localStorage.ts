@@ -8,6 +8,15 @@ export function saveToLocalStorage<T>(name: string, data: T): void {
   }
 }
 
+const isJsonString = (str: string): boolean => {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+};
+
 export function getAllLocalStorage(): Record<string, string> {
   const result: Record<string, string> = {};
   for (let i = 0; i < window.localStorage.length; i++) {
@@ -25,6 +34,11 @@ export function getFromLocalStorage<T>(name: string): T | null {
     if (serializedData === null) {
       return null;
     }
+
+    if (!isJsonString(serializedData)) {
+      return serializedData as unknown as T;
+    }
+
     return JSON.parse(serializedData) as T;
   } catch (error) {
     // Optionally handle deserialization errors here
