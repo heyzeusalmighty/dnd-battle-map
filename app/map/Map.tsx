@@ -132,16 +132,17 @@ const MapContainer = () => {
   const {
     isConnected,
     isConnecting,
+    connect,
+    sendGameUpdate,
+    sendPlayerAction,
+    players,
+    sendMoveCharacter,
     error,
     lastMessage,
     connectionId,
-    connect,
-    disconnect,
-    sendGameUpdate,
-    sendPlayerAction,
     sendMessage,
     clearError,
-    players,
+    disconnect,
   } = useWebhooks({ mapName, playerId: 'DM' });
 
   useMapEventListeners({
@@ -152,6 +153,50 @@ const MapContainer = () => {
     handleRemoteRemoveCondition,
     handleRemoteToggleStatus,
   });
+
+  // Add interval ref to store the timer
+  const gameStateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Function to send current game state
+  const sendCurrentGameState = useCallback(() => {
+    const fullSnapshot = takeSnapshot();
+    const playerSnapshot = createPlayerSnapshot(fullSnapshot);
+    sendGameUpdate(playerSnapshot);
+  }, [takeSnapshot, sendGameUpdate]);
+
+  // Set up 30-second interval for sending game state
+  useEffect(() => {
+    // Only start the interval if we're connected
+    if (isConnected) {
+      // Clear any existing interval first
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current);
+      }
+
+      // Set up new interval to send game state every 30 seconds
+      gameStateIntervalRef.current = setInterval(() => {
+        console.log('Sending periodic game state update...');
+        sendCurrentGameState();
+      }, 30000); // 30 seconds = 30000 milliseconds
+
+      console.log('Started 30-second game state sync interval');
+    } else {
+      // Clear interval if disconnected
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current);
+        gameStateIntervalRef.current = null;
+        console.log('Cleared game state sync interval (disconnected)');
+      }
+    }
+
+    // Cleanup function
+    return () => {
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current);
+        gameStateIntervalRef.current = null;
+      }
+    };
+  }, [isConnected, sendCurrentGameState]);
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);
@@ -190,8 +235,6 @@ const MapContainer = () => {
     }
   }, [mapIsLoaded, handleLoadMap]);
 
-  // ---- undo / redo snapshot
-  // snapshot helper
   function commit(mutator: () => void) {
     saveSnapshot();
     mutator();
@@ -344,12 +387,10 @@ const MapContainer = () => {
             handleCellMouseEnter={handleCellMouseEnter}
             commit={commit}
             paintSnap={paintSnap}
+            sendMoveCharacter={sendMoveCharacter}
           />
 
-          <CharacterPanel
-            sendMessage={sendMessage}
-            sendPlayerAction={sendPlayerAction}
-          />
+          <CharacterPanel sendPlayerAction={sendPlayerAction} />
         </div>
         {/* Right Panel - Initiative + Combat Log */}
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">

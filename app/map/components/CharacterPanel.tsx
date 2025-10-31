@@ -37,14 +37,10 @@ import { DEFAULT_PARTY } from '../utils/partyPresets';
 import AddSummonDialog from './AddSummonDialog';
 
 interface CharacterPanelProps {
-  sendMessage: (message: string) => void;
   sendPlayerAction: (action: any) => void;
 }
 
-const CharacterPanel = ({
-  sendMessage,
-  sendPlayerAction,
-}: CharacterPanelProps) => {
+const CharacterPanel = ({ sendPlayerAction }: CharacterPanelProps) => {
   const { handlers, state, actions } = useMapContext();
   const {
     setCharacters,

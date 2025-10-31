@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/app/components/ui/select';
+import { MoveCharacterData } from '@/app/hooks/websockets.types';
 import type { CustomObj, DistanceRule, Measurement } from '@/app/map/types';
 import { GRID_SIZE } from '@/app/map/utils/constants';
 import { measureFeet } from '@/app/map/utils/distance';
@@ -48,6 +49,7 @@ interface MapGridProps {
   handleCellMouseDown: (e: MouseEvent, x: number, y: number) => void;
   handleCellMouseEnter: (e: MouseEvent, x: number, y: number) => void;
   commit: (fn: () => void) => void;
+  sendMoveCharacter: (action: MoveCharacterData) => void;
   paintSnap: MutableRefObject<boolean>;
 }
 
@@ -58,6 +60,7 @@ const MapGrid: FC<MapGridProps> = ({
   handleCellMouseEnter,
   paintSnap,
   commit,
+  sendMoveCharacter,
 }) => {
   const { state, handlers, actions, mapScrollRef } = useMapContext();
   const {
@@ -148,6 +151,7 @@ const MapGrid: FC<MapGridProps> = ({
           );
           // clear selected character after move
           setSelectedCharacter(null);
+          sendMoveCharacter({ characterId: sel.id, position: { x, y } });
         });
       }
       return;
