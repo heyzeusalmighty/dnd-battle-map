@@ -8,6 +8,37 @@
   }
 }
 
+@keyframes slime-drip {
+  0%, 100% {
+    filter: drop-shadow(0 2px 4px rgba(34, 197, 94, 0.3)) 
+            drop-shadow(0 4px 8px rgba(34, 197, 94, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 4px 8px rgba(34, 197, 94, 0.5)) 
+            drop-shadow(0 8px 16px rgba(34, 197, 94, 0.4))
+            drop-shadow(0 16px 32px rgba(34, 197, 94, 0.3));
+  }
+}
+
+@keyframes magical-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(255, 255, 255, 0.8),
+      0 0 20px rgba(124, 58, 237, 0.6),
+      0 0 30px rgba(236, 72, 153, 0.4);
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    box-shadow: 
+      0 0 15px rgba(255, 255, 255, 1),
+      0 0 30px rgba(124, 58, 237, 0.8),
+      0 0 45px rgba(236, 72, 153, 0.6);
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+} 
+
 .pageWrapper {
   min-height: 100vh;
   display: flex;
@@ -17,37 +48,73 @@
   justify-content: center;
   margin: -8px;
 
-  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
-  background-size: 400% 400%;
-  animation: gradient-x 15s ease infinite;
-}
-
-.glassCard {
-  /* white in the center, fading to black at the edges */
+  /* Main background with radial gradient */
   background: radial-gradient(
     circle at center,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(255, 255, 255, 0.9) 15%,
-    rgba(255, 255, 255, 0.6) 35%,
+    rgba(255, 255, 255, 0.8) 0%,    
+    rgba(0, 0, 0, 0.5) 35%,
+    rgba(0, 0, 0, 0.7) 55%,
     rgba(0, 0, 0, 0.8) 100%
   );
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);  
+  background-size: 400% 400%;
+
+  /* hide default cursor */
+  cursor: none;
+
+  /* White fade on all edges using box-shadow inset */
+  box-shadow: 
+    inset 0 2vh 1vh -1vh rgba(255, 255, 255, 0.6),              
+    inset -2vw 0 1vw -1vw rgba(255, 255, 255, 0.6),             
+    inset 0 -2vh 1vh -1vw rgba(255, 255, 255, 0.6),             
+    inset 2vw 0 1vw -1vw rgba(255, 255, 255, 0.6);              
+}
+
+.pageWrapper::after {
+  content: '';
+  position: fixed;
+  top: var(--mouse-y, 50%);
+  left: var(--mouse-x, 50%);
+  width: 30px;
+  height: 30px;
+  border: 2px solid white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  animation: magical-glow 2s ease-in-out infinite;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+}
+
+/* you want cursor pointer on interactive elements */
+.pageWrapper .input,
+.pageWrapper .button,
+.pageWrapper .mapLink {
+  cursor: pointer;
+}
+
+.glassCard {  
   border-radius: 1.5rem;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
   padding: 2.5rem;
   width: 100%;
   max-width: 28rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);  
 }
 
 .title {
-  font-size: 2.5rem;
+  font-size: 3.5rem;
   font-weight: 800;
   color: #fff;
   text-align: center;
   margin-bottom: 1.5rem;
   text-shadow: 0 2px 8px #7c3aed, 0 4px 24px #ec4899;
   letter-spacing: 0.05em;
+  font-family: var(--font-creepster), sans-serif;  
 }
 
 .form {
@@ -56,12 +123,25 @@
   gap: 1.5rem;
 }
 
+
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  color: #fff;
+  background: linear-gradient(180deg, 
+    #000 0%,     
+    #6b7280 25%,    
+    #84cc16 65%,    
+    #22c55e 85%,    
+    #16a34a 100%    
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   text-align: center;
   margin-bottom: 1rem;
+  font-family: var(--font-butcherman), sans-serif;  
+  animation: slime-drip 3s ease-in-out infinite;
+  word-spacing: 1.5rem;
 }
 
 .inputGroup {
@@ -73,8 +153,7 @@
 .input {
   padding: 0.75rem 1.5rem;
   border-radius: 1rem;
-  border: 2px solid #ec4899;
-  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
+  border: 1px solid #ec4899;  
   color: #fff;
   font-size: 1.125rem;
   font-weight: 700;
@@ -86,8 +165,10 @@
   color: rgba(255, 255, 255, 0.7);
 }
 .input:focus {
+  border: 2px solid #ec4899;  
   border-color: #fbbf24;
   box-shadow: 0 0 0 4px #ec489988;
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);
 }
 .input:invalid + .button {
   background: #9ca3af;
@@ -102,7 +183,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 1rem;
   background: linear-gradient(90deg, #ec4899 0%, #fbbf24 50%, #7c3aed 100%);
-  color: #fff;
+  color: #000;
   font-weight: 800;
   font-size: 1.125rem;
   box-shadow: 0 2px 12px #ec489988;
@@ -119,18 +200,22 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin-top: 1rem;  
 }
 
 .mapLink {
   padding: 0.5rem 1rem;
   border-radius: 0.75rem;
   background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  color: #000;
   font-weight: 600;
   text-decoration: none;
   text-align: center;
-  transition: background 0.3s, transform 0.3s;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+.mapLink:hover {
+  background: linear-gradient(90deg, #7c3aed 0%, #ec4899 50%, #fbbf24 100%);  
 }
 
 .goblinImage {
@@ -141,3 +226,21 @@
   border-radius: 50%;
   box-shadow: 0 4px 16px #00000088;
 }
+
+.magical-cursor {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  border: 2px solid white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  animation: magical-glow 2s ease-in-out infinite;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+}
+

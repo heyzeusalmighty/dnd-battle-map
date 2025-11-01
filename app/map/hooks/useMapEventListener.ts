@@ -3,7 +3,7 @@ import type {
   PlayerAction,
 } from '@/app/hooks/websockets.types';
 import { useEffect } from 'react';
-import { CharacterStatus } from '../types';
+import type { CharacterStatus } from '../types';
 
 interface MapEventListenersProps {
   handleRemoteCharacterMove: (data: MoveCharacterData) => void;
@@ -16,7 +16,6 @@ interface MapEventListenersProps {
     status: CharacterStatus,
     value: boolean
   ) => void;
-  setChangeMade: (value: boolean) => void;
 }
 
 const useMapEventListeners = ({
@@ -26,14 +25,12 @@ const useMapEventListeners = ({
   handleRemoteAddCondition,
   handleRemoteRemoveCondition,
   handleRemoteToggleStatus,
-  setChangeMade,
 }: MapEventListenersProps) => {
   useEffect(() => {
     const onMoveCharacter: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<MoveCharacterData>;
       console.log('Received move character event:', ev.detail);
       handleRemoteCharacterMove(ev.detail);
-      setChangeMade(true);
     };
 
     window.addEventListener('moveCharacter', onMoveCharacter);
@@ -41,12 +38,12 @@ const useMapEventListeners = ({
     return () => {
       window.removeEventListener('moveCharacter', onMoveCharacter);
     };
-  }, [handleRemoteCharacterMove, setChangeMade]);
+  }, [handleRemoteCharacterMove]);
 
   // gameUpdate
   useEffect(() => {
     const onGameUpdate: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<unknown>;
       console.log('Received game update event:', ev.detail);
     };
 
@@ -62,7 +59,6 @@ const useMapEventListeners = ({
     const onPlayerAction: EventListener = (e: Event) => {
       const ev = e as CustomEvent<PlayerAction>;
       console.log('Received player action event:', ev.detail);
-      setChangeMade(true);
 
       const { actionType } = ev.detail;
       if (actionType === 'updateHp') {
@@ -99,13 +95,12 @@ const useMapEventListeners = ({
     handleRemoteAddCondition,
     handleRemoteRemoveCondition,
     handleRemoteToggleStatus,
-    setChangeMade,
   ]);
 
   // playerConnected
   useEffect(() => {
     const onPlayerConnected: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<unknown>;
       console.log('Received player connected event:', ev.detail);
       sendGameState();
     };

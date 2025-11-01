@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { getAllLocalStorage } from "@/app/utils/localStorage";
-import { useEffect, useState } from "react";
-import styles from "./index.module.css";
+import { getAllLocalStorage } from '@/app/utils/localStorage';
+import { useEffect, useState } from 'react';
+import styles from './index.module.css';
 
 interface HomePageProps {
   createInvoice: (formData: FormData) => Promise<void>;
@@ -10,6 +10,20 @@ interface HomePageProps {
 
 const HomePage = ({ createInvoice }: HomePageProps) => {
   const [storedMaps, setStoredMaps] = useState<Record<string, string>>({});
+
+  // Track mouse position for cursor effect
+  useEffect(() => {
+    const updateMousePosition = (e: MouseEvent) => {
+      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+    };
+
+    document.addEventListener('mousemove', updateMousePosition);
+
+    return () => {
+      document.removeEventListener('mousemove', updateMousePosition);
+    };
+  }, []);
 
   useEffect(() => {
     const maps = getAllLocalStorage();
@@ -38,7 +52,7 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
               autoComplete="off"
             />
             <button type="submit" className={styles.button}>
-              Create Map
+              Create Map``
             </button>
           </div>
         </form>

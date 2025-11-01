@@ -34,7 +34,6 @@ import { BUILTIN_TERRAIN } from './utils/terrain';
 
 const MapContainer = () => {
   // Map configuration
-  const [changeMade, setChangeMade] = useState(false);
   const { state, actions, handlers } = useMapContext();
   const {
     terrain,
@@ -135,7 +134,6 @@ const MapContainer = () => {
     handleRemoteAddCondition,
     handleRemoteRemoveCondition,
     handleRemoteToggleStatus,
-    setChangeMade,
   });
 
   // Function to send current game state
@@ -148,7 +146,8 @@ const MapContainer = () => {
 
   // Set up 30-second interval for sending game state
   useEffect(() => {
-    if (isConnected && changeMade) {
+    console.log('Setting up game state sync interval...', players.length);
+    if (isConnected && players.length > 0) {
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);
       }
@@ -156,8 +155,7 @@ const MapContainer = () => {
       gameStateIntervalRef.current = setInterval(() => {
         console.log('Sending periodic game state update...');
         sendCurrentGameState();
-        setChangeMade(false);
-      }, 30000); // 30 seconds = 30000 milliseconds
+      }, 10000); // 30 seconds = 30000 milliseconds
     } else {
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);
@@ -172,7 +170,7 @@ const MapContainer = () => {
         gameStateIntervalRef.current = null;
       }
     };
-  }, [isConnected, sendCurrentGameState, changeMade]);
+  }, [isConnected, sendCurrentGameState, players.length]);
 
   const [mapIsLoaded, setMapIsLoaded] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(true);
