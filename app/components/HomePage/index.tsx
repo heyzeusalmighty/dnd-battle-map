@@ -11,6 +11,20 @@ interface HomePageProps {
 const HomePage = ({ createInvoice }: HomePageProps) => {
   const [storedMaps, setStoredMaps] = useState<Record<string, string>>({});
 
+  // Track mouse position for cursor effect
+  useEffect(() => {
+    const updateMousePosition = (e: MouseEvent) => {
+      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+    };
+
+    document.addEventListener('mousemove', updateMousePosition);
+
+    return () => {
+      document.removeEventListener('mousemove', updateMousePosition);
+    };
+  }, []);
+
   useEffect(() => {
     const maps = getAllLocalStorage();
     setStoredMaps(maps);

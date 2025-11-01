@@ -20,6 +20,25 @@
   }
 }
 
+@keyframes magical-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(255, 255, 255, 0.8),
+      0 0 20px rgba(124, 58, 237, 0.6),
+      0 0 30px rgba(236, 72, 153, 0.4);
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    box-shadow: 
+      0 0 15px rgba(255, 255, 255, 1),
+      0 0 30px rgba(124, 58, 237, 0.8),
+      0 0 45px rgba(236, 72, 153, 0.6);
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+} 
+
 .pageWrapper {
   min-height: 100vh;
   display: flex;
@@ -39,7 +58,36 @@
   );
   backdrop-filter: blur(16px);  
   background-size: 400% 400%;
-  /* animation: gradient-x 15s ease infinite; */
+
+  /* hide default cursor */
+  cursor: none;
+}
+
+.pageWrapper::after {
+  content: '';
+  position: fixed;
+  top: var(--mouse-y, 50%);
+  left: var(--mouse-x, 50%);
+  width: 30px;
+  height: 30px;
+  border: 2px solid white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  animation: magical-glow 2s ease-in-out infinite;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+}
+
+/* you want cursor pointer on interactive elements */
+.pageWrapper .input,
+.pageWrapper .button,
+.pageWrapper .mapLink {
+  cursor: pointer;
 }
 
 .glassCard {  
@@ -171,3 +219,21 @@
   border-radius: 50%;
   box-shadow: 0 4px 16px #00000088;
 }
+
+.magical-cursor {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  border: 2px solid white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  animation: magical-glow 2s ease-in-out infinite;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 70%
+  );
+}
+
