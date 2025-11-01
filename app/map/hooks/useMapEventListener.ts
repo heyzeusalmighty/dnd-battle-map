@@ -3,7 +3,7 @@ import type {
   PlayerAction,
 } from '@/app/hooks/websockets.types';
 import { useEffect } from 'react';
-import { CharacterStatus } from '../types';
+import type { CharacterStatus } from '../types';
 
 interface MapEventListenersProps {
   handleRemoteCharacterMove: (data: MoveCharacterData) => void;
@@ -28,7 +28,7 @@ const useMapEventListeners = ({
 }: MapEventListenersProps) => {
   useEffect(() => {
     const onMoveCharacter: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<MoveCharacterData>;
       console.log('Received move character event:', ev.detail);
       handleRemoteCharacterMove(ev.detail);
     };
@@ -43,7 +43,7 @@ const useMapEventListeners = ({
   // gameUpdate
   useEffect(() => {
     const onGameUpdate: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<unknown>;
       console.log('Received game update event:', ev.detail);
     };
 
@@ -100,7 +100,7 @@ const useMapEventListeners = ({
   // playerConnected
   useEffect(() => {
     const onPlayerConnected: EventListener = (e: Event) => {
-      const ev = e as CustomEvent<any>;
+      const ev = e as CustomEvent<unknown>;
       console.log('Received player connected event:', ev.detail);
       sendGameState();
     };

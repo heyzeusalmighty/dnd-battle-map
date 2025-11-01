@@ -52,7 +52,7 @@ const HomePage = ({ createInvoice }: HomePageProps) => {
               autoComplete="off"
             />
             <button type="submit" className={styles.button}>
-              Create Map
+              Create Map``
             </button>
           </div>
         </form>
