@@ -1,5 +1,5 @@
 {
-  "main": "./custom-worker.ts",
+  "main": "./.open-next/worker.js",
   "name": "dnd-battle-map",
   "compatibility_date": "2025-03-25",
   "compatibility_flags": [
