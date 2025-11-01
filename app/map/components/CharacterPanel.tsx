@@ -40,9 +40,13 @@ import AddSummonDialog from './AddSummonDialog';
 
 interface CharacterPanelProps {
   sendPlayerAction: (action: any) => void;
+  sendDamageLog: (logData: DamageEvent) => void;
 }
 
-const CharacterPanel = ({ sendPlayerAction }: CharacterPanelProps) => {
+const CharacterPanel = ({
+  sendPlayerAction,
+  sendDamageLog,
+}: CharacterPanelProps) => {
   const { handlers, state, actions } = useMapContext();
   const {
     setCharacters,
@@ -222,6 +226,7 @@ const CharacterPanel = ({ sendPlayerAction }: CharacterPanelProps) => {
         }
 
         setDamageLog((prev) => [...prev, ...(lastEvent ? [lastEvent] : [])]);
+        sendDamageLog(lastEvent);
 
         damageEventQueue.current = [];
       }

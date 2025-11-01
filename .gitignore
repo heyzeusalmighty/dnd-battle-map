@@ -16,7 +16,7 @@
 # next.js
 /.next/
 /out/
-/.open-next/.build
+/.open-next/
 
 # production
 /build

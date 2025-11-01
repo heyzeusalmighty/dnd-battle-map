@@ -32,6 +32,8 @@ import { getId } from './utils/id';
 import { createPlayerSnapshot } from './utils/playerSnapshot';
 import { BUILTIN_TERRAIN } from './utils/terrain';
 
+const GAME_STATE_SYNC_INTERVAL = 20000; // 20 seconds
+
 const MapContainer = () => {
   // Map configuration
   const { state, actions, handlers } = useMapContext();
@@ -117,8 +119,9 @@ const MapContainer = () => {
     connect,
     sendGameUpdate,
     sendPlayerAction,
-    players,
     sendMoveCharacter,
+    sendDamageLog,
+    players,
   } = useWebSockets({ mapName, playerId: 'DM' });
 
   const sendGameState = useCallback(() => {
@@ -155,7 +158,7 @@ const MapContainer = () => {
       gameStateIntervalRef.current = setInterval(() => {
         console.log('Sending periodic game state update...');
         sendCurrentGameState();
-      }, 10000); // 30 seconds = 30000 milliseconds
+      }, GAME_STATE_SYNC_INTERVAL);
     } else {
       if (gameStateIntervalRef.current) {
         clearInterval(gameStateIntervalRef.current);
@@ -364,7 +367,10 @@ const MapContainer = () => {
             sendMoveCharacter={sendMoveCharacter}
           />
 
-          <CharacterPanel sendPlayerAction={sendPlayerAction} />
+          <CharacterPanel
+            sendPlayerAction={sendPlayerAction}
+            sendDamageLog={sendDamageLog}
+          />
         </div>
         {/* Right Panel - Initiative + Combat Log */}
         <div className="w-64 flex-shrink-0 flex flex-col gap-4">

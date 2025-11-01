@@ -21,7 +21,7 @@ const UserMapView = () => {
     state;
   const { setGameState, setUsername, setSubmitted, setSelectedCharacterId } =
     actions;
-  const { handleRemoteCharacterMove } = handlers;
+  const { handleRemoteCharacterMove, handleRemoteDamageLog } = handlers;
 
   const searchParams = useSearchParams();
   const mapName = searchParams.get('mapName') ?? 'Shadow Over Orlando';
@@ -41,7 +41,11 @@ const UserMapView = () => {
     (c) => c.id === selectedCharacterId && c.isPlayer
   );
 
-  useMapViewEventListeners({ setGameState, handleRemoteCharacterMove });
+  useMapViewEventListeners({
+    setGameState,
+    handleRemoteCharacterMove,
+    handleRemoteDamageLog,
+  });
 
   const handleUpdateHp = (newHp: number) => {
     if (!selectedCharacter) return;

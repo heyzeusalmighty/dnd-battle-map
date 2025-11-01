@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
 
-import type { AppSnapshot } from '../../map/types';
+import type { AppSnapshot, DamageEvent } from '../../map/types';
 import { coolCharacters, coolDemoTerrain } from '../../map/utils/demo';
 
 interface UserMapContextType {
@@ -34,6 +34,7 @@ interface UserMapContextType {
       characterId: string,
       position: { x: number; y: number }
     ) => void;
+    handleRemoteDamageLog: (damageLog: DamageEvent) => void;
   };
 }
 
@@ -173,6 +174,13 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
     }));
   };
 
+  const handleRemoteDamageLog = (damageLog: DamageEvent) => {
+    setGameState((prev) => ({
+      ...prev,
+      damageLog: [...prev.damageLog, damageLog],
+    }));
+  };
+
   const value = {
     state: {
       gameState,
@@ -199,6 +207,7 @@ export const UserMapProvider = ({ children }: UserMapProviderProps) => {
       toggleDisadvantage,
       toggleConcentration,
       handleRemoteCharacterMove,
+      handleRemoteDamageLog,
     },
   };
 

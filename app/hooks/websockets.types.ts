@@ -1,4 +1,4 @@
-import type { AppSnapshot } from '../map/types';
+import type { AppSnapshot, DamageEvent } from '../map/types';
 
 export interface GameData {
   characterId?: string;
@@ -32,11 +32,7 @@ export interface MoveCharacterData {
 
 export interface WebSocketMessage {
   type: string;
-  data:
-    | AppSnapshot
-    | PlayerAction
-    | GameData
-    | { connectionId?: string; message?: string; [key: string]: unknown };
+  data: AppSnapshot | PlayerAction | GameData | DamageEvent;
   timestamp: number;
   id?: string;
   connectionId?: string;

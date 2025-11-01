@@ -1,5 +1,5 @@
 import { PlayerAction } from '@/app/hooks/websockets.types';
-import { AppSnapshot, Character } from '@/app/map/types';
+import { AppSnapshot, Character, DamageEvent } from '@/app/map/types';
 import React, { useEffect } from 'react';
 
 interface MapViewEventListenersProps {
@@ -8,11 +8,13 @@ interface MapViewEventListenersProps {
     characterId: string,
     position: { x: number; y: number }
   ) => void;
+  handleRemoteDamageLog: (damageLog: DamageEvent) => void;
 }
 
 const useMapViewEventListeners = ({
   setGameState,
   handleRemoteCharacterMove,
+  handleRemoteDamageLog,
 }: MapViewEventListenersProps) => {
   // PLAYER ACTION
   useEffect(() => {
@@ -121,6 +123,22 @@ const useMapViewEventListeners = ({
       window.removeEventListener('moveCharacter', onMoveCharacter);
     };
   }, [handleRemoteCharacterMove]);
+
+  // DAMAGE LOG
+  useEffect(() => {
+    const onDamageLog: EventListener = (e: Event) => {
+      const ev = e as CustomEvent<DamageEvent>;
+      console.log('Received damage log event:', ev.detail);
+      handleRemoteDamageLog(ev.detail);
+      // Handle damage log as needed
+    };
+
+    window.addEventListener('damageLog', onDamageLog);
+
+    return () => {
+      window.removeEventListener('damageLog', onDamageLog);
+    };
+  }, [handleRemoteDamageLog]);
 };
 
 export default useMapViewEventListeners;

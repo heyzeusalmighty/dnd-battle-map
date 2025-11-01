@@ -109,6 +109,10 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
         case "move_character":
           this.handleMoveCharacter(ws, parsedMessage, connectionId);
           break;
+
+        case "damage_log":
+          this.hadleDamageLog(ws, parsedMessage, connectionId);
+          break;
             
           
           
@@ -231,6 +235,16 @@ export class DNDWebSocketHibernationServer extends DurableObject<Env> {
       data: message.data,
       characterId: message.characterId,
       position: message.position,
+      timestamp: Date.now()
+    });
+  }
+
+  private hadleDamageLog(ws: WebSocket, message: any, connectionId: string) {
+    // Broadcast damage log to all clients in the same mapName
+    this.broadcastToAll(ws, {
+      type: "damage_log",
+      connectionId,
+      data: message.data,
       timestamp: Date.now()
     });
   }

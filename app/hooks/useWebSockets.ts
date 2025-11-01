@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { AppSnapshot } from '../map/types';
+import type { AppSnapshot, DamageEvent } from '../map/types';
 import type {
   ConnectedPlayer,
   MoveCharacterData,
@@ -18,6 +18,7 @@ interface UseWebSocketsReturn extends WebSocketConnection {
   sendGameUpdate: (gameData: AppSnapshot) => void;
   sendPlayerAction: (action: PlayerAction) => void;
   sendMoveCharacter: (action: MoveCharacterData) => void;
+  sendDamageLog: (logData: DamageEvent) => void;
   clearError: () => void;
   players: ConnectedPlayer[];
 }
@@ -179,6 +180,13 @@ const useWebSockets = (props: WebSocketsProps): UseWebSocketsReturn => {
               );
               break;
 
+            case 'damage_log':
+              console.log('Damage log received:', message.data);
+              window.dispatchEvent(
+                new CustomEvent('damageLog', { detail: message.data })
+              );
+              break;
+
             case 'error': {
               console.error('WebSocket error message:', message.data);
               // Safely narrow message.data to an indexable object and check the "message" property
@@ -246,6 +254,7 @@ const useWebSockets = (props: WebSocketsProps): UseWebSocketsReturn => {
         | AppSnapshot
         | PlayerAction
         | MoveCharacterData
+        | DamageEvent
         | Record<string, unknown>
     ) => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -293,6 +302,14 @@ const useWebSockets = (props: WebSocketsProps): UseWebSocketsReturn => {
     [sendMessage]
   );
 
+  const sendDamageLog = useCallback(
+    (logData: DamageEvent) => {
+      console.log('Sending damage log:', logData);
+      sendMessage('damage_log', logData);
+    },
+    [sendMessage]
+  );
+
   return {
     ...state,
     connect,
@@ -301,6 +318,7 @@ const useWebSockets = (props: WebSocketsProps): UseWebSocketsReturn => {
     sendGameUpdate,
     sendPlayerAction,
     sendMoveCharacter,
+    sendDamageLog,
     clearError,
     players,
   };
