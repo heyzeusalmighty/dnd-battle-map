@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { getAllLocalStorage } from "@/app/utils/localStorage";
-import { useEffect, useState } from "react";
-import styles from "./index.module.css";
+import { getAllLocalStorage } from '@/app/utils/localStorage';
+import { useEffect, useState } from 'react';
+import styles from './index.module.css';
 
 interface HomePageProps {
   createInvoice: (formData: FormData) => Promise<void>;
